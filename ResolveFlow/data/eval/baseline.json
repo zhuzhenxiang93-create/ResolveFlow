@@ -1,0 +1,489 @@
+{
+  "timestamp": "2026-08-17T02:25:55.448173",
+  "total": 8,
+  "passed": 8,
+  "pass_rate": 1.0,
+  "avg_scores": {
+    "relevance": 0.9714,
+    "accuracy": 0.9714,
+    "completeness": 0.7929,
+    "helpfulness": 0.9214,
+    "intent_accuracy": 0.9302
+  },
+  "regressions": [],
+  "recommendations": [
+    "所有指标均达标，继续保持"
+  ],
+  "results": [
+    {
+      "test_id": "intent_recognition",
+      "passed": true,
+      "scores": {
+        "accuracy": 0.9302,
+        "macro_f1": 0.9603
+      },
+      "detail": "准确率 93.0%，Macro-F1 0.960",
+      "metadata": {
+        "total": 43,
+        "correct": 40,
+        "cases": [
+          {
+            "message": "我的订单什么时候到？",
+            "expected": "logistics",
+            "predicted": "logistics",
+            "confidence": 0.8075,
+            "reasoning": "用户询问订单送达时间，属于物流进度查询，与示例'快递什么时候到？'语义一致，应匹配细粒度意图logistics。"
+          },
+          {
+            "message": "帮我取消订单",
+            "expected": "request",
+            "predicted": "request",
+            "confidence": 0.8825,
+            "reasoning": "用户明确使用'帮我'提出操作请求，核心动作为'取消订单'，属于通用服务请求类意图，且无更细粒度意图（如cancel_order）在可选列表中，故匹配最贴近的细粒度已定义意图'request'"
+          },
+          {
+            "message": "你们服务太差了！",
+            "expected": "complaint",
+            "predicted": "complaint",
+            "confidence": 0.8825,
+            "reasoning": "用户使用强烈负面评价'服务太差了'，明确表达对服务质量的不满，属于典型投诉意图。"
+          },
+          {
+            "message": "应用一直报500错误",
+            "expected": "technical_crash",
+            "predicted": "technical_crash",
+            "confidence": 0.8075,
+            "reasoning": "用户明确指出应用出现500错误，属于服务端技术故障，匹配细粒度意图technical（示例中'应用一直崩溃'对应technical_crash，但500错误是更通用的服务端异常，未在细粒度列表中单独列出，故归入上层technical）"
+          },
+          {
+            "message": "为什么扣了两次款？",
+            "expected": "payment_issue",
+            "predicted": "payment_issue",
+            "confidence": 0.8075,
+            "reasoning": "用户明确质疑‘扣了两次款’，属于支付环节的异常问题，与示例中‘为什么重复扣款？’完全匹配，应优先使用细粒度意图payment_issue而非宽泛的billing。"
+          },
+          {
+            "message": "我要投诉，转人工！",
+            "expected": "human_handoff",
+            "predicted": "human_handoff",
+            "confidence": 0.8075,
+            "reasoning": "用户明确使用'我要投诉'表达升级诉求，属于典型投诉升级意图，优先于'human_handoff'等次级意图"
+          },
+          {
+            "message": "你好",
+            "expected": "greeting",
+            "predicted": "greeting",
+            "confidence": 0.9249999999999999,
+            "reasoning": "用户发送'你好'是典型的问候语，用于开启对话。"
+          },
+          {
+            "message": "修改我的邮箱地址",
+            "expected": "account",
+            "predicted": "account",
+            "confidence": 0.8825,
+            "reasoning": "用户明确要求修改邮箱地址，属于账户信息管理类操作，与示例'修改邮箱'完全匹配，应优先使用细粒度意图account。"
+          },
+          {
+            "message": "帮我开发票",
+            "expected": "invoice",
+            "predicted": "invoice",
+            "confidence": 0.9079999999999999,
+            "reasoning": "用户明确使用'帮我开发票'这一典型指令性表达，直接匹配细粒度意图invoice。"
+          },
+          {
+            "message": "退款多久到账？",
+            "expected": "refund",
+            "predicted": "refund",
+            "confidence": 0.8825,
+            "reasoning": "用户询问退款到账时间，属于退款流程中的具体问题，直接匹配细粒度意图refund"
+          },
+          {
+            "message": "登录一直报401",
+            "expected": "technical_login",
+            "predicted": "technical_login",
+            "confidence": 0.9079999999999999,
+            "reasoning": "用户明确提到登录时出现HTTP 401错误码，属于登录相关的技术故障，匹配细粒度意图technical_login"
+          },
+          {
+            "message": "你们的会员等级是怎么划分的？",
+            "expected": "query",
+            "predicted": "query",
+            "confidence": 0.9199999999999999,
+            "reasoning": "用户询问会员等级划分规则，属于对平台基础信息的通用咨询，无更细粒度意图匹配"
+          },
+          {
+            "message": "APP 支持哪些语言切换？",
+            "expected": "query",
+            "predicted": "query",
+            "confidence": 0.8825,
+            "reasoning": "用户询问APP支持的语言切换功能，属于对产品基础信息的常规咨询，无更细粒度意图匹配项。"
+          },
+          {
+            "message": "你们家客服在线时间是几点到几点？",
+            "expected": "query",
+            "predicted": "query",
+            "confidence": 0.8825,
+            "reasoning": "用户询问客服在线时间，属于对服务信息的常规咨询，匹配最细粒度意图query（而非更宽泛的other或request）"
+          },
+          {
+            "message": "怎么查看我以前买过的所有商品记录？",
+            "expected": "query",
+            "predicted": "query",
+            "confidence": 0.9199999999999999,
+            "reasoning": "用户询问如何查看历史购买商品记录，属于对账户或订单信息的常规查询，未指向具体细粒度意图如order_status或account，且query是覆盖该场景的最适配基础意图。"
+          },
+          {
+            "message": "这次服务体验太差了，我要投诉，必须有人认真处理",
+            "expected": "escalation",
+            "predicted": "escalation",
+            "confidence": 0.8825,
+            "reasoning": "用户明确使用'我要投诉，必须有人认真处理'，表达强烈升级诉求，符合escalation意图定义"
+          },
+          {
+            "message": "麻烦把我这个诉求反馈给你们经理，前台客服解决不了",
+            "expected": "escalation",
+            "predicted": "escalation",
+            "confidence": 0.8825,
+            "reasoning": "用户明确要求将诉求反馈给经理，并指出前台客服无法解决，属于典型的升级投诉意图。"
+          },
+          {
+            "message": "同样的问题我反馈第三次了，希望能升级处理，不要再让我重复描述",
+            "expected": "escalation",
+            "predicted": "escalation",
+            "confidence": 0.833,
+            "reasoning": "用户明确表示‘希望能升级处理’，并强调重复反馈，属于主动要求问题升级的典型升级意图。"
+          },
+          {
+            "message": "你们这个态度让我很不满，我需要跟负责人当面说清楚",
+            "expected": "escalation",
+            "predicted": "escalation",
+            "confidence": 0.8075,
+            "reasoning": "用户明确表达强烈不满并要求与负责人当面沟通，属于升级投诉意图。"
+          },
+          {
+            "message": "扫码支付这个功能好像坏了，一直转圈加载不出来",
+            "expected": "technical",
+            "predicted": "technical",
+            "confidence": 0.8075,
+            "reasoning": "用户明确描述扫码支付功能异常（转圈加载不出），属于技术功能故障，且未特指登录或崩溃等更细粒度场景，故匹配宽泛technical意图"
+          },
+          {
+            "message": "APP 上的搜索功能搜不到我想要的商品，是不是出问题了",
+            "expected": "technical",
+            "predicted": "technical",
+            "confidence": 0.8075,
+            "reasoning": "用户明确指出APP搜索功能异常（搜不到商品），属于技术功能故障，且未特指登录或崩溃等子类，故匹配宽泛但准确的technical意图"
+          },
+          {
+            "message": "消息推送一直收不到，是不是设置有问题",
+            "expected": "technical",
+            "predicted": "technical",
+            "confidence": 0.8075,
+            "reasoning": "用户反馈消息推送收不到，属于系统功能异常问题，未明确指向登录或崩溃等更细粒度场景，故归为通用technical意图"
+          },
+          {
+            "message": "同步到我其他设备上的数据总是对不上",
+            "expected": "technical",
+            "predicted": "other",
+            "confidence": 0.8075,
+            "reasoning": "用户描述的是多设备间数据同步不一致的问题，属于技术类中的细粒度同步故障意图，虽未在示例中显式列出，但'technical_sync'比宽泛的'technical'更精准匹配该场景；因示例未提供'technical_sync'，且可选意图列表中无此值，故退而选择最接近的细粒度意图——但可选意图列表中实际不含'technical_sync'，需严格从给定可选意图中选择；分析发现该问题本质是技术性功能异常（同步失败），不属于login、crash等已列子类，因此归为'technical'"
+          },
+          {
+            "message": "我想问一下连续包月和单次购买价格差多少",
+            "expected": "billing",
+            "predicted": "billing",
+            "confidence": 0.8075,
+            "reasoning": "用户询问连续包月与单次购买的价格差异，属于计费策略和价格对比问题，直接关联 billing 意图。"
+          },
+          {
+            "message": "优惠券用不了，提示已过期但明明还没到期",
+            "expected": "billing",
+            "predicted": "technical",
+            "confidence": 0.782,
+            "reasoning": "用户描述优惠券功能异常（提示过期但实际未到期），属于系统功能逻辑或状态同步问题，归类为技术类问题而非具体登录或崩溃等细粒度子类"
+          },
+          {
+            "message": "你们的会员费是每个月自动续费吗，怎么关掉",
+            "expected": "billing",
+            "predicted": "billing",
+            "confidence": 0.8075,
+            "reasoning": "用户询问会员费自动续费机制及关闭方式，属于账单与支付规则类问题，细粒度意图 billing 比 account 或 query 更精准匹配"
+          },
+          {
+            "message": "账单上有一笔我不认识的收费项目，能说明一下是什么吗",
+            "expected": "billing",
+            "predicted": "billing",
+            "confidence": 0.8075,
+            "reasoning": "用户质疑账单中不明收费项目，属于账务明细查询与解释类问题，直接匹配细粒度意图billing。"
+          },
+          {
+            "message": "这次客服响应特别快，问题一下子就解决了，很满意",
+            "expected": "feedback",
+            "predicted": "feedback",
+            "confidence": 0.8075,
+            "reasoning": "用户明确表达对客服响应速度和服务效果的正面评价，属于典型的服务反馈意图。"
+          },
+          {
+            "message": "商品质量比想象中好很多，包装也很用心，给你们点赞",
+            "expected": "feedback",
+            "predicted": "feedback",
+            "confidence": 0.833,
+            "reasoning": "用户明确表达对商品质量、包装的正面评价和赞赏，属于典型的服务反馈意图。"
+          },
+          {
+            "message": "APP 新版本改版之后好用多了，体验感提升不少",
+            "expected": "feedback",
+            "predicted": "feedback",
+            "confidence": 0.8075,
+            "reasoning": "用户明确表达对APP新版本改版的正面评价，属于典型的产品体验反馈。"
+          },
+          {
+            "message": "第一次网购体验这么顺畅，客服态度也很好，会继续回购的",
+            "expected": "feedback",
+            "predicted": "feedback",
+            "confidence": 0.8075,
+            "reasoning": "用户明确表达对首次网购体验和客服态度的正面评价，并表明复购意愿，属于典型的服务反馈。"
+          },
+          {
+            "message": "我下的这笔订单显示在处理中，具体是卡在哪个环节了？",
+            "expected": "order_status",
+            "predicted": "order_status",
+            "confidence": 0.8075,
+            "reasoning": "用户明确询问订单当前状态（'显示在处理中'）及具体卡点环节，属于对订单处理进度的精细化状态查询，匹配细粒度意图order_status。"
+          },
+          {
+            "message": "订单页面一直显示待发货，是不是没安排上",
+            "expected": "order_status",
+            "predicted": "order_status",
+            "confidence": 0.8075,
+            "reasoning": "用户明确询问订单当前状态（'待发货'是否真实），属于对订单履约进度的直接查询，与示例'我的订单现在是什么状态？'语义高度一致。"
+          },
+          {
+            "message": "怎么查我这笔订单现在到哪一步了，付款成功了吗",
+            "expected": "order_status",
+            "predicted": "order_status",
+            "confidence": 0.8075,
+            "reasoning": "用户明确询问订单当前所处步骤及付款是否成功，属于对具体订单状态的查询，与示例'我的订单现在是什么状态？'高度一致，优先匹配细粒度意图order_status而非宽泛query"
+          },
+          {
+            "message": "订单是不是已经进入打包阶段了，还是说还没开始处理",
+            "expected": "order_status",
+            "predicted": "order_status",
+            "confidence": 0.8075,
+            "reasoning": "用户明确询问订单当前处理阶段（打包与否、是否开始处理），属于对订单实时状态的查询，与示例'我的订单现在是什么状态？'语义一致，优先匹配细粒度意图order_status。"
+          },
+          {
+            "message": "我刚收到一条短信说账号在异地登录了，是不是被盗号了",
+            "expected": "account_security",
+            "predicted": "account_security",
+            "confidence": 0.8825,
+            "reasoning": "用户明确提到收到异地登录短信并担忧账号被盗，属于账户安全类紧急风险问题。"
+          },
+          {
+            "message": "想开启两步验证，但是设置里找不到入口",
+            "expected": "account_security",
+            "predicted": "account_security",
+            "confidence": 0.8075,
+            "reasoning": "用户明确表达希望开启两步验证（账户安全功能），属于账户设置类操作，与account意图高度匹配，且未涉及安全事件（如盗号）故不归为account_security。"
+          },
+          {
+            "message": "怀疑账号密码泄露了，想尽快重置一下",
+            "expected": "account_security",
+            "predicted": "account_security",
+            "confidence": 0.8075,
+            "reasoning": "用户明确表达对账号密码泄露的担忧，并提出重置需求，属于账户安全类意图。"
+          },
+          {
+            "message": "登录时提示有陌生设备访问，这个正常吗",
+            "expected": "account_security",
+            "predicted": "account_security",
+            "confidence": 0.8075,
+            "reasoning": "用户提及登录时收到陌生设备访问提示，直接关联账户安全风险，属于账户安全类意图。"
+          },
+          {
+            "message": "你们家养猫吗",
+            "expected": "other",
+            "predicted": "other",
+            "confidence": 0.8075,
+            "reasoning": "用户询问‘你们家养猫吗’属于与业务无关的闲聊或幽默提问，无法匹配任何预定义的业务意图。"
+          },
+          {
+            "message": "今天天气怎么样",
+            "expected": "other",
+            "predicted": "other",
+            "confidence": 0.8075,
+            "reasoning": "用户询问天气，与客服业务场景无关，不属于任何预定义业务意图"
+          },
+          {
+            "message": "随便问问，你们公司在哪个城市",
+            "expected": "other",
+            "predicted": "query",
+            "confidence": 0.8075,
+            "reasoning": "用户询问公司所在地，属于信息查询类问题，且无更细粒度意图匹配（如地址变更、营业网点等），故归为通用query"
+          },
+          {
+            "message": "哈哈开个玩笑而已",
+            "expected": "other",
+            "predicted": "other",
+            "confidence": 0.8075,
+            "reasoning": "用户表达的是轻松玩笑语气，无实际业务诉求或问题，不属于预定义的任何业务意图类别"
+          }
+        ]
+      }
+    },
+    {
+      "test_id": "dialog_0",
+      "passed": true,
+      "scores": {
+        "relevance": 0.95,
+        "accuracy": 1.0,
+        "completeness": 0.6,
+        "helpfulness": 0.9,
+        "overall": 0.8625
+      },
+      "detail": "Q: 我的订单 #12345 还没到，已经超时了... → 综合评分 0.863",
+      "metadata": {
+        "question": "我的订单 #12345 还没到，已经超时了",
+        "response": "你好，感谢反馈！我来帮你跟进订单 #12345 的物流情况。\n\n为了更准确查询，请你补充以下任一信息（只需一个即可）：\n- 下单时使用的手机号后四位  \n- 物流单号（如有）  \n- 预计送达时间或超时的具体天数（例如“已超预计送达时间3天”）\n\n⚠️ 温馨提示：订单物流状态需以系统实时数据为准，我无法直接修改或催促快递，但可为你：\n✅ 核实当前物流节点和异常原因  \n✅ 判断是否符合售后补发/退款条件  \n✅ 如需人工加急，可立即为你转接专属客服  \n\n请告诉我上述任一信息，我马上为你查看 👇",
+        "agent_type": "general",
+        "intent": "logistics",
+        "turn": 0,
+        "conv_id": "eval_0",
+        "judge_failed": false,
+        "judge_error": null
+      }
+    },
+    {
+      "test_id": "dialog_1",
+      "passed": true,
+      "scores": {
+        "relevance": 1.0,
+        "accuracy": 1.0,
+        "completeness": 0.85,
+        "helpfulness": 0.95,
+        "overall": 0.95
+      },
+      "detail": "Q: 应用登录一直报错 401... → 综合评分 0.950",
+      "metadata": {
+        "question": "应用登录一直报错 401",
+        "response": "感谢反馈！401 错误表示 **认证失败（Unauthorized）**，即服务端拒绝了当前请求，因为它无法确认你的身份有效性。这不是账号密码输错的客户端提示，而是服务端校验 Token、API Key、签名等认证凭据不通过的结果。\n\n为精准定位问题，请你协助确认以下 **三点关键信息**（只需简要回答，无需敏感信息）：\n\n---\n\n✅ **1. 登录方式是什么？**  \n- 是网页表单输入账号密码登录？  \n- 还是调用 API 接口（如 `POST /api/v1/login`）？  \n- 或使用第三方登录（微信/钉钉/OAuth2）？  \n\n✅ **2. 错误是否稳定复现？发生时间？**  \n- 是每次登录都 401？还是仅在某次更新/重启后出现？  \n- 最近是否有变更：升级应用版本、修改配置（如 `JWT_SECRET`、`APP_ID`）、更换域名或代理？  \n\n✅ **3. 能否提供以下任一信息（越具体越好）？**  \n- 浏览器开发者工具（F12 → Network → 找到登录请求）中的：  \n  ▪️ 请求 URL（如 `/api/auth/login`）  \n  ▪️ 请求方法（POST/GET）  \n  ▪️ **响应状态码确实是 `401`，且响应体内容**（如 `{\"code\":401,\"msg\":\"Invalid token\"}`）  \n  ▪️ 请求头中是否含 `Authorization: Bearer xxx` 或 `X-API-Key: xxx`？（可隐藏中间字符，如 `abc...xyz`）  \n- 如果是 App 或脚本调用，能否提供类似 curl 示例？（隐去密钥）\n\n---\n\n🔍 *为什么先问这些？*  \n因为 401 的常见根因差异很大：  \n| 场景 | 典型原因 | 初步自查建议 |\n|------|----------|--------------|\n| Web 表单登录 | 后端 JWT 密钥不一致 / Token 过期未刷新 / Cookie 域名不匹配 | 检查浏览器是否禁用 Cookie、是否跨域访问、控制台是否有 `Failed to load resource` 网络错误 |\n| API 调用 | `Authorization` 头缺失/格式错误 / 时间戳超时（如 OAuth2 要求 `timestamp` 在 5 分钟内） / 签名计算错误 | 用 Postman 复现，对比文档要求的 Header 和 Body 结构 |\n| 第三方登录 | 回调地址未在开放平台配置 / `state` 参数丢失 / `code` 重复使用 | 查看回调 URL 是否带 `?code=xxx&state=yyy`，且服务端未重复消费该 code |\n\n⚠️ **请勿提供：** 完整 Token、密码、API Key 明文、截图含敏感域名/账号。\n\n收到你的补充信息后，我会立即给出 **可验证的排查步骤**（例如：检查某个配置项、执行一条 curl 命令、查看某段日志关键词）。若确认为服务端配置异常或需后台权限修复，将明确提示“需升级至二线技术支持”。\n\n请随时回复 👇",
+        "agent_type": "technical",
+        "intent": "technical_login",
+        "turn": 0,
+        "conv_id": "eval_1",
+        "judge_failed": false,
+        "judge_error": null
+      }
+    },
+    {
+      "test_id": "dialog_2",
+      "passed": true,
+      "scores": {
+        "relevance": 1.0,
+        "accuracy": 0.95,
+        "completeness": 0.8,
+        "helpfulness": 0.95,
+        "overall": 0.925
+      },
+      "detail": "Q: 为什么这个月多扣了 50 块钱？... → 综合评分 0.925",
+      "metadata": {
+        "question": "为什么这个月多扣了 50 块钱？",
+        "response": "您好，感谢您的反馈！为了帮您准确核实本月多扣的 50 元，我需要查看您的账单详情。请您提供以下任一信息（任选其一即可）：\n\n✅ 账单日期（例如：2024年6月1日–6月30日）  \n✅ 订单号或交易号（通常在扣款通知/短信/邮件中可见，以“ORD”或“TRX”开头）  \n✅ 订阅服务名称（如「高级会员年订」「企业版按月订阅」等）  \n✅ 扣款时间（精确到日，例如：6月15日 14:22）\n\n收到信息后，我将立即为您：\n🔹 核对当期费用构成（基础费、税费、可能的叠加服务或试用期结束自动转正等）  \n🔹 检查是否存在重复扣款、汇率浮动（如适用）、或系统临时异常  \n🔹 若确认为误扣，将为您生成退款申请，并说明后续人工审核流程（通常1–3个工作日完成）\n\n请放心，所有账单操作均严格遵循财务合规要求。期待您的补充信息，我随时为您跟进 ✅",
+        "agent_type": "billing",
+        "intent": "payment_issue",
+        "turn": 0,
+        "conv_id": "eval_2",
+        "judge_failed": false,
+        "judge_error": null
+      }
+    },
+    {
+      "test_id": "dialog_3",
+      "passed": true,
+      "scores": {
+        "relevance": 0.95,
+        "accuracy": 1.0,
+        "completeness": 0.8,
+        "helpfulness": 0.9,
+        "overall": 0.9125
+      },
+      "detail": "Q: 帮我把收货地址改成北京市朝阳区... → 综合评分 0.912",
+      "metadata": {
+        "question": "帮我把收货地址改成北京市朝阳区",
+        "response": "您好，感谢您的咨询！\n\n需要说明的是：**收货地址的修改不属于账单服务范畴**，账单服务主要负责账单查询、退款申请、发票开具与管理、订阅状态及费用相关问题。\n\n收货地址通常由您在下单时填写，并保存在订单系统或账户的「收货地址簿」中。建议您按以下方式操作：\n\n✅ **自助修改方式（推荐）**：  \n1. 登录您的购物/会员账户（如App或官网）；  \n2. 进入「我的地址」或「收货地址管理」；  \n3. 编辑现有地址或新增地址，将详细地址更新为“北京市朝阳区”（温馨提示：为确保准确送达，建议补充具体街道、门牌号、楼栋单元及联系方式）；  \n4. 保存并设为默认地址（如需）。\n\n⚠️ 注意：  \n- 已提交的订单无法修改收货地址，仅可联系客服尝试拦截或转寄（视物流状态而定）；  \n- 若您是在订阅服务（如月度配送类）中需更新地址，请提供订阅编号或服务名称，我可为您指引对应操作路径。\n\n如您实际想处理的是**账单、发票收件地址**（例如纸质发票邮寄地址），请确认并告知，我将立即为您协助。\n\n是否需要我进一步帮您查询某笔账单、申请退款，或开具/重发发票？😊",
+        "agent_type": "billing",
+        "intent": "account",
+        "turn": 0,
+        "conv_id": "eval_3",
+        "judge_failed": false,
+        "judge_error": null
+      }
+    },
+    {
+      "test_id": "dialog_4_turn_0",
+      "passed": true,
+      "scores": {
+        "relevance": 0.95,
+        "accuracy": 0.95,
+        "completeness": 0.8,
+        "helpfulness": 0.9,
+        "overall": 0.9
+      },
+      "detail": "Q: 你好，我想退款... → 综合评分 0.900",
+      "metadata": {
+        "question": "你好，我想退款",
+        "response": "您好！感谢联系 ResolveFlow 账单服务。为了帮您准确处理退款申请，我需要先了解一些必要信息，以便核验订单状态和确认是否符合退款规则：\n\n🔍 **请提供以下任意一项（至少一项）：**  \n- 订单号 或 交易号（可在支付成功页、短信、邮件或账单记录中找到）  \n- 支付时间（例如：2024年6月15日 14:30左右）  \n- 支付渠道（如：微信支付、支付宝、银行卡、ResolveFlow 账户余额等）  \n- 扣款金额及币种（如：¥98.00 人民币）\n\n💡 同时，请说明：  \n✅ 您希望退款的原因（例如：未使用、重复扣款、订阅取消、服务未生效等）  \n✅ 是否已提交过退款申请？平台是否有提示“审核中”或“失败”？  \n✅ 如涉及发票或企业报销，是否需要同步处理开票/作废？\n\n📌 温馨提醒：  \n- 退款需人工审核订单状态（如服务是否已开通、优惠券是否已使用、活动协议是否限制退款等）；  \n- 审核通过后，款项通常原路退回，到账时间依支付渠道而定（微信/支付宝一般1–3个工作日，银行卡可能3–7个工作日）；  \n- 若为自动续费订单，取消订阅 ≠ 自动退款，当前周期费用仍需按规则审核。\n\n请您提供上述信息后，我会立即为您跟进处理路径，并告知下一步操作。",
+        "agent_type": "billing",
+        "intent": "refund",
+        "turn": 0,
+        "conv_id": "eval_4",
+        "judge_failed": false,
+        "judge_error": null
+      }
+    },
+    {
+      "test_id": "dialog_4_turn_1",
+      "passed": true,
+      "scores": {
+        "relevance": 1.0,
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "helpfulness": 0.95,
+        "overall": 0.9375
+      },
+      "detail": "Q: 订单号是 #12345... → 综合评分 0.938",
+      "metadata": {
+        "question": "订单号是 #12345",
+        "response": "感谢您提供订单号 **#12345**。我已为您调取该订单的账单信息（模拟系统查询中… ✅）：\n\n🔍 **订单摘要（仅含公开可查字段）：**  \n- 订单号：#12345  \n- 支付时间：2024年6月18日 10:22  \n- 支付渠道：微信支付  \n- 金额：¥198.00（人民币）  \n- 商品/服务：ResolveFlow Pro 年度订阅（自动续费）  \n- 当前状态：**已生效，服务开通中**（开通日期：2024年6月18日）  \n- 续费周期：下一次扣款预计为2025年6月18日  \n\n⚠️ **退款规则提示（依据《ResolveFlow 服务协议》第5.2条）：**  \n- 年度订阅订单支持**开通后14天内无理由退款**（需未超出70%服务使用时长）；  \n- 本订单截至今日（2024年6月25日）已开通 **7天**，仍在14天冷静期内，符合基本退款条件；  \n- 但需确认：是否已使用 Pro 功能（如AI深度分析、导出高清报告等）？若高频使用核心功能，可能影响审核结果。\n\n✅ 请您补充以下任一信息，以便我启动人工审核流程：  \n1. **退款原因**（例如：“未及时取消自动续费” / “试用后决定不使用” / “误操作下单”等）；  \n2. **是否已使用 Pro 版核心功能**（是/否）；  \n3. 是否需要同步**作废已开具的电子发票**（如有，发票代码尾号为XXXX）？\n\n收到您的确认后，我将立即为您：  \n🔹 提交退款工单（编号将同步发送至您注册邮箱）；  \n🔹 暂停下一期自动续费（无需额外操作）；  \n🔹 告知预计审核时效（通常1–2个工作日）及到账路径。\n\n请随时告诉我 👇",
+        "agent_type": "billing",
+        "intent": "refund",
+        "turn": 1,
+        "conv_id": "eval_4",
+        "judge_failed": false,
+        "judge_error": null
+      }
+    },
+    {
+      "test_id": "dialog_4_turn_2",
+      "passed": true,
+      "scores": {
+        "relevance": 0.95,
+        "accuracy": 0.95,
+        "completeness": 0.85,
+        "helpfulness": 0.9,
+        "overall": 0.9125
+      },
+      "detail": "Q: 退款多久能到账？... → 综合评分 0.912",
+      "metadata": {
+        "question": "退款多久能到账？",
+        "response": "关于订单 #12345 的退款到账时间，我为您说明如下（基于当前订单状态及支付渠道规则）：\n\n✅ **当前进度**：  \n您尚未确认退款原因及核心功能使用情况，因此退款申请**尚未正式提交**，也**未进入人工审核环节**。  \n→ 请先补充：退款原因 + 是否已使用 Pro 版核心功能（是/否），我将立即为您提交审核工单。\n\n⏳ **审核通过后的到账时效（保守预估，需以实际处理为准）：**  \n- **审核周期**：人工审核通常需 **1–2个工作日**（节假日顺延）；  \n- **退款处理**：审核通过后，系统发起原路退回（微信支付）；  \n- **到账时间**：  \n  • 微信零钱：一般 **1–3个工作日**内到账（多数在48小时内）；  \n  • 绑定的银行卡：可能需 **3–7个工作日**（受银行清算节奏影响）；  \n  • ⚠️ 注意：若微信账户存在异常（如未实名、余额受限），可能延迟或失败，系统将自动触发短信提醒。\n\n📌 重要提示：  \n- 退款金额为 **实付金额 ¥198.00**（不含优惠券抵扣，本订单未使用优惠）；  \n- 退款成功后，**自动续费已同步暂停**，不会产生下一期扣款；  \n- 到账前建议您：  \n  ▪️ 检查微信「服务通知」及注册邮箱，查收退款工单号与进度更新；  \n  ▪️ 不要注销该微信账号或解绑银行卡，以免影响原路退回。\n\n请随时告诉我您的退款原因和使用情况，我即刻为您启动流程。需要我帮您草拟一句简洁的退款说明吗？",
+        "agent_type": "billing",
+        "intent": "refund",
+        "turn": 2,
+        "conv_id": "eval_4",
+        "judge_failed": false,
+        "judge_error": null
+      }
+    }
+  ]
+}

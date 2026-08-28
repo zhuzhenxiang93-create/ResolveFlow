@@ -1,0 +1,119 @@
+[
+  {
+    "id": "demo-refund-eligibility",
+    "title": "演示政策：退款资格",
+    "category": "refund",
+    "risk_level": "high",
+    "content": "这是 ResolveFlow 演示政策，不代表真实业务规则。未使用的服务可以提交退款申请，是否通过由人工审核决定。客服不得保证退款结果。",
+    "search_terms": [
+      "退款",
+      "退钱",
+      "退回",
+      "未使用",
+      "资格",
+      "申请退款",
+      "用了一部分",
+      "保证退款"
+    ],
+    "effective_date": "2026-08-18",
+    "source": "ResolveFlow internal demo policy v1",
+    "owner": "ResolveFlow demo team",
+    "review_status": "pending_human_review",
+    "version": "v1",
+    "last_reviewed_at": "2026-08-18"
+  },
+  {
+    "id": "demo-refund-timeline",
+    "title": "演示政策：退款处理时效",
+    "category": "refund",
+    "risk_level": "high",
+    "content": "这是 ResolveFlow 演示政策，不代表真实业务规则。退款申请需要人工审核；处理进度以实际支付渠道状态为准。客服不得承诺立刻到账。",
+    "search_terms": [
+      "退款",
+      "到账",
+      "时效",
+      "多久",
+      "进度",
+      "审核",
+      "处理状态",
+      "支付渠道"
+    ],
+    "effective_date": "2026-08-18",
+    "source": "ResolveFlow internal demo policy v1",
+    "owner": "ResolveFlow demo team",
+    "review_status": "pending_human_review",
+    "version": "v1",
+    "last_reviewed_at": "2026-08-18"
+  },
+  {
+    "id": "demo-payment-troubleshooting",
+    "title": "演示政策：支付失败与重复扣款",
+    "category": "payment_issue",
+    "risk_level": "critical",
+    "content": "这是 ResolveFlow 演示政策，不代表真实业务规则。支付失败、重复扣款或无法识别扣款均需先核实交易状态。涉及异常扣款时应升级人工处理。",
+    "search_terms": [
+      "支付",
+      "扣款",
+      "扣费",
+      "重复扣款",
+      "多扣",
+      "收费",
+      "账单",
+      "交易",
+      "支付失败",
+      "异常收费"
+    ],
+    "effective_date": "2026-08-18",
+    "source": "ResolveFlow internal demo policy v1",
+    "owner": "ResolveFlow demo team",
+    "review_status": "pending_human_review",
+    "version": "v1",
+    "last_reviewed_at": "2026-08-18"
+  },
+  {
+    "id": "demo-invoice",
+    "title": "演示政策：发票申请与更正",
+    "category": "invoice",
+    "risk_level": "medium",
+    "content": "这是 ResolveFlow 演示政策，不代表真实业务规则。用户可按正规入口提交电子发票申请和更正请求。客服不得伪造发票内容。",
+    "search_terms": [
+      "发票",
+      "票据",
+      "抬头",
+      "开票",
+      "电子票据",
+      "更正",
+      "下载",
+      "开具"
+    ],
+    "effective_date": "2026-08-18",
+    "source": "ResolveFlow internal demo policy v1",
+    "owner": "ResolveFlow demo team",
+    "review_status": "pending_human_review",
+    "version": "v1",
+    "last_reviewed_at": "2026-08-18"
+  },
+  {
+    "id": "demo-account-security",
+    "title": "演示政策：账户安全与升级",
+    "category": "account_security",
+    "risk_level": "critical",
+    "content": "这是 ResolveFlow 演示政策，不代表真实业务规则。出现陌生设备、异常访问或疑似盗用时，应建议用户保护账户并升级人工处理。客服不得索要密码或验证码。",
+    "search_terms": [
+      "安全",
+      "盗用",
+      "陌生设备",
+      "异常访问",
+      "可疑登录",
+      "密码",
+      "验证码",
+      "风险"
+    ],
+    "effective_date": "2026-08-18",
+    "source": "ResolveFlow internal demo policy v1",
+    "owner": "ResolveFlow demo team",
+    "review_status": "pending_human_review",
+    "version": "v1",
+    "last_reviewed_at": "2026-08-18"
+  }
+]

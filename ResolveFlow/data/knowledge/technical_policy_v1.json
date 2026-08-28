@@ -1,0 +1,95 @@
+[
+  {
+    "id": "demo-login-sop",
+    "title": "演示 SOP：登录与验证码",
+    "category": "technical_login",
+    "risk_level": "high",
+    "content": "这是 ResolveFlow 演示政策，不代表真实业务规则。登录失败时先检查凭据、网络和验证码；不得索要密码或验证码。",
+    "search_terms": [
+      "登录",
+      "账号",
+      "验证码",
+      "401",
+      "认证",
+      "身份验证",
+      "无法登录",
+      "登不进去"
+    ],
+    "effective_date": "2026-08-18",
+    "source": "ResolveFlow internal demo policy v1",
+    "owner": "ResolveFlow demo team",
+    "review_status": "pending_human_review",
+    "version": "v1",
+    "last_reviewed_at": "2026-08-18"
+  },
+  {
+    "id": "demo-crash-sop",
+    "title": "演示 SOP：崩溃与服务器错误",
+    "category": "technical_crash",
+    "risk_level": "high",
+    "content": "这是 ResolveFlow 演示政策，不代表真实业务规则。崩溃或服务器错误应提供基本排障步骤，持续失败时升级人工。",
+    "search_terms": [
+      "崩溃",
+      "闪退",
+      "500",
+      "白屏",
+      "卡死",
+      "服务器错误",
+      "无法启动",
+      "报错"
+    ],
+    "effective_date": "2026-08-18",
+    "source": "ResolveFlow internal demo policy v1",
+    "owner": "ResolveFlow demo team",
+    "review_status": "pending_human_review",
+    "version": "v1",
+    "last_reviewed_at": "2026-08-18"
+  },
+  {
+    "id": "demo-network-sop",
+    "title": "演示 SOP：网络与加载",
+    "category": "technical",
+    "risk_level": "medium",
+    "content": "这是 ResolveFlow 演示政策，不代表真实业务规则。加载异常应检查网络、缓存和版本状态。",
+    "search_terms": [
+      "加载",
+      "转圈",
+      "网络",
+      "缓存",
+      "版本",
+      "同步",
+      "上传",
+      "通知",
+      "页面异常"
+    ],
+    "effective_date": "2026-08-18",
+    "source": "ResolveFlow internal demo policy v1",
+    "owner": "ResolveFlow demo team",
+    "review_status": "pending_human_review",
+    "version": "v1",
+    "last_reviewed_at": "2026-08-18"
+  },
+  {
+    "id": "demo-payment-page-sop",
+    "title": "演示 SOP：支付页面技术故障",
+    "category": "technical",
+    "risk_level": "high",
+    "content": "这是 ResolveFlow 演示政策，不代表真实业务规则。支付页面技术问题需要与账单状态核实，不能臆测交易结果。",
+    "search_terms": [
+      "支付页面",
+      "付款页",
+      "结算",
+      "支付报错",
+      "交易结果",
+      "跳转",
+      "账单状态",
+      "页面卡住"
+    ],
+    "effective_date": "2026-08-18",
+    "source": "ResolveFlow internal demo policy v1",
+    "owner": "ResolveFlow demo team",
+    "review_status": "pending_human_review",
+    "version": "v1",
+    "last_reviewed_at": "2026-08-18"
+  }
+]

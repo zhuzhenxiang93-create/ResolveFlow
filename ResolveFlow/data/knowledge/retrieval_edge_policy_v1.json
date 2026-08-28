@@ -1,0 +1,66 @@
+[
+  {
+    "id": "demo-error-err-x91",
+    "title": "ERR_X91 认证错误处理",
+    "category": "technical",
+    "risk_level": "low",
+    "search_terms": ["ERR_X91", "token expired", "认证令牌过期"],
+    "content": "错误码 ERR_X91 表示认证令牌已经过期。用户应退出当前会话，重新登录并刷新令牌；如果重新登录后仍出现 ERR_X91，再检查设备时间是否准确并联系技术支持。"
+  },
+  {
+    "id": "demo-order-a1024",
+    "title": "ORDER-A1024 演示订单说明",
+    "category": "general",
+    "risk_level": "low",
+    "search_terms": ["ORDER-A1024", "A1024"],
+    "content": "演示订单 ORDER-A1024 当前处于仓库复核状态。该编号仅用于验证精确订单标识符检索，实际订单状态仍应以订单系统为准。"
+  },
+  {
+    "id": "demo-product-rtx5090",
+    "title": "RTX-5090 驱动兼容指南",
+    "category": "technical",
+    "risk_level": "low",
+    "search_terms": ["RTX-5090", "driver compatibility", "驱动兼容"],
+    "content": "产品型号 RTX-5090 需要安装 600 系列或更新版本的演示驱动。出现黑屏时应先核对 RTX-5090 的驱动版本，再检查电源和显示连接。"
+  },
+  {
+    "id": "demo-seven-day-trial",
+    "title": "七天试用退款规则",
+    "category": "billing",
+    "risk_level": "medium",
+    "search_terms": ["7天试用", "七天退款", "trial refund"],
+    "content": "试用服务允许在开通后 7 天内申请退款。第 8 天起不再适用七天试用退款规则，是否退款需要转人工依据实际使用记录审核。"
+  },
+  {
+    "id": "demo-seventy-day-log-retention",
+    "title": "审计日志保留七十天",
+    "category": "technical",
+    "risk_level": "low",
+    "search_terms": ["70天", "七十天", "audit log retention"],
+    "content": "系统审计日志保留 70 天，超过七十天的历史日志会按计划清理。该期限只适用于日志留存，不是退款期限。"
+  },
+  {
+    "id": "demo-activated-license-no-refund",
+    "title": "已激活许可证退款限制",
+    "category": "billing",
+    "risk_level": "high",
+    "search_terms": ["已激活", "不允许退款", "activated license"],
+    "content": "已经激活并使用的数字许可证不允许自动退款。客服不得承诺退款，应收集订单与激活信息后转交人工审核。"
+  },
+  {
+    "id": "demo-unopened-device-refund",
+    "title": "未拆封设备退款规则",
+    "category": "billing",
+    "risk_level": "medium",
+    "search_terms": ["未拆封", "允许退款", "unopened device"],
+    "content": "未拆封且包装完整的设备允许在收货后 7 天内申请退款。仓库验收通过后才会执行退款，客服不能跳过验收。"
+  },
+  {
+    "id": "demo-long-diagnostics-guide",
+    "title": "企业连接诊断长指南",
+    "category": "technical",
+    "risk_level": "low",
+    "search_terms": ["企业连接诊断", "enterprise diagnostics"],
+    "content": "企业连接诊断开始前，应记录发生时间、客户端版本和当前网络类型，并确认问题是否能够稳定复现。第一阶段检查本地网络，依次验证网关、域名解析、代理设置和系统时间，不要在证据不足时直接修改生产配置。第二阶段检查身份认证，确认账号状态、令牌有效期、设备证书和组织策略是否一致，并把每一步结果写入排障记录。第三阶段比较不同设备和不同网络的表现，用对照实验区分客户端问题、网络问题与服务端问题，同时保存不包含敏感信息的日志。第四阶段检查服务健康状态与近期变更记录，若异常只影响单一入口，应核对该入口的路由、权限和灰度策略。第五阶段在执行任何修复前创建回滚点，明确负责人、验证标准和观察窗口，修复后再次运行相同测试。诊断人员还应检查监控曲线是否与用户报告的时间窗口一致，避免把无关告警误判为根因，并记录用于排除每种假设的证据。涉及多个区域时，应分别比较入口延迟、错误比例和依赖服务状态，不能因为一个区域恢复就提前关闭整个事件。若需要变更生产配置，必须经过审批并先在受控范围验证，观察指标稳定后再逐步扩大，同时准备可立即执行的回退方案。对于仍未定位的问题，使用蓝鲸校验流程：生成一次性诊断编号，上传脱敏后的最小日志包，并由二线工程师复核链路追踪结果。蓝鲸校验完成后，应把根因、修复动作和防止复发的监控规则写入事件报告，不得在报告中记录密码、令牌或个人隐私。"
+  }
+]

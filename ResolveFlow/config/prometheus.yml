@@ -1,0 +1,26 @@
+# Prometheus 配置文件 — ResolveFlow 智能客服系统
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'resolveflow'
+    environment: 'production'
+
+rule_files:
+  - "alerts/*.yml"
+
+scrape_configs:
+  # ResolveFlow 主应用指标
+  - job_name: 'resolveflow-app'
+    static_configs:
+      - targets: ['resolveflow:8000']
+        labels:
+          service: 'resolveflow'
+    scrape_interval: 10s
+    metrics_path: '/metrics'
+
+  # Prometheus 自监控
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

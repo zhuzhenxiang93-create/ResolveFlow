@@ -1,0 +1,26 @@
+[
+  {
+    "id": "demo-escalation-sop",
+    "title": "演示 SOP：人工升级",
+    "category": "escalation",
+    "risk_level": "critical",
+    "content": "这是 ResolveFlow 演示政策，不代表真实业务规则。明确转人工、重复失败、异常扣款和账户安全风险应升级。转交时保留问题摘要，客服不得索要密码或验证码。",
+    "search_terms": [
+      "人工",
+      "升级",
+      "专员",
+      "投诉",
+      "重复失败",
+      "工单",
+      "问题摘要",
+      "转交",
+      "自动处理"
+    ],
+    "effective_date": "2026-08-18",
+    "source": "ResolveFlow internal demo policy v1",
+    "owner": "ResolveFlow demo team",
+    "review_status": "pending_human_review",
+    "version": "v1",
+    "last_reviewed_at": "2026-08-18"
+  }
+]

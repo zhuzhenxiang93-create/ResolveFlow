@@ -1,0 +1,92 @@
+[
+  {
+    "id": "demo-order-status",
+    "title": "演示政策：订单状态",
+    "category": "order_status",
+    "risk_level": "medium",
+    "content": "这是 ResolveFlow 演示政策，不代表真实业务规则。订单状态应通过正规查询入口确认，客服不得臆测处理进度。",
+    "search_terms": [
+      "订单",
+      "购买",
+      "处理中",
+      "待处理",
+      "处理进度",
+      "受理",
+      "状态含义"
+    ],
+    "effective_date": "2026-08-18",
+    "source": "ResolveFlow internal demo policy v1",
+    "owner": "ResolveFlow demo team",
+    "review_status": "pending_human_review",
+    "version": "v1",
+    "last_reviewed_at": "2026-08-18"
+  },
+  {
+    "id": "demo-logistics",
+    "title": "演示政策：物流配送",
+    "category": "logistics",
+    "risk_level": "medium",
+    "content": "这是 ResolveFlow 演示政策，不代表真实业务规则。物流异常应引导用户查询并在持续异常时升级处理。",
+    "search_terms": [
+      "物流",
+      "配送",
+      "包裹",
+      "快递",
+      "运输",
+      "发货",
+      "送达",
+      "轨迹",
+      "运送"
+    ],
+    "effective_date": "2026-08-18",
+    "source": "ResolveFlow internal demo policy v1",
+    "owner": "ResolveFlow demo team",
+    "review_status": "pending_human_review",
+    "version": "v1",
+    "last_reviewed_at": "2026-08-18"
+  },
+  {
+    "id": "demo-account-profile",
+    "title": "演示政策：账户资料",
+    "category": "account",
+    "risk_level": "medium",
+    "content": "这是 ResolveFlow 演示政策，不代表真实业务规则。账户资料修改应使用正规设置入口，不得要求用户提供敏感凭据。",
+    "search_terms": [
+      "账户资料",
+      "个人资料",
+      "账号资料",
+      "偏好",
+      "通知",
+      "编辑",
+      "修改",
+      "设置"
+    ],
+    "effective_date": "2026-08-18",
+    "source": "ResolveFlow internal demo policy v1",
+    "owner": "ResolveFlow demo team",
+    "review_status": "pending_human_review",
+    "version": "v1",
+    "last_reviewed_at": "2026-08-18"
+  },
+  {
+    "id": "demo-membership",
+    "title": "演示政策：会员与积分",
+    "category": "query",
+    "risk_level": "low",
+    "content": "这是 ResolveFlow 演示政策，不代表真实业务规则。会员和积分说明以当前帮助中心规则为准。",
+    "search_terms": [
+      "会员",
+      "积分",
+      "等级",
+      "权益",
+      "等级变化",
+      "积分规则"
+    ],
+    "effective_date": "2026-08-18",
+    "source": "ResolveFlow internal demo policy v1",
+    "owner": "ResolveFlow demo team",
+    "review_status": "pending_human_review",
+    "version": "v1",
+    "last_reviewed_at": "2026-08-18"
+  }
+]

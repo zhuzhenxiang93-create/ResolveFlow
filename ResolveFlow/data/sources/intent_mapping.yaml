@@ -1,0 +1,66 @@
+version: 1
+mapping_rules:
+  - source: bitext_customer_support
+    source_intent: check_refund_policy
+    resolveflow_intent: refund
+    expected_group: billing
+    expected_primary_agent: billing
+    status: approved_semantic_mapping
+  - source: bitext_customer_support
+    source_intent: get_refund
+    resolveflow_intent: refund
+    expected_group: billing
+    expected_primary_agent: billing
+    status: approved_semantic_mapping
+  - source: bitext_customer_support
+    source_intent: track_refund
+    resolveflow_intent: refund
+    expected_group: billing
+    expected_primary_agent: billing
+    status: approved_semantic_mapping
+  - source: bitext_customer_support
+    source_intent: check_invoice
+    resolveflow_intent: invoice
+    expected_group: billing
+    expected_primary_agent: billing
+    status: approved_semantic_mapping
+  - source: bitext_customer_support
+    source_intent: get_invoice
+    resolveflow_intent: invoice
+    expected_group: billing
+    expected_primary_agent: billing
+    status: approved_semantic_mapping
+  - source: bitext_customer_support
+    source_intent: payment_issue
+    resolveflow_intent: payment_issue
+    expected_group: billing
+    expected_primary_agent: billing
+    status: approved_semantic_mapping
+  - source: bitext_customer_support
+    source_intent: contact_human_agent
+    resolveflow_intent: human_handoff
+    expected_group: escalation
+    expected_primary_agent: escalation
+    status: approved_semantic_mapping
+  - source: banking77
+    source_intent: unknown
+    resolveflow_intent: null
+    expected_group: null
+    expected_primary_agent: null
+    status: requires_row_level_review
+    action: exclude
+  - source: dch2
+    source_intent: null
+    resolveflow_intent: null
+    status: pending_approval
+    action: exclude
+  - source: csds
+    source_intent: null
+    resolveflow_intent: null
+    status: pending_author_confirmation
+    action: exclude
+  - source: jddc
+    source_intent: null
+    resolveflow_intent: null
+    status: pending_approval
+    action: exclude

@@ -1,0 +1,454 @@
+{
+  "timestamp": "2026-08-26T16:45:43.004183",
+  "dataset": "internal deterministic supervisor set",
+  "evaluation_mode": "gold_intent_rule_planner_control_plane",
+  "total": 20,
+  "compound_case_count": 12,
+  "compound_detection_accuracy": 1.0,
+  "subtask_coverage": 1.0,
+  "agent_assignment_accuracy": 1.0,
+  "dependency_accuracy": 1.0,
+  "multi_agent_routing_accuracy": 1.0,
+  "escalation_accuracy": 1.0,
+  "control_plane_task_success_rate": 1.0,
+  "end_to_end_task_success_rate": null,
+  "planner_fallback_rate": 0.0,
+  "synthesis_fallback_rate": null,
+  "synthesis_evaluated": false,
+  "avg_control_plane_latency_ms": 0.0872,
+  "p95_control_plane_latency_ms": 0.1336,
+  "failed": [],
+  "results": [
+    {
+      "id": "sup-001",
+      "tags": [
+        "technical+billing",
+        "parallel",
+        "high_risk"
+      ],
+      "expected_compound": true,
+      "compound_correct": true,
+      "route_correct": true,
+      "subtask_coverage_correct": true,
+      "agent_assignment_correct": true,
+      "dependency_correct": true,
+      "escalation_correct": true,
+      "plan_valid": true,
+      "planner_fallback": false,
+      "actual_primary_agent": "billing",
+      "actual_supporting_agents": [
+        "technical"
+      ],
+      "actual_dependencies": {},
+      "passed": true
+    },
+    {
+      "id": "sup-002",
+      "tags": [
+        "technical+billing",
+        "parallel",
+        "number"
+      ],
+      "expected_compound": true,
+      "compound_correct": true,
+      "route_correct": true,
+      "subtask_coverage_correct": true,
+      "agent_assignment_correct": true,
+      "dependency_correct": true,
+      "escalation_correct": true,
+      "plan_valid": true,
+      "planner_fallback": false,
+      "actual_primary_agent": "technical",
+      "actual_supporting_agents": [
+        "billing"
+      ],
+      "actual_dependencies": {},
+      "passed": true
+    },
+    {
+      "id": "sup-003",
+      "tags": [
+        "technical+billing",
+        "parallel"
+      ],
+      "expected_compound": true,
+      "compound_correct": true,
+      "route_correct": true,
+      "subtask_coverage_correct": true,
+      "agent_assignment_correct": true,
+      "dependency_correct": true,
+      "escalation_correct": true,
+      "plan_valid": true,
+      "planner_fallback": false,
+      "actual_primary_agent": "technical",
+      "actual_supporting_agents": [
+        "billing"
+      ],
+      "actual_dependencies": {},
+      "passed": true
+    },
+    {
+      "id": "sup-004",
+      "tags": [
+        "order+refund",
+        "parallel"
+      ],
+      "expected_compound": true,
+      "compound_correct": true,
+      "route_correct": true,
+      "subtask_coverage_correct": true,
+      "agent_assignment_correct": true,
+      "dependency_correct": true,
+      "escalation_correct": true,
+      "plan_valid": true,
+      "planner_fallback": false,
+      "actual_primary_agent": "billing",
+      "actual_supporting_agents": [
+        "general"
+      ],
+      "actual_dependencies": {},
+      "passed": true
+    },
+    {
+      "id": "sup-005",
+      "tags": [
+        "logistics+billing",
+        "parallel"
+      ],
+      "expected_compound": true,
+      "compound_correct": true,
+      "route_correct": true,
+      "subtask_coverage_correct": true,
+      "agent_assignment_correct": true,
+      "dependency_correct": true,
+      "escalation_correct": true,
+      "plan_valid": true,
+      "planner_fallback": false,
+      "actual_primary_agent": "general",
+      "actual_supporting_agents": [
+        "billing"
+      ],
+      "actual_dependencies": {},
+      "passed": true
+    },
+    {
+      "id": "sup-006",
+      "tags": [
+        "security+billing",
+        "parallel",
+        "high_risk"
+      ],
+      "expected_compound": true,
+      "compound_correct": true,
+      "route_correct": true,
+      "subtask_coverage_correct": true,
+      "agent_assignment_correct": true,
+      "dependency_correct": true,
+      "escalation_correct": true,
+      "plan_valid": true,
+      "planner_fallback": false,
+      "actual_primary_agent": "billing",
+      "actual_supporting_agents": [
+        "technical"
+      ],
+      "actual_dependencies": {},
+      "passed": true
+    },
+    {
+      "id": "sup-007",
+      "tags": [
+        "handoff+technical"
+      ],
+      "expected_compound": true,
+      "compound_correct": true,
+      "route_correct": true,
+      "subtask_coverage_correct": true,
+      "agent_assignment_correct": true,
+      "dependency_correct": true,
+      "escalation_correct": true,
+      "plan_valid": true,
+      "planner_fallback": false,
+      "actual_primary_agent": "escalation",
+      "actual_supporting_agents": [
+        "technical"
+      ],
+      "actual_dependencies": {},
+      "passed": true
+    },
+    {
+      "id": "sup-008",
+      "tags": [
+        "handoff+billing"
+      ],
+      "expected_compound": true,
+      "compound_correct": true,
+      "route_correct": true,
+      "subtask_coverage_correct": true,
+      "agent_assignment_correct": true,
+      "dependency_correct": true,
+      "escalation_correct": true,
+      "plan_valid": true,
+      "planner_fallback": false,
+      "actual_primary_agent": "escalation",
+      "actual_supporting_agents": [
+        "billing"
+      ],
+      "actual_dependencies": {},
+      "passed": true
+    },
+    {
+      "id": "sup-009",
+      "tags": [
+        "single_fast_path"
+      ],
+      "expected_compound": false,
+      "compound_correct": true,
+      "route_correct": true,
+      "subtask_coverage_correct": true,
+      "agent_assignment_correct": true,
+      "dependency_correct": true,
+      "escalation_correct": true,
+      "plan_valid": true,
+      "planner_fallback": false,
+      "actual_primary_agent": "technical",
+      "actual_supporting_agents": [],
+      "actual_dependencies": {},
+      "passed": true
+    },
+    {
+      "id": "sup-010",
+      "tags": [
+        "single_fast_path"
+      ],
+      "expected_compound": false,
+      "compound_correct": true,
+      "route_correct": true,
+      "subtask_coverage_correct": true,
+      "agent_assignment_correct": true,
+      "dependency_correct": true,
+      "escalation_correct": true,
+      "plan_valid": true,
+      "planner_fallback": false,
+      "actual_primary_agent": "billing",
+      "actual_supporting_agents": [],
+      "actual_dependencies": {},
+      "passed": true
+    },
+    {
+      "id": "sup-011",
+      "tags": [
+        "single_fast_path"
+      ],
+      "expected_compound": false,
+      "compound_correct": true,
+      "route_correct": true,
+      "subtask_coverage_correct": true,
+      "agent_assignment_correct": true,
+      "dependency_correct": true,
+      "escalation_correct": true,
+      "plan_valid": true,
+      "planner_fallback": false,
+      "actual_primary_agent": "general",
+      "actual_supporting_agents": [],
+      "actual_dependencies": {},
+      "passed": true
+    },
+    {
+      "id": "sup-012",
+      "tags": [
+        "ambiguous"
+      ],
+      "expected_compound": false,
+      "compound_correct": true,
+      "route_correct": true,
+      "subtask_coverage_correct": true,
+      "agent_assignment_correct": true,
+      "dependency_correct": true,
+      "escalation_correct": true,
+      "plan_valid": true,
+      "planner_fallback": false,
+      "actual_primary_agent": "general",
+      "actual_supporting_agents": [],
+      "actual_dependencies": {},
+      "passed": true
+    },
+    {
+      "id": "sup-013",
+      "tags": [
+        "dependent",
+        "order+refund"
+      ],
+      "expected_compound": true,
+      "compound_correct": true,
+      "route_correct": true,
+      "subtask_coverage_correct": true,
+      "agent_assignment_correct": true,
+      "dependency_correct": true,
+      "escalation_correct": true,
+      "plan_valid": true,
+      "planner_fallback": false,
+      "actual_primary_agent": "billing",
+      "actual_supporting_agents": [
+        "general"
+      ],
+      "actual_dependencies": {
+        "billing_1": [
+          "general_1"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "id": "sup-014",
+      "tags": [
+        "dependent",
+        "technical+billing"
+      ],
+      "expected_compound": true,
+      "compound_correct": true,
+      "route_correct": true,
+      "subtask_coverage_correct": true,
+      "agent_assignment_correct": true,
+      "dependency_correct": true,
+      "escalation_correct": true,
+      "plan_valid": true,
+      "planner_fallback": false,
+      "actual_primary_agent": "technical",
+      "actual_supporting_agents": [
+        "billing"
+      ],
+      "actual_dependencies": {
+        "billing_1": [
+          "technical_1"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "id": "sup-015",
+      "tags": [
+        "dependent",
+        "billing+technical"
+      ],
+      "expected_compound": true,
+      "compound_correct": true,
+      "route_correct": true,
+      "subtask_coverage_correct": true,
+      "agent_assignment_correct": true,
+      "dependency_correct": true,
+      "escalation_correct": true,
+      "plan_valid": true,
+      "planner_fallback": false,
+      "actual_primary_agent": "billing",
+      "actual_supporting_agents": [
+        "technical"
+      ],
+      "actual_dependencies": {
+        "technical_1": [
+          "billing_1"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "id": "sup-016",
+      "tags": [
+        "negation",
+        "single_fast_path"
+      ],
+      "expected_compound": false,
+      "compound_correct": true,
+      "route_correct": true,
+      "subtask_coverage_correct": true,
+      "agent_assignment_correct": true,
+      "dependency_correct": true,
+      "escalation_correct": true,
+      "plan_valid": true,
+      "planner_fallback": false,
+      "actual_primary_agent": "billing",
+      "actual_supporting_agents": [],
+      "actual_dependencies": {},
+      "passed": true
+    },
+    {
+      "id": "sup-017",
+      "tags": [
+        "number",
+        "negation"
+      ],
+      "expected_compound": false,
+      "compound_correct": true,
+      "route_correct": true,
+      "subtask_coverage_correct": true,
+      "agent_assignment_correct": true,
+      "dependency_correct": true,
+      "escalation_correct": true,
+      "plan_valid": true,
+      "planner_fallback": false,
+      "actual_primary_agent": "billing",
+      "actual_supporting_agents": [],
+      "actual_dependencies": {},
+      "passed": true
+    },
+    {
+      "id": "sup-018",
+      "tags": [
+        "same_domain"
+      ],
+      "expected_compound": false,
+      "compound_correct": true,
+      "route_correct": true,
+      "subtask_coverage_correct": true,
+      "agent_assignment_correct": true,
+      "dependency_correct": true,
+      "escalation_correct": true,
+      "plan_valid": true,
+      "planner_fallback": false,
+      "actual_primary_agent": "general",
+      "actual_supporting_agents": [],
+      "actual_dependencies": {},
+      "passed": true
+    },
+    {
+      "id": "sup-019",
+      "tags": [
+        "same_agent_multiple_topics"
+      ],
+      "expected_compound": false,
+      "compound_correct": true,
+      "route_correct": true,
+      "subtask_coverage_correct": true,
+      "agent_assignment_correct": true,
+      "dependency_correct": true,
+      "escalation_correct": true,
+      "plan_valid": true,
+      "planner_fallback": false,
+      "actual_primary_agent": "general",
+      "actual_supporting_agents": [],
+      "actual_dependencies": {},
+      "passed": true
+    },
+    {
+      "id": "sup-020",
+      "tags": [
+        "technical+billing",
+        "retry_exhausted"
+      ],
+      "expected_compound": true,
+      "compound_correct": true,
+      "route_correct": true,
+      "subtask_coverage_correct": true,
+      "agent_assignment_correct": true,
+      "dependency_correct": true,
+      "escalation_correct": true,
+      "plan_valid": true,
+      "planner_fallback": false,
+      "actual_primary_agent": "technical",
+      "actual_supporting_agents": [
+        "billing"
+      ],
+      "actual_dependencies": {},
+      "passed": true
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+version: 1
+updated_at: "2026-08-17"
+sources:
+  - id: resolveflow_synthetic_gold_v2
+    url: "internal://resolveflow/scripts/generate_multi_agent_data.py"
+    language: zh
+    license: "Internal synthetic dataset; no external dialogue text included"
+    access_status: "approved_internal"
+    allowed_for: ["training", "evaluation"]
+    allowed_in_repository: true
+    download_date: null
+    risk: "Every row is synthetic and pending human review; it must not be presented as a real customer record."
+  - id: resolveflow_synthetic_taxonomy_reference
+    url: "internal://resolveflow/scripts/generate_multi_agent_data.py"
+    language: en
+    license: "Taxonomy reference: Bitext CDLA-Sharing-1.0; BANKING77 CC-BY-4.0"
+    access_status: "approved_internal_synthetic"
+    allowed_for: ["cold_start_stress_test"]
+    allowed_in_repository: true
+    download_date: null
+    risk: "Rows are ResolveFlow-authored synthetic prompts. Public source labels inform taxonomy only; no public dialogue rows are copied."
+  - id: bitext_customer_support
+    url: "https://huggingface.co/datasets/bitext/Bitext-customer-support-llm-chatbot-training-dataset"
+    language: en
+    license: "CDLA-Sharing-1.0"
+    access_status: "metadata_reviewed"
+    allowed_for: ["taxonomy_reference", "internal_evaluation_after_legal_review"]
+    allowed_in_repository: false
+    download_date: null
+    risk: "Dataset contains synthetic English customer-support text. Do not redistribute raw rows until the CDLA-Sharing obligations are reviewed."
+  - id: banking77
+    url: "https://huggingface.co/datasets/PolyAI/banking77"
+    language: en
+    license: "CC-BY-4.0"
+    access_status: "metadata_reviewed"
+    allowed_for: ["taxonomy_reference", "training", "evaluation"]
+    allowed_in_repository: false
+    download_date: null
+    attribution_required: true
+    risk: "Fine-grained banking labels are useful for payment ambiguity, but the corpus is English and single-turn."
+  - id: dch2
+    url: "https://dialeval-2.github.io/DCH-2/"
+    language: ["zh", "en"]
+    license: "User agreement required"
+    access_status: "pending_approval"
+    allowed_for: ["research_evaluation_after_approval"]
+    allowed_in_repository: false
+    download_date: null
+    risk: "Chinese multi-turn customer-helpdesk data with quality annotations; do not download or use before agreement approval."
+  - id: csds
+    url: "https://github.com/xiaolinAndy/CSDS"
+    language: zh
+    license: "Not clearly stated in the official repository"
+    access_status: "pending_approval"
+    allowed_for: ["research_evaluation_after_author_confirmation"]
+    allowed_in_repository: false
+    download_date: null
+    risk: "Useful for memory and summary evaluation, but usage rights must be confirmed with the authors."
+  - id: jddc
+    url: "https://arxiv.org/abs/1911.09969"
+    language: zh
+    license: "Access and commercial terms require confirmation"
+    access_status: "pending_approval"
+    allowed_for: ["research_evaluation_after_approval"]
+    allowed_in_repository: false
+    download_date: null
+    risk: "Large e-commerce dialogue corpus; later releases have academic-use constraints, so it is excluded from this MVP."

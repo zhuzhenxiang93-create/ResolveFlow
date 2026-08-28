@@ -1,0 +1,20 @@
+{"id":"robust-exact-err-01","query":"ERR_X91","expected_document_id":"demo-error-err-x91","top_k":3,"tags":["exact_identifier","mixed_language"]}
+{"id":"robust-exact-err-02","query":"登录出现 ERR_X91 应该刷新什么","expected_document_id":"demo-error-err-x91","top_k":3,"tags":["exact_identifier","mixed_language"]}
+{"id":"robust-exact-order-01","query":"ORDER-A1024","expected_document_id":"demo-order-a1024","top_k":3,"tags":["exact_identifier"]}
+{"id":"robust-exact-order-02","query":"帮我核对订单 ORDER-A1024 的状态","expected_document_id":"demo-order-a1024","top_k":3,"tags":["exact_identifier","mixed_language"]}
+{"id":"robust-exact-product-01","query":"RTX-5090","expected_document_id":"demo-product-rtx5090","top_k":3,"tags":["exact_identifier"]}
+{"id":"robust-exact-product-02","query":"RTX-5090 driver compatibility","expected_document_id":"demo-product-rtx5090","top_k":3,"tags":["exact_identifier","mixed_language"]}
+{"id":"robust-exact-product-03","query":"RTX-5090 黑屏先检查哪个版本","expected_document_id":"demo-product-rtx5090","top_k":3,"tags":["exact_identifier","mixed_language"]}
+{"id":"robust-number-7-01","query":"试用服务第7天还能退吗","expected_document_id":"demo-seven-day-trial","top_k":3,"tags":["number_boundary"]}
+{"id":"robust-number-7-02","query":"七天试用退款什么时候失效","expected_document_id":"demo-seven-day-trial","top_k":3,"tags":["number_boundary"]}
+{"id":"robust-number-70-01","query":"审计记录会保存70天吗","expected_document_id":"demo-seventy-day-log-retention","top_k":3,"tags":["number_boundary"]}
+{"id":"robust-number-70-02","query":"七十天后历史日志怎么处理","expected_document_id":"demo-seventy-day-log-retention","top_k":3,"tags":["number_boundary"]}
+{"id":"robust-negation-01","query":"激活过的数字许可证允许自动退款吗","expected_document_id":"demo-activated-license-no-refund","top_k":3,"tags":["negation"]}
+{"id":"robust-negation-02","query":"哪种许可证明确不允许客服直接退费","expected_document_id":"demo-activated-license-no-refund","top_k":3,"tags":["negation"]}
+{"id":"robust-positive-01","query":"包装没拆的设备是否允许退款","expected_document_id":"demo-unopened-device-refund","top_k":3,"tags":["negation"]}
+{"id":"robust-positive-02","query":"什么设备可以在收货七天内申请退货退款","expected_document_id":"demo-unopened-device-refund","top_k":3,"tags":["negation","number_boundary"]}
+{"id":"robust-semantic-01","query":"认证票据失效以后该怎样恢复会话","expected_document_id":"demo-error-err-x91","top_k":3,"tags":["semantic_paraphrase"]}
+{"id":"robust-semantic-02","query":"enterprise connection troubleshooting needs a rollback point","expected_document_id":"demo-long-diagnostics-guide","top_k":3,"tags":["mixed_language","semantic_paraphrase"]}
+{"id":"robust-chunk-01","query":"连接排障时怎样通过不同设备做对照实验","expected_chunk_id":"demo-long-diagnostics-guide::chunk::0","top_k":3,"tags":["chunk_precision"]}
+{"id":"robust-chunk-02","query":"蓝鲸校验流程需要上传什么材料","expected_chunk_id":"demo-long-diagnostics-guide::chunk::1","top_k":3,"tags":["chunk_precision"]}
+{"id":"robust-no-match-01","query":"MARS-OXYGEN-77Z","expect_no_match":true,"top_k":3,"tags":["no_match","exact_identifier"]}
