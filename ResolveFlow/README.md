@@ -1,5 +1,26 @@
 # ResolveFlow 完整使用指南
 
+新增 Agent 业务执行入口：`make agent-demo` 可离线演示工具调用、多步执行、
+跨轮任务状态、人工审批恢复、主辅证据交接及业务结果核验。
+接口与模型配置见 [Agent 执行指南](wiki/agent-execution.md)。
+
+本轮业务执行增强提供 `make agent-eval`（内部确定性回归）和 `make agent-eval-live`
+（显式真实模型验证，缺少凭据/预算时明确降为离线）。报告独立保存，不覆盖 RAG 指标。
+查询不自动授权修改；退款先绑定审批，再根据模拟数据库核验结果。
+调研与技术取舍见 [外部调研](wiki/external_research.md)、[采用决策](wiki/adoption_decisions.md)。
+
+2026-09-11：业务 action 新增 [LLM 目标理解与用户确认](wiki/goal-understanding-confirmation.md)。
+任何实际修改先进入 `awaiting_confirmation`，用户通过确认接口同意具体操作；退款另需人工审批。
+业务数据均为模拟。
+
+2026-09-12：`/chat` 收敛为唯一对话入口（旧 mode=chat/action 直接调用编排器的入口已下线），
+鉴权扩展到 `/search`、`/knowledge/*`、`/skills`、`/monitor`、`/eval/run`（分层：只读任意角色，
+写/运维需 `role=admin`），身份统一为本地签发 JWT（`user`/`reviewer`/`admin` 三角色），
+见 [2.4 获取身份令牌](#24-获取身份令牌新增2026-09-12-起必需)。`ResolveFlowFrontend`
+（独立 Vue 项目）已接入这条统一链路，含身份令牌管理、模拟订单、任务卡、确认/审批交互；
+[Postgres 迁移方案与 POC](wiki/postgres-migration-plan.md) 已产出但生产 Action 层仍是 SQLite，
+未做真实切换。旧任务 schema 不复用旧授权，请新建任务。
+
 本文档说明 ResolveFlow 的部署、启动、API 调用、知识库使用、ChromaDB 数据查看、监控评测和常见排障。
 
 ResolveFlow 是一个企业级智能客服系统，核心链路为：
@@ -97,6 +118,35 @@ ResolveFlow 常用两种 Docker 启动方式：`docker compose up` 全栈部署�
 - 想完整体验 HTTP API、Swagger、Nginx、Prometheus：用 **Docker Compose 全栈部署**。
 - 想调试源码或 CLI，并且希望本地改代码后快速重跑：用 **Docker run 开发模式**。
 - 如果只是跑 CLI，最省心的方式是 `docker compose run --rm resolveflow python api/main.py --cli`，它会自动使用 Compose 网络。
+
+### 2.4 获取身份令牌（新增，2026-09-12 起必需）
+
+`/chat` 和其余所有业务接口（除 `/health`、`/metrics`）现在都要求本地签发的 JWT，不再信任
+匿名请求。先在 `.env` 里配置好签名密钥和管理员引导密钥：
+
+```env
+AGENT_JWT_SECRET=一串随机字符串
+AGENT_ADMIN_SECRET=另一串随机字符串
+```
+
+服务起来之后，用管理员密钥签发一个 `role=user` 的 token（其余 curl 示例都会引用 `$TOKEN`）：
+
+```bash
+export TOKEN=$(curl -s -X POST http://localhost:8000/agent/auth/token \
+  -H "X-Admin-Secret: your_admin_secret" -H "Content-Type: application/json" \
+  -d '{"subject":"demo","role":"user","ttl_seconds":3600}' | python3 -c "import json,sys;print(json.load(sys.stdin)['access_token'])")
+```
+
+知识库写入、`/monitor`、`/skills/reload`、`/eval/run` 这类运维/写操作需要 `role=admin`：
+
+```bash
+export ADMIN_TOKEN=$(curl -s -X POST http://localhost:8000/agent/auth/token \
+  -H "X-Admin-Secret: your_admin_secret" -H "Content-Type: application/json" \
+  -d '{"subject":"ops","role":"admin","ttl_seconds":3600}' | python3 -c "import json,sys;print(json.load(sys.stdin)['access_token'])")
+```
+
+本地开发（不经过 HTTP）可以直接用 `make mint-token SUBJECT=demo ROLE=user` 签发，见
+[Agent 执行指南](wiki/agent-execution.md)。角色边界、审批自批拒绝等细节也在那篇文档里。
 
 ## 3. Docker Compose 全栈部署
 
@@ -215,18 +265,21 @@ http://localhost:8000/docs
 http://localhost/docs
 ```
 
-打开 Swagger 后，可以点击任意接口右侧的 **Try it out**，填写参数后点 **Execute** 直接调用本地服务。常用调试顺序：
+打开 Swagger 后，可以点击任意接口右侧的 **Try it out**，填写参数后点 **Execute** 直接调用本地服务。
+除 `/health`、`/metrics` 外都要求 `Authorization` 请求头（见 [2.4 获取身份令牌](#24-获取身份令牌新增2026-09-12-起必需)）；
+Swagger 这里把它显示成普通请求头参数、不是右上角一次性 Authorize 锁图标，需要在每个接口的
+`authorization` 参数里手动填 `Bearer <token>`。常用调试顺序：
 
 ```text
 1. GET /health                确认服务是否就绪
-2. POST /chat                 测试主对话链路
-3. GET /knowledge/stats       查看知识库是否已有数据
-4. POST /knowledge/upload     上传演示知识库文件
-5. POST /search               测试知识库检索、查询改写和重排
-6. GET /monitor               查看 Agent 和工具运行指标
-7. GET /skills                查看已加载 Skills
-8. POST /skills/reload        重新加载 Skills
-9. POST /eval/run             运行端到端评测
+2. POST /chat                 测试主对话链路（需要 role=user 的 Bearer token）
+3. GET /knowledge/stats       查看知识库是否已有数据（需要任意角色的 Bearer token）
+4. POST /knowledge/upload     上传演示知识库文件（需要 role=admin 的 Bearer token）
+5. POST /search               测试知识库检索、查询改写和重排（需要任意角色的 Bearer token）
+6. GET /monitor               查看 Agent 和工具运行指标（需要 role=admin 的 Bearer token）
+7. GET /skills                查看已加载 Skills（需要任意角色的 Bearer token）
+8. POST /skills/reload        重新加载 Skills（需要 role=admin 的 Bearer token）
+9. POST /eval/run             运行端到端评测（需要 role=admin 的 Bearer token）
 ```
 
 ## 6. 可复现评测与简历指标
@@ -307,13 +360,13 @@ enabled: true
 查看加载结果：
 
 ```bash
-curl http://localhost:8000/skills
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/skills
 ```
 
 修改 Skill 文件后热加载：
 
 ```bash
-curl -X POST http://localhost:8000/skills/reload
+curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:8000/skills/reload
 ```
 
 ### 5.3 `/health`
@@ -392,7 +445,7 @@ Query 参数：
 示例：
 
 ```bash
-curl -X POST "http://localhost:8000/search?query=退款多久到账&top_k=3"
+curl -X POST -H "Authorization: Bearer $TOKEN" "http://localhost:8000/search?query=退款多久到账&top_k=3"
 ```
 
 ### 5.6 `/knowledge/add`
@@ -428,6 +481,7 @@ curl -X POST "http://localhost:8000/search?query=退款多久到账&top_k=3"
 
 ```bash
 curl -X POST http://localhost:8000/knowledge/upload \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
   -F "file=@data/demo_docs/sample_knowledge.json"
 ```
 
@@ -436,7 +490,7 @@ curl -X POST http://localhost:8000/knowledge/upload \
 用途：查看知识库片段数量。
 
 ```bash
-curl http://localhost:8000/knowledge/stats
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/knowledge/stats
 ```
 
 ### 5.9 `/monitor`
@@ -444,7 +498,7 @@ curl http://localhost:8000/knowledge/stats
 用途：查看 Agent 和工具在线指标。
 
 ```bash
-curl http://localhost:8000/monitor
+curl -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:8000/monitor
 ```
 
 返回内容包括：
@@ -461,13 +515,14 @@ curl http://localhost:8000/monitor
 用途：运行内置评测，或运行受登记金标数据集驱动的回归评测。
 
 ```bash
-curl -X POST http://localhost:8000/eval/run
+curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:8000/eval/run
 ```
 
 运行 Billing MVP 金标集：
 
 ```bash
 curl -X POST http://localhost:8000/eval/run \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"dataset":"billing"}'
 ```
@@ -476,6 +531,7 @@ curl -X POST http://localhost:8000/eval/run \
 
 ```bash
 curl -X POST http://localhost:8000/eval/run \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"dataset":"multi_agent","split":"dev"}'
 ```
@@ -505,6 +561,7 @@ Billing 数据文件位于 `data/golden/`。它们均为待人工审核的合成
 
 ```bash
 curl -X POST http://localhost:8000/chat \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "message": "我的订单什么时候到？",
@@ -544,6 +601,7 @@ curl -X POST http://localhost:8000/chat \
 
 ```bash
 curl -X POST http://localhost:8000/chat \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "message": "订单号是 A123456",
@@ -558,6 +616,7 @@ curl -X POST http://localhost:8000/chat \
 
 ```bash
 curl -X POST http://localhost:8000/chat \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "message": "应用登录一直报 401 错误",
@@ -572,6 +631,7 @@ curl -X POST http://localhost:8000/chat \
 
 ```bash
 curl -X POST http://localhost:8000/chat \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "message": "为什么这个月重复扣款了？我要退款",
@@ -586,6 +646,7 @@ curl -X POST http://localhost:8000/chat \
 
 ```bash
 curl -X POST http://localhost:8000/chat \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "message": "登录报错 401，而且这个月还重复扣款了",
@@ -641,7 +702,7 @@ Collection；不会尝试修改 ChromaDB 中不可变的 `hnsw:space`。
 ### 7.1 查看知识库统计
 
 ```bash
-curl http://localhost:8000/knowledge/stats
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/knowledge/stats
 ```
 
 响应示例：
@@ -656,6 +717,7 @@ curl http://localhost:8000/knowledge/stats
 
 ```bash
 curl -X POST http://localhost:8000/knowledge/add \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "documents": [
@@ -679,6 +741,7 @@ curl -X POST http://localhost:8000/knowledge/add \
 
 ```bash
 curl -X POST http://localhost:8000/knowledge/upload \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
   -F "file=@data/demo_docs/troubleshooting.md"
 ```
 
@@ -686,6 +749,7 @@ curl -X POST http://localhost:8000/knowledge/upload \
 
 ```bash
 curl -X POST http://localhost:8000/knowledge/upload \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
   -F "file=@data/demo_docs/sample_knowledge.json"
 ```
 
@@ -703,7 +767,7 @@ JSON 格式必须是数组：
 ### 7.4 检索知识库
 
 ```bash
-curl -X POST "http://localhost:8000/search?query=退款需要多久到账&top_k=3"
+curl -X POST -H "Authorization: Bearer $TOKEN" "http://localhost:8000/search?query=退款需要多久到账&top_k=3"
 ```
 
 响应示例：
@@ -919,6 +983,7 @@ PY
 
 ```bash
 curl -X POST http://localhost:8000/chat \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"message": "我经常咨询会员积分和退款问题，回答请简洁一点", "user_id": "profile_user", "conv_id": "profile_session"}'
 ```
@@ -958,6 +1023,7 @@ PY
 ```bash
 for i in $(seq 1 16); do
   curl -s -X POST http://localhost:8000/chat \
+    -H "Authorization: Bearer $TOKEN" \
     -H "Content-Type: application/json" \
     -d "{\"message\": \"这是第 $i 条测试消息，我想咨询退款和订单问题\", \"user_id\": \"episodic_user\", \"conv_id\": \"episodic_session\"}" > /dev/null
 done
@@ -1263,7 +1329,7 @@ PY
 查看监控摘要：
 
 ```bash
-curl http://localhost:8000/monitor
+curl -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:8000/monitor
 ```
 
 响应包含：
@@ -1314,13 +1380,14 @@ http://localhost:9090
 ## 13. 运行端到端评测
 
 ```bash
-curl -X POST http://localhost:8000/eval/run
+curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:8000/eval/run
 ```
 
 也可以运行受数据治理约束的 Billing 金标集：
 
 ```bash
 curl -X POST http://localhost:8000/eval/run \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"dataset":"billing"}'
 ```
@@ -1445,20 +1512,21 @@ docker exec -it resolveflow-redis redis-cli -a resolveflow123 ping
 先确认知识库中有数据：
 
 ```bash
-curl http://localhost:8000/knowledge/stats
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/knowledge/stats
 ```
 
 如果是 0，可以重新导入演示文档：
 
 ```bash
 curl -X POST http://localhost:8000/knowledge/upload \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
   -F "file=@data/demo_docs/sample_knowledge.json"
 ```
 
 再测试：
 
 ```bash
-curl -X POST "http://localhost:8000/search?query=API如何接入&top_k=3"
+curl -X POST -H "Authorization: Bearer $TOKEN" "http://localhost:8000/search?query=API如何接入&top_k=3"
 ```
 
 ### 15.5 用户画像查不到
@@ -1493,25 +1561,27 @@ curl http://localhost:8000/health
 
 # 3. 主对话
 curl -X POST http://localhost:8000/chat \
+  -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"message": "你好，我想了解退款政策", "user_id": "demo_user", "conv_id": "demo_conv"}'
 
 # 4. 知识库统计
-curl http://localhost:8000/knowledge/stats
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/knowledge/stats
 
 # 5. 导入演示知识库
 curl -X POST http://localhost:8000/knowledge/upload \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
   -F "file=@data/demo_docs/sample_knowledge.json"
 
 # 6. 检索
-curl -X POST "http://localhost:8000/search?query=ResolveFlow如何接入API&top_k=3"
+curl -X POST -H "Authorization: Bearer $TOKEN" "http://localhost:8000/search?query=ResolveFlow如何接入API&top_k=3"
 
 # 7. 监控
-curl http://localhost:8000/monitor
+curl -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:8000/monitor
 
 # 8. Skills
-curl http://localhost:8000/skills
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8000/skills
 
 # 9. 评测
-curl -X POST http://localhost:8000/eval/run
+curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:8000/eval/run
 ```

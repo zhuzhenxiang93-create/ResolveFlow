@@ -15,16 +15,20 @@
 升级机制：
   - Agent 置信度低于阈值 → 自动升级到更高级 Agent 或转人工
 """
+import inspect
 import json
 import logging
+import os
 import time
 import uuid
+from collections import deque
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from core.intent_recognizer import IntentCategory, IntentRecognizer, UrgencyLevel
 from core.llm_client import LLMClient
+from agents.chat_tools import build_tool_registry
 from agents.supervisor import (
     DAGScheduler,
     ResponseSynthesizer,
@@ -78,6 +82,8 @@ class AgentResponse:
     confidence:  float = 1.0
     latency_ms:  float = 0.0
     escalate:    bool  = False   # 是否需要升级
+    tools_used:  List[str] = field(default_factory=list)
+    tool_traces: List[Dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
@@ -115,6 +121,8 @@ class OrchestratorResult:
     execution_trace: List[Dict[str, Any]] = field(default_factory=list)
     synthesis_method: str = "single_agent"
     degradations: List[str] = field(default_factory=list)
+    tools_used: List[str] = field(default_factory=list)
+    tool_traces: List[Dict[str, Any]] = field(default_factory=list)
 
 
 @dataclass
@@ -142,17 +150,23 @@ class BaseAgent:
     agent_type: AgentType
     system_prompt: str
 
-    def __init__(self, client: LLMClient, model: str, skill_manager: Optional[Any] = None):
+    def __init__(self, client: LLMClient, model: str, skill_manager: Optional[Any] = None, tool_manager: Optional[Any] = None):
         self._client = client
         self._model  = model
         self._skill_manager = skill_manager
+        # 只有显式传入 tool_manager 时才装配工具（含共享知识库检索工具），
+        # 这是"该 Agent 是否具备工具调用能力"的唯一开关：未传入时保持旧行为
+        # （单轮直接生成回复），避免离线/测试场景下的假 LLM client 因为不认识
+        # create_tool_turn() 而报错，同时也不给没有真实工具基础设施的调用方
+        # 一堆看起来能调用、实际什么都做不了的工具。
+        self._tools = build_tool_registry(self.agent_type.value, tool_manager) if tool_manager is not None else {}
         self.stats   = AgentStats()
 
     async def handle(self, req: Request) -> AgentResponse:
         t0 = time.monotonic()
         self.stats.total += 1
         try:
-            content = await self._call_llm(req)
+            content, tools_used, tool_traces = await self._call_llm(req)
             content, safety_escalate = self._apply_safety_guard(content)
             ms = (time.monotonic() - t0) * 1000
             self.stats.success += 1
@@ -164,6 +178,8 @@ class BaseAgent:
                 success=True,
                 latency_ms=ms,
                 escalate=escalate,
+                tools_used=tools_used,
+                tool_traces=tool_traces,
             )
         except Exception as ex:
             ms = (time.monotonic() - t0) * 1000
@@ -176,11 +192,12 @@ class BaseAgent:
                 latency_ms=ms,
             )
 
-    async def _call_llm(self, req: Request) -> str:
+    async def _call_llm(self, req: Request):
+        """返回 (最终文本回复, 本轮用过的工具名列表, 工具调用明细列表)。"""
         def _clean(s: str) -> str:
             return s.encode("utf-8", errors="ignore").decode("utf-8")
 
-        messages = []
+        messages: List[Dict[str, Any]] = []
         if req.context:
             messages.append({"role": "user", "content": f"[背景信息]\n{_clean(req.context)}"})
             messages.append({"role": "assistant", "content": "好的，我已了解背景信息。"})
@@ -202,11 +219,83 @@ class BaseAgent:
         else:
             messages.append({"role": "user", "content": _clean(req.message)})
 
-        return await self._client.create(
-            max_tokens=1024,
-            system=self._build_system_prompt(req),
-            messages=messages,
-        )
+        if not self._tools:
+            # 没有可用工具（未注入 tool_manager，或该 Agent 类型未配置工具）时，
+            # 保持原来的单轮调用路径，不为空工具表多付一次协议转换开销。
+            content = await self._client.create(
+                max_tokens=1024,
+                system=self._build_system_prompt(req),
+                messages=messages,
+            )
+            return content, [], []
+
+        return await self._run_tool_loop(req, messages)
+
+    async def _run_tool_loop(self, req: Request, messages: List[Dict[str, Any]]):
+        """最多 3 轮的工具调用循环：模型可以在给出最终回复前，先调用本 Agent
+        工具白名单里的只读工具（知识库检索、错误码查询、账单字段核验等）。
+        每一轮的调用明细都记录进 tool_traces，供 /trace/tool/{request_id} 回放。"""
+        tool_schemas = [
+            {"name": spec.name, "description": spec.description, "parameters": spec.parameters}
+            for spec in self._tools.values()
+        ]
+        system = self._build_system_prompt(req)
+        tools_used: List[str] = []
+        tool_traces: List[Dict[str, Any]] = []
+        for _ in range(3):
+            turn = await self._client.create_tool_turn(
+                system=system, messages=messages, tools=tool_schemas, max_tokens=1024,
+            )
+            calls = turn.get("tool_calls") or []
+            if not calls:
+                return turn.get("content") or "", tools_used, tool_traces
+
+            messages.append({"role": "assistant", "content": turn.get("content") or "", "tool_calls": calls})
+            for call in calls:
+                fn = call.get("function", {}) if isinstance(call, dict) else {}
+                name = fn.get("name", "")
+                call_id = call.get("id")
+                try:
+                    args = json.loads(fn.get("arguments") or "{}")
+                    if not isinstance(args, dict):
+                        args = {}
+                except (TypeError, ValueError):
+                    args = {}
+                spec = self._tools.get(name)
+                tool_t0 = time.monotonic()
+                error_text = ""
+                if spec is None or spec.handler is None:
+                    success = False
+                    result: Dict[str, Any] = {"success": False, "error": f"工具不在 {self.agent_type.value} Agent 白名单中"}
+                    error_text = result["error"]
+                else:
+                    try:
+                        outcome = spec.handler(req, args)
+                        if inspect.isawaitable(outcome):
+                            outcome = await outcome
+                        result = outcome if isinstance(outcome, dict) else {"success": True, "result": outcome}
+                        success = bool(result.get("success", True))
+                        tools_used.append(name)
+                    except Exception as ex:
+                        success = False
+                        error_text = str(ex)
+                        result = {"success": False, "error": error_text}
+                        logger.warning("Agent 工具 %s 执行失败: %s", name, ex)
+                tool_latency_ms = (time.monotonic() - tool_t0) * 1000
+                tool_traces.append({
+                    "agent_type": self.agent_type.value,
+                    "tool_name": name,
+                    "input": dict(args),
+                    "success": success,
+                    "latency_ms": round(tool_latency_ms, 1),
+                    "cached": bool(result.get("cached")),
+                    "reranked": bool(result.get("reranked")),
+                    "error": error_text or str(result.get("error") or ""),
+                })
+                messages.append({"role": "tool", "tool_call_id": call_id, "content": json.dumps(result, ensure_ascii=False)})
+
+        logger.warning("%s 工具调用超过最大轮数，返回兜底回复", self.agent_type.value)
+        return "抱歉，这个问题需要更多信息核实，建议转接人工客服协助处理。", tools_used, tool_traces
 
     def _build_system_prompt(self, req: Request) -> str:
         """把动态加载的 Skills 拼入 system prompt，让业务规则随请求生效。"""
@@ -310,18 +399,22 @@ class AgentOrchestrator:
         provider: Optional[str] = None,
         supervisor_max_subtasks: int = 3,
         subtask_timeout_s: float = 30.0,
+        client=None,
+        recognizer=None,
+        tool_manager: Optional[Any] = None,
     ):
-        client = LLMClient(api_key=api_key, base_url=base_url, model=model, provider=provider)
+        client = client or LLMClient(api_key=api_key, base_url=base_url, model=model, provider=provider)
 
-        self._intent_recognizer = IntentRecognizer(api_key=api_key, base_url=base_url, model=model, provider=provider)
+        self._intent_recognizer = recognizer or IntentRecognizer(api_key=api_key, base_url=base_url, model=model, provider=provider)
         self._skill_manager = skill_manager
+        self._tool_manager = tool_manager
 
         # Agent 池：每种类型可有多个实例（水平扩展）
         self._pool: Dict[AgentType, List[BaseAgent]] = {
-            AgentType.GENERAL:   [GeneralAgent(client, model, skill_manager)],
-            AgentType.TECHNICAL: [TechnicalAgent(client, model, skill_manager)],
-            AgentType.BILLING:   [BillingAgent(client, model, skill_manager)],
-            AgentType.ESCALATION: [EscalationAgent(client, model, skill_manager)],
+            AgentType.GENERAL:   [GeneralAgent(client, model, skill_manager, tool_manager)],
+            AgentType.TECHNICAL: [TechnicalAgent(client, model, skill_manager, tool_manager)],
+            AgentType.BILLING:   [BillingAgent(client, model, skill_manager, tool_manager)],
+            AgentType.ESCALATION: [EscalationAgent(client, model, skill_manager, tool_manager)],
         }
         self._planner = TaskPlanner(
             allowed_agent_types=(agent_type.value for agent_type in AgentType),
@@ -329,6 +422,45 @@ class AgentOrchestrator:
         )
         self._scheduler = DAGScheduler(self._planner, timeout_s=subtask_timeout_s)
         self._synthesizer = ResponseSynthesizer()
+        # 请求级工具调用轨迹：有界队列，供 /trace/tool/{request_id} 和
+        # /trace/tools 回放一次请求里实际发生过的工具调用（不落库，进程重启即丢失，
+        # 只用于排查和演示，不作为审计凭证——审计凭证是 action_runtime 的证据链）。
+        self._recent_tool_traces: "deque[Dict[str, Any]]" = deque(
+            maxlen=int(os.getenv("RESOLVEFLOW_TOOL_TRACE_MAX", "200"))
+        )
+
+    def _tool_trace_store(self) -> "deque[Dict[str, Any]]":
+        """惰性拿到（必要时创建）trace 队列。测试里常用 object.__new__(AgentOrchestrator)
+        绕过 __init__ 直接手工拼装最小实例，这种实例没有 __init__ 设过的属性；
+        观测性功能不应该让这类已有测试用例因为缺一个属性而报错。"""
+        store = getattr(self, "_recent_tool_traces", None)
+        if store is None:
+            store = deque(maxlen=int(os.getenv("RESOLVEFLOW_TOOL_TRACE_MAX", "200")))
+            self._recent_tool_traces = store
+        return store
+
+    def _record_tool_trace(self, result: "OrchestratorResult") -> None:
+        self._tool_trace_store().append({
+            "request_id": result.request_id,
+            "agent_type": result.agent_type.value if result.agent_type else None,
+            "agent_types": [agent.value for agent in result.agent_types],
+            "tools_used": list(result.tools_used),
+            "tool_calls": list(result.tool_traces),
+            "latency_ms": round(result.latency_ms, 1),
+        })
+
+    def get_tool_trace(self, request_id: str) -> Optional[Dict[str, Any]]:
+        for trace in reversed(self._tool_trace_store()):
+            if trace.get("request_id") == request_id:
+                return trace
+        return None
+
+    def get_recent_tool_traces(self, limit: int = 20) -> List[Dict[str, Any]]:
+        store = self._tool_trace_store()
+        if not store:
+            return []
+        limit = max(1, min(int(limit or 20), len(store)))
+        return list(reversed(list(store)[-limit:]))
 
     def set_skill_manager(self, skill_manager: Optional[Any]) -> None:
         """更新 SkillManager 引用，供运行时重载或测试替换使用。"""
@@ -344,6 +476,12 @@ class AgentOrchestrator:
     ):
         """对外暴露意图识别，供 API 层先判断是否需要 RAG 等前置能力。"""
         return await self._intent_recognizer.recognize(message, history=history)
+
+    @staticmethod
+    async def execute_action(runtime, *, owner, message="", task_id=None, order_id=None, conversation_id=None):
+        """Shared entry for chat actions and direct task API, including resume."""
+        task = runtime.get(task_id, owner) if task_id else runtime.create(owner, message, conversation_id)
+        return await runtime.advance(task["id"], owner, order_id, message, conversation_id)
 
     # ── 主入口 ────────────────────────────────────────────────────────────────
 
@@ -394,7 +532,7 @@ class AgentOrchestrator:
             logger.warning(f"请求 {req.request_id} 触发升级: urgency={req.urgency}")
             # 生产环境：此处创建工单、通知人工客服
 
-        return OrchestratorResult(
+        result = OrchestratorResult(
             request_id=req.request_id,
             response=response.content,
             agent_type=response.agent_type,
@@ -406,7 +544,11 @@ class AgentOrchestrator:
             supporting_agents=[],
             routing_reason=decision.reason,
             routing_confidence=decision.confidence,
+            tools_used=list(response.tools_used),
+            tool_traces=list(response.tool_traces),
         )
+        self._record_tool_trace(result)
+        return result
 
     async def run_parallel(self, req: Request, decision: RoutingDecision) -> OrchestratorResult:
         """
@@ -414,72 +556,9 @@ class AgentOrchestrator:
         """
         t0 = time.monotonic()
         self._ensure_supervisor_components()
-        degradations: List[str] = []
         risk_reasons = self._high_risk_reasons(req)
-        try:
-            plan = self._planner.create_plan(
-                original_request=req.message,
-                primary_agent=decision.primary_agent.value,
-                supporting_agents=[agent.value for agent in decision.supporting_agents],
-                reason=decision.reason,
-                confidence=decision.confidence,
-                risk_reasons=risk_reasons,
-            )
-        except Exception as ex:
-            logger.warning("TaskPlanner 失败，使用单任务确定性计划: %s", type(ex).__name__)
-            degradations.append("task_planner_unavailable")
-            plan = TaskPlan(
-                original_request=req.message,
-                subtasks=[SubTask(
-                    id=f"{decision.primary_agent.value}_fallback_1",
-                    description="仅处理当前主领域请求，不能替其他领域作出结论",
-                    agent_type=decision.primary_agent.value,
-                    risk_level="high" if risk_reasons else "low",
-                )],
-                reason="planner fallback to primary agent",
-                confidence=decision.confidence,
-                method="fallback",
-            )
-
-        async def execute_subtask(
-            task: SubTask,
-            dependency_results: Dict[str, SubTaskResult],
-        ) -> SubTaskResult:
-            dependency_context = "\n\n".join(
-                result.content for result in dependency_results.values()
-                if result.success and result.content
-            )
-            scoped_request = replace(
-                req,
-                subtask_id=task.id,
-                task_instruction=task.description,
-                dependency_context=dependency_context,
-            )
-            response = await self._execute(scoped_request, AgentType(task.agent_type))
-            return SubTaskResult(
-                task_id=task.id,
-                agent_type=response.agent_type.value,
-                success=response.success,
-                content=response.content,
-                latency_ms=response.latency_ms,
-                error=None if response.success else "agent_execution_failed",
-                escalated=response.escalate,
-                status=TaskStatus.SUCCESS if response.success else TaskStatus.FAILED,
-            )
-
-        try:
-            task_results = await self._scheduler.execute(plan, execute_subtask)
-        except Exception as ex:
-            logger.error("DAG Scheduler 失败: %s", type(ex).__name__)
-            degradations.append("task_scheduler_unavailable")
-            task_results = [SubTaskResult(
-                task_id=task.id,
-                agent_type=task.agent_type,
-                success=False,
-                error=type(ex).__name__,
-                status=TaskStatus.FAILED,
-                dependencies=list(task.dependencies),
-            ) for task in plan.subtasks]
+        plan, degradations = self._plan_or_fallback(req, decision, risk_reasons)
+        task_results, degradations = await self._schedule_or_fallback(plan, req, degradations)
 
         force_escalation = bool(risk_reasons) or req.urgency == UrgencyLevel.CRITICAL or req.intent in (
             IntentCategory.ESCALATION,
@@ -511,7 +590,7 @@ class AgentOrchestrator:
             if result.success and result.agent_type in {agent.value for agent in AgentType}
         ))
 
-        return OrchestratorResult(
+        result = OrchestratorResult(
             request_id=req.request_id,
             response=combined,
             agent_type=decision.primary_agent,
@@ -524,10 +603,170 @@ class AgentOrchestrator:
             routing_reason=decision.reason,
             routing_confidence=decision.confidence,
             task_plan=plan.to_dict(),
-            execution_trace=[result.to_trace() for result in task_results],
+            execution_trace=[task_result.to_trace() for task_result in task_results],
             synthesis_method=synthesis_method,
             degradations=list(dict.fromkeys(degradations)),
+            tools_used=list(dict.fromkeys(name for task_result in task_results for name in task_result.tools_used)),
+            tool_traces=[trace for task_result in task_results for trace in task_result.tool_traces],
         )
+        self._record_tool_trace(result)
+        return result
+
+    async def run_compound(self, req: Request, primary_result: SubTaskResult) -> OrchestratorResult:
+        """处理复合请求里"已经由调用方算好"的那一部分（Action 层执行结果，或知识库
+        RAG 政策回答）之外的剩余通用/技术内容——req.message 应当只是剩余部分的文本
+        （由 ConversationService 传入 GoalProposal.general_remainder），不是完整原话，
+        这样这里的规划/调度不会重新发现、重复回答已经由 primary_result 处理过的话题。
+
+        primary_result.agent_type 通常是 "action" 或 "policy"；orchestrator 本身不关心
+        它具体是哪个路由算出来的，只负责把它和剩余部分的调度结果拼接合成成一条回复——
+        并且不会让它参与 ResponseSynthesizer 的关键词冲突检测（见 supervisor.py 里
+        synthesize() 的 extra_results 参数说明）。
+        """
+        t0 = time.monotonic()
+        self._ensure_supervisor_components()
+        if req.intent is None:
+            intent_result = await self._intent_recognizer.recognize(req.message, history=req.history)
+            req.intent = intent_result.intent
+            req.intent_group = intent_result.intent_group
+            req.urgency = intent_result.urgency
+            req.intent_confidence = intent_result.confidence
+
+        decision = self._route_decision(req)
+        risk_reasons = self._high_risk_reasons(req)
+        plan, degradations = self._plan_or_fallback(req, decision, risk_reasons)
+        task_results, degradations = await self._schedule_or_fallback(plan, req, degradations)
+
+        force_escalation = bool(risk_reasons) or req.urgency == UrgencyLevel.CRITICAL or req.intent in (
+            IntentCategory.ESCALATION,
+            IntentCategory.HUMAN_HANDOFF,
+        )
+        try:
+            synthesis = self._synthesizer.synthesize(
+                original_request=req.message,
+                plan=plan,
+                results=task_results,
+                extra_results=[primary_result],
+                force_escalation=force_escalation,
+            )
+            combined = synthesis.content
+            synthesis_method = synthesis.method
+            degradations.extend(synthesis.degradations)
+            escalated = synthesis.escalated
+        except Exception as ex:
+            logger.error("ResponseSynthesizer 失败，使用确定性安全合并: %s", type(ex).__name__)
+            degradations.append("response_synthesizer_unavailable")
+            combined = self._fallback_synthesis([primary_result, *task_results])
+            synthesis_method = "fallback"
+            escalated = force_escalation or any(result.escalated for result in [primary_result, *task_results])
+
+        combined, safety_escalate = BaseAgent._apply_safety_guard(combined)
+        escalated = escalated or safety_escalate or primary_result.escalated
+        actual_agent_types = list(dict.fromkeys(
+            AgentType(result.agent_type)
+            for result in task_results
+            if result.success and result.agent_type in {agent.value for agent in AgentType}
+        ))
+
+        result = OrchestratorResult(
+            request_id=req.request_id,
+            response=combined,
+            agent_type=decision.primary_agent,
+            intent=req.intent,
+            escalated=escalated,
+            latency_ms=(time.monotonic() - t0) * 1000,
+            agent_types=actual_agent_types or decision.agent_types,
+            primary_agent=decision.primary_agent,
+            supporting_agents=decision.supporting_agents,
+            routing_reason=decision.reason,
+            routing_confidence=decision.confidence,
+            task_plan=plan.to_dict(),
+            execution_trace=[primary_result.to_trace()] + [task_result.to_trace() for task_result in task_results],
+            synthesis_method=synthesis_method,
+            degradations=list(dict.fromkeys(degradations)),
+            tools_used=list(dict.fromkeys(
+                name for task_result in [primary_result, *task_results] for name in task_result.tools_used
+            )),
+            tool_traces=[trace for task_result in [primary_result, *task_results] for trace in task_result.tool_traces],
+        )
+        self._record_tool_trace(result)
+        return result
+
+    def _plan_or_fallback(self, req: Request, decision: RoutingDecision, risk_reasons: List[str]):
+        """规划子任务；规划器失败时降级为只处理主 Agent 的单任务确定性计划。
+        run_parallel() 和 run_compound() 共用，避免同一段 try/except 分叉维护两份。"""
+        degradations: List[str] = []
+        try:
+            plan = self._planner.create_plan(
+                original_request=req.message,
+                primary_agent=decision.primary_agent.value,
+                supporting_agents=[agent.value for agent in decision.supporting_agents],
+                reason=decision.reason,
+                confidence=decision.confidence,
+                risk_reasons=risk_reasons,
+            )
+        except Exception as ex:
+            logger.warning("TaskPlanner 失败，使用单任务确定性计划: %s", type(ex).__name__)
+            degradations.append("task_planner_unavailable")
+            plan = TaskPlan(
+                original_request=req.message,
+                subtasks=[SubTask(
+                    id=f"{decision.primary_agent.value}_fallback_1",
+                    description="仅处理当前主领域请求，不能替其他领域作出结论",
+                    agent_type=decision.primary_agent.value,
+                    risk_level="high" if risk_reasons else "low",
+                )],
+                reason="planner fallback to primary agent",
+                confidence=decision.confidence,
+                method="fallback",
+            )
+        return plan, degradations
+
+    async def _schedule_or_fallback(self, plan: TaskPlan, req: Request, degradations: List[str]):
+        """按计划调度子任务；调度器失败时把每个子任务标记为失败，保留可观测性。
+        run_parallel() 和 run_compound() 共用。"""
+        async def execute_subtask(
+            task: SubTask,
+            dependency_results: Dict[str, SubTaskResult],
+        ) -> SubTaskResult:
+            dependency_context = "\n\n".join(
+                result.content for result in dependency_results.values()
+                if result.success and result.content
+            )
+            scoped_request = replace(
+                req,
+                subtask_id=task.id,
+                task_instruction=task.description,
+                dependency_context=dependency_context,
+            )
+            response = await self._execute(scoped_request, AgentType(task.agent_type))
+            return SubTaskResult(
+                task_id=task.id,
+                agent_type=response.agent_type.value,
+                success=response.success,
+                content=response.content,
+                latency_ms=response.latency_ms,
+                error=None if response.success else "agent_execution_failed",
+                escalated=response.escalate,
+                status=TaskStatus.SUCCESS if response.success else TaskStatus.FAILED,
+                tools_used=list(response.tools_used),
+                tool_traces=list(response.tool_traces),
+            )
+
+        try:
+            task_results = await self._scheduler.execute(plan, execute_subtask)
+        except Exception as ex:
+            logger.error("DAG Scheduler 失败: %s", type(ex).__name__)
+            degradations = [*degradations, "task_scheduler_unavailable"]
+            task_results = [SubTaskResult(
+                task_id=task.id,
+                agent_type=task.agent_type,
+                success=False,
+                error=type(ex).__name__,
+                status=TaskStatus.FAILED,
+                dependencies=list(task.dependencies),
+            ) for task in plan.subtasks]
+        return task_results, degradations
 
     def _ensure_supervisor_components(self) -> None:
         """兼容使用 object.__new__ 构造的离线路由测试。"""

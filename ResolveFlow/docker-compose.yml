@@ -43,6 +43,31 @@ services:
       retries: 3
       start_period: 10s
 
+  # ── PostgreSQL（Action 层迁移 POC，非默认启动）───────────────────────────────
+  # 只用 `docker compose up -d postgres` 或 `make pg-poc-up` 显式拉起；不在默认
+  # `docker compose up -d` 全栈路径里，生产 Action 层仍在用 SQLite。
+  # 见 wiki/postgres-migration-plan.md 和 agents/action_runtime_pg_poc.py。
+  postgres:
+    image: postgres:16-alpine
+    container_name: resolveflow-postgres-poc
+    profiles: ["pg-poc"]   # excluded from a plain `docker compose up -d`; needs --profile pg-poc or an explicit service name
+    ports:
+      - "${PG_POC_PORT:-15432}:5432"
+    environment:
+      - POSTGRES_USER=resolveflow
+      - POSTGRES_PASSWORD=${PG_POC_PASSWORD:-resolveflow123}
+      - POSTGRES_DB=resolveflow_action_poc
+    volumes:
+      - pg-poc-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - resolveflow-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U resolveflow -d resolveflow_action_poc"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # ── Prometheus 监控 ─────────────────────────────────────────────────────────
   prometheus:
     image: prom/prometheus:latest
@@ -87,6 +112,7 @@ services:
     volumes:
       - ./data/chroma:/app/data/chroma
       - ./data/eval:/app/data/eval
+      - ./data/agent:/app/data/agent
       - ./skills:/app/skills
       - ./logs:/app/logs
     depends_on:
@@ -127,12 +153,11 @@ services:
       start_period: 10s
 
 # ── 网络 ────────────────────────────────────────────────────────────────────
+# 不再写死子网：固定 172.28.0.0/16 曾与本机另一个项目的 Docker 网络冲突，导致
+# `docker compose up` 建网络失败。交给 Docker 自动分配空闲子网。
 networks:
   resolveflow-network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.28.0.0/16
 
 # ── 数据卷 ──────────────────────────────────────────────────────────────────
 volumes:
@@ -140,3 +165,4 @@ volumes:
   chromadb-data:
   prometheus-data:
   nginx-logs:
+  pg-poc-data:

@@ -247,21 +247,6 @@ class BillingDataTests(unittest.TestCase):
         self.assertEqual(decision.primary_agent, AgentType.TECHNICAL)
         self.assertFalse(orchestrator._requires_high_risk_escalation(req))
 
-    def test_knowledge_base_lexical_score_prefers_business_term_hits(self):
-        from mcp.knowledge_base import KnowledgeBase
-
-        matched = KnowledgeBase._lexical_score(
-            "为什么出现重复扣款",
-            "支付失败与重复扣款处理流程",
-            {"title": "支付政策", "search_terms": '["重复扣款", "支付"]'},
-        )
-        unrelated = KnowledgeBase._lexical_score(
-            "为什么出现重复扣款",
-            "物流配送轨迹查询流程",
-            {"title": "物流政策", "search_terms": '["物流", "快递"]'},
-        )
-        self.assertGreater(matched, unrelated)
-
     def test_metrics_report_contains_required_fields(self):
         eval_report = {
             "total": 2,

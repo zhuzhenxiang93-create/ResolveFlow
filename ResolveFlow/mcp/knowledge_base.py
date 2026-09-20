@@ -17,7 +17,7 @@ import hashlib
 import json
 import logging
 import threading
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 import chromadb
 from chromadb.errors import InvalidCollectionException
@@ -160,6 +160,7 @@ class KnowledgeBase:
                     "title": title,
                     "category": doc.get("category", ""),
                     "risk_level": doc.get("risk_level", ""),
+                    "source": doc.get("source", ""),
                     "search_terms": json.dumps(doc.get("search_terms", []), ensure_ascii=False),
                     "chunk_index": i,
                     "total_chunks": len(chunks),
@@ -189,11 +190,45 @@ class KnowledgeBase:
         """异步导入文档；ChromaDB 客户端为同步实现，因此放入线程池执行。"""
         return await asyncio.to_thread(self.add_documents, documents)
 
-    def search(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
-        """Search without serializing concurrent readers behind mutation locks."""
-        return self._search_impl(query, top_k)
+    @classmethod
+    def lexical_documents(cls, documents):
+        """Explicit dependency-light backend using the same lexical index contract."""
+        instance = cls.__new__(cls)
+        instance._lexical_only = True
+        instance._lexical_index = BM25Index()
+        instance._lexical_index.upsert([instance._result_record(d["id"], d["content"],
+            {"document_id": d["id"], "title": d["title"], "search_terms": d.get("search_terms", [])}) for d in documents])
+        return instance
 
-    def _search_impl(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+    def search(
+        self,
+        query: str,
+        top_k: int = 5,
+        allowed_document_ids: Optional[Iterable[str]] = None,
+    ) -> List[Dict[str, Any]]:
+        """Search without serializing concurrent readers behind mutation locks.
+
+        ``allowed_document_ids``, when given, restricts recall itself (a
+        ChromaDB ``where`` clause plus a lexical post-filter) instead of
+        discarding out-of-scope hits after the fact — the caller gets back
+        only candidates from the intended document set, or nothing.
+        """
+        scope = set(allowed_document_ids) if allowed_document_ids is not None else None
+        if scope is not None and not scope:
+            return []
+        if getattr(self, "_lexical_only", False):
+            hits = self._lexical_index.search(query, top_k * 4 if scope else top_k)
+            if scope is not None:
+                hits = [h for h in hits if h.get("document_id") in scope]
+            return hits[:top_k]
+        return self._search_impl(query, top_k, scope)
+
+    def _search_impl(
+        self,
+        query: str,
+        top_k: int = 5,
+        allowed_document_ids: Optional[set] = None,
+    ) -> List[Dict[str, Any]]:
         """Run independent vector/BM25 recall and fuse candidates with RRF."""
         query = str(query or "").strip()
         top_k = max(0, int(top_k))
@@ -210,12 +245,21 @@ class KnowledgeBase:
         rankings: Dict[str, List[Dict[str, Any]]] = {}
         degradations: List[str] = []
         try:
-            rankings["vector"] = self._vector_search(query, candidate_count)
+            rankings["vector"] = (
+                self._vector_search(query, candidate_count, allowed_document_ids)
+                if allowed_document_ids is not None
+                else self._vector_search(query, candidate_count)
+            )
         except Exception as ex:
             degradations.append("vector_unavailable")
             logger.warning("向量召回失败，降级为关键词召回: %s", type(ex).__name__)
         try:
-            rankings["lexical"] = self._lexical_search(query, candidate_count)
+            lexical_candidate_count = candidate_count * 4 if allowed_document_ids is not None else candidate_count
+            rankings["lexical"] = self._lexical_search(query, lexical_candidate_count)
+            if allowed_document_ids is not None:
+                rankings["lexical"] = [
+                    item for item in rankings["lexical"] if item.get("document_id") in allowed_document_ids
+                ][:candidate_count]
         except Exception as ex:
             degradations.append("lexical_unavailable")
             logger.warning("关键词召回失败，降级为向量召回: %s", type(ex).__name__)
@@ -254,10 +298,17 @@ class KnowledgeBase:
             item["fusion_weights"] = dict(route_weights)
         return fused
 
-    def _vector_search(self, query: str, top_k: int) -> List[Dict[str, Any]]:
+    def _vector_search(
+        self,
+        query: str,
+        top_k: int,
+        allowed_document_ids: Optional[set] = None,
+    ) -> List[Dict[str, Any]]:
+        where = {"document_id": {"$in": list(allowed_document_ids)}} if allowed_document_ids is not None else None
         results = self._collection.query(
             query_texts=[query],
             n_results=top_k,
+            where=where,
             include=["documents", "metadatas", "distances"],
         )
         ids = results.get("ids", [[]])[0]
@@ -277,28 +328,14 @@ class KnowledgeBase:
     def _lexical_search(self, query: str, top_k: int) -> List[Dict[str, Any]]:
         return self._lexical_index.search(query, top_k)
 
-    @staticmethod
-    def _lexical_score(query: str, content: str, metadata: Dict[str, Any]) -> float:
-        """Backward-compatible diagnostic score; production search uses BM25."""
-        normalized_query = str(query or "").lower()
-        try:
-            terms = json.loads(metadata.get("search_terms") or "[]")
-        except (TypeError, json.JSONDecodeError):
-            terms = []
-        normalized_terms = [str(term).lower() for term in terms if str(term).strip()]
-        term_hits = sum(term in normalized_query for term in normalized_terms)
-        searchable = f"{metadata.get('title', '')} {' '.join(normalized_terms)} {content}".lower()
-        query_chars = {char for char in normalized_query if not char.isspace()}
-        char_overlap = len(query_chars.intersection(searchable)) / max(1, len(query_chars))
-        return term_hits * 2.0 + char_overlap
-
-    async def search_async(self, query: str, top_k: int = 5) -> List[Dict[str, Any]]:
+    async def search_async(
+        self,
+        query: str,
+        top_k: int = 5,
+        allowed_document_ids: Optional[Iterable[str]] = None,
+    ) -> List[Dict[str, Any]]:
         """异步检索；ChromaDB 客户端为同步实现，因此放入线程池执行。"""
-        return await asyncio.to_thread(self.search, query, top_k)
-
-    @property
-    def doc_count(self) -> int:
-        return self._collection.count()
+        return await asyncio.to_thread(self.search, query, top_k, allowed_document_ids)
 
     async def doc_count_async(self) -> int:
         """异步获取文档片段数量。"""
@@ -317,6 +354,7 @@ class KnowledgeBase:
             "chunk_id": chunk_id,
             "document_id": clean_metadata.get("document_id", ""),
             "title": clean_metadata.get("title", ""),
+            "source": clean_metadata.get("source", ""),
             "content": content,
             "metadata": clean_metadata,
             "vector_rank": None,
@@ -392,7 +430,7 @@ class KnowledgeBase:
         """
         query = params.get("query", "")
         top_k = params.get("top_k", 5)
-        return await self.search_async(query, top_k=top_k)
+        return await self.search_async(query, top_k=top_k, allowed_document_ids=params.get("allowed_document_ids"))
 
     # ── 内部方法 ──────────────────────────────────────────────────────────────
 
@@ -450,7 +488,8 @@ class KnowledgeBase:
             {
                 "title": "退款政策",
                 "content": (
-                    "退款政策说明。"
+                    "退款政策说明（本政策仅适用于站内购买的实物/普通商品订单，不适用于会员费用；"
+                    "会员费的重复扣款退款请走会员支持通道，见会员权益与账单相关政策）。"
                     "用户在购买后 7 天内可以申请无理由退款。"
                     "退款申请提交后，系统会在 1-3 个工作日内审核。"
                     "审核通过后，款项将在 5-7 个工作日内退回原支付账户。"

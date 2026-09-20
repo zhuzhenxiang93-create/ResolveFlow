@@ -73,6 +73,8 @@ class SubTaskResult:
     escalated: bool = False
     status: TaskStatus = TaskStatus.PENDING
     dependencies: List[str] = field(default_factory=list)
+    tools_used: List[str] = field(default_factory=list)
+    tool_traces: List[Dict[str, Any]] = field(default_factory=list)
 
     def to_trace(self) -> Dict[str, Any]:
         """只输出控制面信息，不把 Agent 正文或异常细节写入 Trace。"""
@@ -429,6 +431,9 @@ class ResponseSynthesizer:
         "billing": "账单与支付",
         "general": "订单与通用事项",
         "escalation": "人工升级",
+        "action": "会员业务",
+        "policy": "会员政策说明",
+        "unsupported": "超出支持范围",
     }
 
     def synthesize(
@@ -437,12 +442,18 @@ class ResponseSynthesizer:
         original_request: str,
         plan: TaskPlan,
         results: Sequence[SubTaskResult],
+        extra_results: Sequence[SubTaskResult] = (),
         force_escalation: bool = False,
     ) -> SynthesisResult:
+        """extra_results 是调用方在这次调度之外预先算好、已经验证过的结果（例如 Action
+        层的执行结果或 RAG grounded 的政策回答）——它们参与最终内容拼接和 escalated 信号，
+        但刻意不参与 detect_conflicts()：那是一个不区分语义的关键词/数字启发式，没有能力
+        去仲裁一段已验证事实和一段未验证文本谁对谁错，让它们参与比较只会制造误报冲突。"""
         del original_request  # 合成只使用已验证的子任务结果，不再复述用户敏感原文。
         successful = [result for result in results if result.success and result.content.strip()]
+        extra_successful = [result for result in extra_results if result.success and result.content.strip()]
         failed = [result for result in results if not result.success]
-        if not successful:
+        if not successful and not extra_successful:
             return SynthesisResult(
                 content="抱歉，当前各专业处理环节均未能完成。请稍后重试；如涉及账户或资金安全，请转人工核实。",
                 method="deterministic",
@@ -453,7 +464,7 @@ class ResponseSynthesizer:
         conflicts = self.detect_conflicts(successful)
         seen = set()
         sections = []
-        for result in successful:
+        for result in [*extra_successful, *successful]:
             normalized = self._normalize(result.content)
             if normalized in seen:
                 continue
@@ -467,7 +478,8 @@ class ResponseSynthesizer:
             )
             sections.append(f"【暂未完成】\n{labels}相关环节暂时不可用，未返回的部分需要稍后重试或人工核实。")
 
-        escalated = force_escalation or bool(conflicts) or any(result.escalated for result in results)
+        escalated = (force_escalation or bool(conflicts) or any(result.escalated for result in results)
+                     or any(result.escalated for result in extra_results))
         if conflicts:
             sections.append("【需要核实】\n不同处理结果存在数字或允许条件冲突，系统未自行选择结论，请转人工核实。")
         elif escalated:
@@ -500,23 +512,50 @@ class ResponseSynthesizer:
         return re.sub(r"\s+", "", text).strip("。.!！")
 
     @staticmethod
-    def _polarity_conflict(left: str, right: str) -> bool:
+    def _split_sentences(text: str) -> List[str]:
+        """Sentence-level split so conflict checks compare clauses that actually
+        share a subject, not just a document that happens to mention the same
+        keyword somewhere unrelated. Deliberately simple (no NLU, no external
+        model call — this module stays testable without one by design)."""
+        parts = re.split(r"[。！？；\n]|(?<=[a-zA-Z0-9])\.\s", text)
+        return [part.strip() for part in parts if part.strip()]
+
+    @classmethod
+    def _polarity_conflict(cls, left: str, right: str) -> bool:
         positive = ("允许", "可以", "支持", "能够")
         negative = ("不允许", "不可以", "不支持", "不能")
-        left_positive = any(term in left for term in positive) and not any(term in left for term in negative)
-        right_positive = any(term in right for term in positive) and not any(term in right for term in negative)
-        left_negative = any(term in left for term in negative)
-        right_negative = any(term in right for term in negative)
         shared_topics = ("退款", "支付", "登录", "订单", "发票", "账户")
-        shared = any(topic in left and topic in right for topic in shared_topics)
-        return shared and ((left_positive and right_negative) or (right_positive and left_negative))
 
-    @staticmethod
-    def _numeric_conflict(left: str, right: str) -> bool:
+        def stance(sentence: str):
+            is_positive = any(term in sentence for term in positive) and not any(term in sentence for term in negative)
+            is_negative = any(term in sentence for term in negative)
+            return is_positive, is_negative
+
+        for left_sentence in cls._split_sentences(left):
+            left_topics = [topic for topic in shared_topics if topic in left_sentence]
+            left_positive, left_negative = stance(left_sentence)
+            if not left_topics or not (left_positive or left_negative):
+                continue
+            for right_sentence in cls._split_sentences(right):
+                if not any(topic in right_sentence for topic in left_topics):
+                    continue
+                right_positive, right_negative = stance(right_sentence)
+                if (left_positive and right_negative) or (left_negative and right_positive):
+                    return True
+        return False
+
+    @classmethod
+    def _numeric_conflict(cls, left: str, right: str) -> bool:
         topics = ("退款", "到账", "有效期", "保修", "金额", "费用", "小时", "天")
-        shared = any(topic in left and topic in right for topic in topics)
-        if not shared:
-            return False
-        left_numbers = set(re.findall(r"\d+(?:\.\d+)?", left))
-        right_numbers = set(re.findall(r"\d+(?:\.\d+)?", right))
-        return bool(left_numbers and right_numbers and left_numbers != right_numbers)
+        for left_sentence in cls._split_sentences(left):
+            left_topics = [topic for topic in topics if topic in left_sentence]
+            left_numbers = set(re.findall(r"\d+(?:\.\d+)?", left_sentence))
+            if not left_topics or not left_numbers:
+                continue
+            for right_sentence in cls._split_sentences(right):
+                if not any(topic in right_sentence for topic in left_topics):
+                    continue
+                right_numbers = set(re.findall(r"\d+(?:\.\d+)?", right_sentence))
+                if right_numbers and right_numbers != left_numbers:
+                    return True
+        return False

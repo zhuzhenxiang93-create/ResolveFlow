@@ -141,14 +141,11 @@ class MCPToolManager:
         self._tools: Dict[str, Tool] = {}
         self._cache: Dict[str, tuple] = {}   # key → (result, expire_at, reranked, degradations)
 
-    # ── 注册 / 注销 ───────────────────────────────────────────────────────────
+    # ── 注册 ──────────────────────────────────────────────────────────────────
 
     def register(self, tool: Tool) -> None:
         self._tools[tool.name] = tool
         logger.info(f"注册工具: {tool.name}")
-
-    def unregister(self, name: str) -> None:
-        self._tools.pop(name, None)
 
     # ── 核心调用 ──────────────────────────────────────────────────────────────
 
@@ -291,20 +288,6 @@ class MCPToolManager:
 
     # ── 查询改写（解决召回不全）────────────────────────────────────────────────
 
-    async def rewrite_query(self, query: str, n: int = 3) -> List[str]:
-        """
-        用 LLM 将原始查询改写为 n 个不同角度的子查询。
-
-        目的：单一查询往往只能召回某一角度的文档，
-        多角度子查询并行检索后合并，显著提升召回率。
-
-        示例：
-          原始: "退款流程"
-          改写: ["如何申请退款", "退款需要多少天", "退款政策是什么"]
-        """
-        queries, _ = await self._rewrite_query_with_status(query, n=n)
-        return queries
-
     async def _rewrite_query_with_status(self, query: str, n: int = 3) -> Tuple[List[str], bool]:
         """Return rewritten queries and whether the LLM rewrite succeeded."""
         prompt = f"""将以下用户查询改写为 {n} 个不同角度的搜索子查询，用于检索知识库。
@@ -334,11 +317,16 @@ class MCPToolManager:
         query: str,
         top_k: int = 5,
         context: Optional[Dict[str, Any]] = None,
+        extra_params: Optional[Dict[str, Any]] = None,
     ) -> ToolResult:
         """
         完整的检索优化链路：查询改写 → 并行召回 → 去重 → 重排 → Top-K
 
         这是解决"检索不全、召回不好"的完整方案。
+
+        ``extra_params``（如 ``{"allowed_document_ids": [...]}``）会合并进每个
+        改写子查询的调用参数，让范围限制在查询改写扇出之后依然对每一路召回生效，
+        而不是等全量结果出来后再事后过滤丢弃。
         """
         # 1. 查询改写：生成多角度子查询
         sub_queries, rewrite_succeeded = await self._rewrite_query_with_status(query, n=3)
@@ -347,8 +335,9 @@ class MCPToolManager:
 
         # 2. 并行召回：所有子查询同时检索
         recall_k = max(top_k, 5)
+        call_params = {"top_k": recall_k, **(extra_params or {})}
         tasks = [
-            self.call(tool_name, {"query": q, "top_k": recall_k}, context, use_cache=True)
+            self.call(tool_name, {"query": q, **call_params}, context, use_cache=True)
             for q in sub_queries
         ]
         results = await asyncio.gather(*tasks, return_exceptions=True)

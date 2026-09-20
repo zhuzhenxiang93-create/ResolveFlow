@@ -1,0 +1,133 @@
+{
+  "checked_at": "2026-09-09T02:08:20.817362+00:00",
+  "sources": [
+    {
+      "repository": "langchain-ai/langgraph",
+      "source_path": "libs/langgraph/langgraph/types.py",
+      "license": {
+        "key": "mit",
+        "name": "MIT License",
+        "spdx_id": "MIT",
+        "url": "https://api.github.com/licenses/mit",
+        "node_id": "MDc6TGljZW5zZTEz"
+      },
+      "archived": false,
+      "pushed_at": "2026-09-08T23:55:29Z",
+      "commit": "0199b519e1f98bd9a108b91fc5ea3a489a728d9f",
+      "release": {
+        "tag_name": "sdk==0.4.4",
+        "published_at": "2026-08-27T21:25:36Z",
+        "html_url": "https://github.com/langchain-ai/langgraph/releases/tag/sdk%3D%3D0.4.4"
+      },
+      "source_url": "https://raw.githubusercontent.com/langchain-ai/langgraph/0199b519e1f98bd9a108b91fc5ea3a489a728d9f/libs/langgraph/langgraph/types.py",
+      "sha256": "7204b467ed7e724ec16bbd2e3e7fac1c698742b12dda27cf2086f744128b1844",
+      "inspection_path": "/tmp/resolveflow-research/langchain-ai_langgraph"
+    },
+    {
+      "repository": "openai/openai-agents-python",
+      "source_path": "examples/agent_patterns/human_in_the_loop.py",
+      "license": {
+        "key": "mit",
+        "name": "MIT License",
+        "spdx_id": "MIT",
+        "url": "https://api.github.com/licenses/mit",
+        "node_id": "MDc6TGljZW5zZTEz"
+      },
+      "archived": false,
+      "pushed_at": "2026-09-09T01:34:39Z",
+      "commit": "e3a03edf186b9a2513d20dc79e6c585d3433272a",
+      "release": {
+        "tag_name": "v0.22.1",
+        "published_at": "2026-09-08T09:18:00Z",
+        "html_url": "https://github.com/openai/openai-agents-python/releases/tag/v0.22.1"
+      },
+      "source_url": "https://raw.githubusercontent.com/openai/openai-agents-python/e3a03edf186b9a2513d20dc79e6c585d3433272a/examples/agent_patterns/human_in_the_loop.py",
+      "sha256": "6ac502e8895fd581a529a8a588bbab8bef84cac79477b920968360a817323ae6",
+      "inspection_path": "/tmp/resolveflow-research/openai_openai-agents-python"
+    },
+    {
+      "repository": "microsoft/autogen",
+      "source_path": "python/packages/autogen-agentchat/src/autogen_agentchat/teams/_group_chat/_base_group_chat.py",
+      "license": {
+        "key": "cc-by-4.0",
+        "name": "Creative Commons Attribution 4.0 International",
+        "spdx_id": "CC-BY-4.0",
+        "url": "https://api.github.com/licenses/cc-by-4.0",
+        "node_id": "MDc6TGljZW5zZTI1"
+      },
+      "archived": false,
+      "pushed_at": "2026-04-15T11:59:09Z",
+      "commit": "027ecf0a379bcc1d09956d46d12d44a3ad9cee14",
+      "release": {
+        "tag_name": "python-v0.7.5",
+        "published_at": "2025-09-30T06:18:26Z",
+        "html_url": "https://github.com/microsoft/autogen/releases/tag/python-v0.7.5"
+      },
+      "source_url": "https://raw.githubusercontent.com/microsoft/autogen/027ecf0a379bcc1d09956d46d12d44a3ad9cee14/python/packages/autogen-agentchat/src/autogen_agentchat/teams/_group_chat/_base_group_chat.py",
+      "sha256": "3a50976a393dbe0aaa27b3fa72517a4b89c70437c237865463a2b87c38ce8134",
+      "inspection_path": "/tmp/resolveflow-research/microsoft_autogen"
+    },
+    {
+      "repository": "langfuse/langfuse-python",
+      "source_path": "langfuse/_client/client.py",
+      "license": {
+        "key": "mit",
+        "name": "MIT License",
+        "spdx_id": "MIT",
+        "url": "https://api.github.com/licenses/mit",
+        "node_id": "MDc6TGljZW5zZTEz"
+      },
+      "archived": false,
+      "pushed_at": "2026-09-08T15:38:39Z",
+      "commit": "d839e642534d2b07eb9ab6d7a691ec0aec397a86",
+      "release": {
+        "tag_name": "v4.15.1",
+        "published_at": "2026-08-28T07:55:19Z",
+        "html_url": "https://github.com/langfuse/langfuse-python/releases/tag/v4.15.1"
+      },
+      "source_url": "https://raw.githubusercontent.com/langfuse/langfuse-python/d839e642534d2b07eb9ab6d7a691ec0aec397a86/langfuse/_client/client.py",
+      "sha256": "f70853deb8ec1b9dc1895c6f5e83e02240d67e4b6d57ee598b3c5d33f6b59e58",
+      "inspection_path": "/tmp/resolveflow-research/langfuse_langfuse-python"
+    },
+    {
+      "repository": "sierra-research/tau2-bench",
+      "source_path": "src/tau2/evaluator/evaluator.py",
+      "license": {
+        "key": "mit",
+        "name": "MIT License",
+        "spdx_id": "MIT",
+        "url": "https://api.github.com/licenses/mit",
+        "node_id": "MDc6TGljZW5zZTEz"
+      },
+      "archived": false,
+      "pushed_at": "2026-09-07T23:46:37Z",
+      "commit": "672227c6b6676edc20d57ea53b7000262aae77b9",
+      "release": {
+        "tag_name": "v1.0.1",
+        "published_at": "2026-07-22T21:22:42Z",
+        "html_url": "https://github.com/sierra-research/tau2-bench/releases/tag/v1.0.1"
+      },
+      "source_url": "https://raw.githubusercontent.com/sierra-research/tau2-bench/672227c6b6676edc20d57ea53b7000262aae77b9/src/tau2/evaluator/evaluator.py",
+      "sha256": "204d95a82812402f2fee989250392d3c66de702a8bcc20258c7e2a8153a1ea8d",
+      "inspection_path": "/tmp/resolveflow-research/sierra-research_tau2-bench"
+    },
+    {
+      "repository": "OpenBMB/ToolBench",
+      "source_path": "toolbench/inference/Downstream_tasks/rapidapi.py",
+      "license": {
+        "key": "apache-2.0",
+        "name": "Apache License 2.0",
+        "spdx_id": "Apache-2.0",
+        "url": "https://api.github.com/licenses/apache-2.0",
+        "node_id": "MDc6TGljZW5zZTI="
+      },
+      "archived": false,
+      "pushed_at": "2025-05-21T15:46:59Z",
+      "commit": "d56fdd89faf8c91fa135090b212bb9057ee5cfc2",
+      "release_unavailable": "HTTP Error 404: Not Found",
+      "source_url": "https://raw.githubusercontent.com/OpenBMB/ToolBench/d56fdd89faf8c91fa135090b212bb9057ee5cfc2/toolbench/inference/Downstream_tasks/rapidapi.py",
+      "sha256": "5d7484297105e2c8edf7ecaedb6f771cc1f5e1f3e64397aadefc3e9815d648c5",
+      "inspection_path": "/tmp/resolveflow-research/OpenBMB_ToolBench"
+    }
+  ]
+}

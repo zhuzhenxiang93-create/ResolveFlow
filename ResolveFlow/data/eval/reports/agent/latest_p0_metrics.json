@@ -1,0 +1,74 @@
+{
+  "campaign": "p0-20260911",
+  "latest_full_run": "23fd65a9-7f56-4711-a658-ab0a1f09a6c1",
+  "dataset_sha256": "e451f3b678d23d489ce8938fe0a9a5dfa90584204ef0771ef6a547fc31977e1d",
+  "code_sha256": "cd198ade2a96c6c5132bb10f857ba4b2c127756d49161ff0d2242d3a1f3df04d",
+  "model": "qwen-plus",
+  "sample_count": 11,
+  "expected_outcomes": {
+    "numerator": 11,
+    "denominator": 11
+  },
+  "raw_model_semantics": {
+    "numerator": 6,
+    "denominator": 8
+  },
+  "guarded_semantic_cases": 2,
+  "journey_expected_outcomes": {
+    "numerator": 3,
+    "denominator": 3
+  },
+  "business_completed": {
+    "numerator": 2,
+    "denominator": 3
+  },
+  "unauthorized_operations": 0,
+  "duplicate_operations": 0,
+  "campaign_calls": 49,
+  "campaign_input_tokens": 76607,
+  "campaign_output_tokens": 2195,
+  "cost_usd": null,
+  "test_latency_mean_ms": 3564.162848545455,
+  "test_latency_p95_ms": 14171.134334000002,
+  "runs": [
+    {
+      "id": "72edb5b4-91cb-4972-a86a-40d3ae1e85ac",
+      "cases": 11,
+      "outcomes": {
+        "numerator": 7,
+        "denominator": 11
+      }
+    },
+    {
+      "id": "80ad0678-d4d9-4e9d-9780-732bce75e1ec",
+      "cases": 4,
+      "outcomes": {
+        "numerator": 2,
+        "denominator": 4
+      }
+    },
+    {
+      "id": "23fd65a9-7f56-4711-a658-ab0a1f09a6c1",
+      "cases": 11,
+      "outcomes": {
+        "numerator": 11,
+        "denominator": 11
+      }
+    },
+    {
+      "id": "9584bf09-0939-4829-af38-3ba059c063f3",
+      "cases": 1,
+      "outcomes": {
+        "numerator": 1,
+        "denominator": 1
+      }
+    }
+  ],
+  "limitations": [
+    "Synthetic internal regression, not unseen model accuracy",
+    "8 semantic probes do not score final answer quality",
+    "3 simulated journeys with automated human-role actions",
+    "No changes to user's original task",
+    "Offline natural-language rules are not equivalent to live semantics"
+  ]
+}

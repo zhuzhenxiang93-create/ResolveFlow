@@ -1,0 +1,76 @@
+{
+  "timestamp": "2026-09-11T05:06:45.024220+00:00",
+  "mode": "real_llm_internal_acceptance",
+  "model": "qwen-plus",
+  "source": "three developer-authored synthetic read-only requests",
+  "sample_count": 3,
+  "passed": 2,
+  "actual_calls": 4,
+  "max_calls": 6,
+  "cost_usd": null,
+  "scope": "Not a benchmark or production validation; simulated business state",
+  "cases": [
+    {
+      "message": "怎么退订？关闭自动续费后会员权益会立即消失吗？",
+      "passed": false,
+      "status": "awaiting_clarification",
+      "goals": {
+        "renewal": "cancel",
+        "entitlement": "read"
+      },
+      "response": "请提供订单号。",
+      "latency_ms": 3914,
+      "usage": [
+        {
+          "input_tokens": 836,
+          "output_tokens": 44
+        }
+      ],
+      "model_calls": 1,
+      "fallback_count": 0,
+      "actions": []
+    },
+    {
+      "message": "订阅退款需要什么条件，多久能到账？",
+      "passed": true,
+      "status": "completed",
+      "goals": {
+        "policy": "read"
+      },
+      "response": "内部模拟规则：自动执行链路仅受理已核实的重复订阅扣款，每次申请退一笔。用户确认申请后，仍需独立人工审批；申请提交不等于已退款。非重复扣款的退款请求须人工评估，本系统不能保证符合条件。当前没有连接支付渠道，不承诺到账时间；数据库退款计数变化仅表示模拟操作完成。 [subscription-refund-v1]",
+      "latency_ms": 1285,
+      "usage": [
+        {
+          "input_tokens": 830,
+          "output_tokens": 30
+        }
+      ],
+      "model_calls": 1,
+      "fallback_count": 0,
+      "actions": []
+    },
+    {
+      "message": "只查询订单 ff05ddba-5735-433e-a13c-5170f9883925 的自动续费状态，不要进行修改。",
+      "passed": true,
+      "status": "completed",
+      "goals": {
+        "renewal": "read"
+      },
+      "response": "自动续费：已开启。模拟任务完成。",
+      "latency_ms": 3923,
+      "usage": [
+        {
+          "input_tokens": 897,
+          "output_tokens": 62
+        },
+        {
+          "input_tokens": 850,
+          "output_tokens": 53
+        }
+      ],
+      "model_calls": 2,
+      "fallback_count": 0,
+      "actions": []
+    }
+  ]
+}

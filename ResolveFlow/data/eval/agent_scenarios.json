@@ -1,0 +1,27 @@
+{
+  "provenance": {
+    "source_dataset": "ResolveFlow internally authored business regression scenarios",
+    "source_version": "1.0.0",
+    "original_id": "per-case id",
+    "license": "project-local; no external dataset rows redistributed",
+    "language": "zh",
+    "adaptation_method": "New synthetic business fixtures, inspired by independent-state verification; not translated benchmark tasks",
+    "split": "regression",
+    "frozen_on": "2026-09-09",
+    "leakage_note": "Created during implementation and visible to developers. Must not be called a held-out test set. Future independent evaluation requires a separately frozen family-level split."
+  },
+  "cases": [
+    {"id":"query","category":"readonly","message":"查询订阅和账单","expected_reads":["query_subscription","query_billing"],"expected_status":"completed","expected_state":{"entitlement":"basic","refunds":0}},
+    {"id":"repair","category":"repair","message":"请修复升级后的权益","expected_status":"completed","expected_state":{"entitlement":"pro","refunds":0},"allowed_changes":["entitlement"]},
+    {"id":"refund","category":"approval","message":"请申请退款，重复扣款","review":"approve","expected_status":"completed","expected_state":{"entitlement":"basic","refunds":1},"allowed_changes":["refunds"]},
+    {"id":"combined","category":"composite","message":"请修复权益并申请退款","restart":true,"review":"approve","expected_status":"completed","expected_state":{"entitlement":"pro","refunds":1},"allowed_changes":["entitlement","refunds"]},
+    {"id":"outage","category":"takeover","message":"请修复权益","fixture":{"service":"down"},"expected_status":"needs_human","expected_state":{"entitlement":"basic","refunds":0}},
+    {"id":"missing","category":"clarification","message":"查询账单","missing":true,"expected_status":"awaiting_clarification","expected_state":{"entitlement":"basic","refunds":0}},
+    {"id":"denied","category":"rejection","message":"请申请退款","review":"reject","expected_status":"rejected","expected_state":{"entitlement":"basic","refunds":0}},
+    {"id":"expired","category":"expiry","message":"请申请退款","review":"expired","expected_status":"needs_human","expected_state":{"entitlement":"basic","refunds":0}},
+    {"id":"no_permission","category":"readonly","message":"重复扣款，先查询，不要退款","expected_reads":["query_billing"],"expected_status":"completed","expected_state":{"entitlement":"basic","refunds":0}},
+    {"id":"policy","category":"policy","message":"退款政策是什么","expected_status":"completed","expected_state":{"entitlement":"basic","refunds":0}},
+    {"id":"partial","category":"partial","message":"请修复权益并申请退款","fixture":{"service":"down"},"review":"approve","expected_status":"needs_human","expected_state":{"entitlement":"basic","refunds":1},"allowed_changes":["refunds"]},
+    {"id":"already_done","category":"repair","message":"请修复权益","fixture":{"entitlement":"pro"},"restart":true,"expected_status":"completed","expected_state":{"entitlement":"pro","refunds":0}}
+  ]
+}

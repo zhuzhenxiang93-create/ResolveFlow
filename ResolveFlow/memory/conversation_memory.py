@@ -15,11 +15,12 @@ import hashlib
 import asyncio
 import json
 import logging
+import re
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 import chromadb
 import redis.asyncio as redis
@@ -41,6 +42,24 @@ class Message:
     content:    str
     timestamp:  datetime = field(default_factory=datetime.now)
     metadata:   Dict[str, Any] = field(default_factory=dict)
+
+
+# 轻量正则先筛：只看最新一条用户发言像不像在表达长期偏好/习惯，命中就值得
+# 立刻触发一次画像提炼，不用等凑够 PROFILE_UPDATE_EVERY 轮。模式沿用
+# LocalConversationMemory.update_profile() 里已经验证过的启发式规则。
+_PREFERENCE_HINT_RE = re.compile(
+    r"请.*(简短|简洁)|我喜欢.*简洁|请.*(详细|具体).*解释|我喜欢.*详细"
+    r"|以后.*(请|帮我)|记住我|我通常|我经常|我更喜欢"
+)
+
+
+def _looks_like_preference_statement(messages: List["Message"]) -> bool:
+    """只检查最近一条用户消息（这一轮新增的信息），不是历史所有消息。"""
+    for m in reversed(messages):
+        if m.role != MsgRole.USER:
+            continue
+        return bool(_PREFERENCE_HINT_RE.search(m.content))
+    return False
 
 
 @dataclass
@@ -81,7 +100,11 @@ class MemoryManager:
 
     WORKING_MAX   = 20    # 工作记忆最大条数，超过则触发压缩
     COMPRESS_AT   = 15    # 达到此条数时压缩，保留摘要 + 最近 5 条
+    SUMMARY_MAX_CHARS = 800  # 会话摘要上限；每次压缩用 LLM 把新旧摘要合并压回这个长度，
+                             # 避免长会话反复压缩后摘要文本无限增长（旧实现是纯字符串拼接）
     HISTORY_TOP_K = 5     # 情景记忆检索返回条数
+    PROFILE_UPDATE_EVERY = 5  # 画像提炼节流：正常每 N 轮才真正调一次 LLM，
+                              # 命中偏好正则或刚完成一次压缩时提前触发（见 update_profile）
 
     def __init__(
         self,
@@ -121,6 +144,69 @@ class MemoryManager:
         # 用户画像：存储提炼出的偏好和实体
         self._profile  = chroma.get_or_create_collection("user_profile")
 
+        # ── 延迟优化相关状态 ──────────────────────────────────────────────
+        # 每个 (user_id, conv_id) 一把锁，防止同一会话被并发触发两次压缩
+        # （两个几乎同时到达阈值的请求都去跑 _compress，互相覆盖 Redis 状态）。
+        self._compress_locks: Dict[str, asyncio.Lock] = {}
+        # 压缩后台任务完成时，把对应 key 记进来，提示下一次 update_profile()
+        # "刚发生过一次信息量较大的压缩，顺带做一次画像提炼"。
+        self._profile_due: Set[str] = set()
+        # 画像提炼节流计数器：每个会话独立计数，达到 PROFILE_UPDATE_EVERY 才
+        # 真正调用一次 LLM。
+        self._profile_turn_counts: Dict[str, int] = {}
+        # 持有后台任务的引用，防止 asyncio 在任务完成前把它垃圾回收。
+        self._background_tasks: Set["asyncio.Task"] = set()
+
+    # ── 后台任务调度 ──────────────────────────────────────────────────────────
+
+    def _spawn(self, coro, *, label: str) -> None:
+        """把一个协程调度为后台任务，不阻塞调用方等待完成。
+
+        协程内部的业务异常（LLM 调用失败等）应该在协程自己的 try/except 里
+        降级处理——这里的 done-callback 只兜底"协程本身抛出了没被处理的异常"
+        这种真正意外的情况，避免它安静地消失在事件循环里查不到。
+        """
+        task = asyncio.ensure_future(coro)
+        self._background_tasks.add(task)
+
+        def _on_done(t: "asyncio.Task") -> None:
+            self._background_tasks.discard(t)
+            if t.cancelled():
+                return
+            ex = t.exception()
+            if ex is not None:
+                logger.error(f"后台任务 {label} 异常退出: {ex}")
+
+        task.add_done_callback(_on_done)
+
+    def _get_compress_lock(self, key: str) -> asyncio.Lock:
+        lock = self._compress_locks.get(key)
+        if lock is None:
+            lock = asyncio.Lock()
+            self._compress_locks[key] = lock
+        return lock
+
+    def _schedule_compress(self, user_id: str, conv_id: str) -> bool:
+        """把压缩调度为后台任务；如果这个会话已经有一次压缩在跑，直接跳过
+        （不排队、不重复触发），返回是否本次调用新调度了一次压缩。"""
+        key = f"{user_id}:{conv_id}"
+        lock = self._get_compress_lock(key)
+        if lock.locked():
+            logger.info(f"压缩已在进行中，跳过重复调度: {key}")
+            return False
+
+        async def _run() -> None:
+            async with lock:
+                try:
+                    await self._compress(user_id, conv_id)
+                except Exception as ex:
+                    logger.warning(f"后台压缩失败 {key}: {ex}")
+                else:
+                    self._profile_due.add(key)
+
+        self._spawn(_run(), label=f"compress:{key}")
+        return True
+
     # ── 写入 ──────────────────────────────────────────────────────────────────
 
     async def add_message(
@@ -130,8 +216,16 @@ class MemoryManager:
         role:    MsgRole,
         content: str,
         metadata: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        """将一条消息写入工作记忆，超阈值时自动压缩。"""
+    ) -> bool:
+        """将一条消息写入工作记忆；达到压缩阈值时把压缩调度为后台任务，
+        不在这次调用里 await 到底（压缩本身要跑 1 次 LLM，同步等待会把这次
+        请求的响应时间拖长 1~2 秒，参见 wiki 里记的延迟分析）。
+
+        返回值：这次调用是否新触发了一次压缩调度（供 update_profile 判断
+        "刚发生过压缩，值得顺带更新画像"——不过压缩是后台跑的，真正完成时间
+        可能晚于这次 add_message 返回，所以这个返回值只是一个即时信号，
+        精确的联动靠 _profile_due 在压缩真正完成后设置）。
+        """
         user_id = self._safe_text(user_id)
         conv_id = self._safe_text(conv_id)
         clean_metadata = {
@@ -150,21 +244,47 @@ class MemoryManager:
         }))
         await self._redis.expire(key, 86400)  # 24h TTL
 
-        # 超过压缩阈值时触发压缩
+        # 超过压缩阈值时，把压缩调度为后台任务，不阻塞这次写入返回
         if await self._redis.llen(key) >= self.COMPRESS_AT:
-            await self._compress(user_id, conv_id)
+            return self._schedule_compress(user_id, conv_id)
+        return False
 
     async def update_profile(self, user_id: str, conv_id: str) -> None:
         """
         从当前工作记忆中提炼用户偏好，更新用户画像。
-        用 LLM 提炼偏好，然后存入 ChromaDB（ChromaDB 内置 embedding，不依赖外部 API）。
+
+        这一步本身是一次 LLM 调用；如果每轮对话都做一次，等于给每条消息
+        都额外加一次模型延迟，但用户画像通常变化很慢，没必要这么频繁。
+        这里改成节流触发，命中以下三个条件之一才真正调用 LLM，其余轮次
+        只做一次计数器自增（近似零开销），真正的 LLM 提炼调度为后台任务，
+        不阻塞这次请求的响应：
+          1. 距上次真正提炼已经过了 PROFILE_UPDATE_EVERY 轮（兜底，保证画像
+             不会因为一直没命中另外两个条件而永远不更新）
+          2. 这个会话刚完成一次工作记忆压缩（说明这段对话信息量已经足够大）
+          3. 最新一条用户发言用轻量正则命中了"像是在表达长期偏好/习惯"
         """
         user_id = self._safe_text(user_id)
         conv_id = self._safe_text(conv_id)
+        key = f"{user_id}:{conv_id}"
+        self._profile_turn_counts[key] = self._profile_turn_counts.get(key, 0) + 1
+
         messages = await self._get_working_memory(user_id, conv_id)
         if not messages:
             return
 
+        due_from_compression = key in self._profile_due
+        due_from_cadence = self._profile_turn_counts[key] >= self.PROFILE_UPDATE_EVERY
+        due_from_heuristic = _looks_like_preference_statement(messages)
+        if not (due_from_compression or due_from_cadence or due_from_heuristic):
+            return
+
+        self._profile_turn_counts[key] = 0
+        self._profile_due.discard(key)
+        self._spawn(self._run_profile_update(user_id, conv_id, messages), label=f"profile:{key}")
+
+    async def _run_profile_update(self, user_id: str, conv_id: str, messages: List[Message]) -> None:
+        """实际调用 LLM 提炼画像并写入 ChromaDB —— 拆成独立方法是为了能被
+        update_profile() 作为后台任务调度，不阻塞调用方等待这次 LLM 调用完成。"""
         text = self._safe_text("\n".join(f"{m.role.value}: {m.content}" for m in messages[-10:]))
         prompt = f"""从以下对话中提炼用户偏好和关键实体，返回 JSON。
 对话:
@@ -237,10 +357,14 @@ class MemoryManager:
     async def _compress(self, user_id: str, conv_id: str) -> None:
         """
         工作记忆压缩：
-          1. 用 LLM 对旧消息生成摘要
+          1. 一次 LLM 调用，把"已有摘要 + 待压缩的旧消息"直接合并成新的完整
+             摘要——取代旧版"先总结新消息、再和旧摘要合并"两次串行 LLM 调用
           2. 摘要存 Redis（覆盖旧摘要）
           3. 旧消息存入情景记忆（ChromaDB）供跨会话检索
           4. 工作记忆只保留最近 5 条
+
+        这个方法现在总是被 _schedule_compress() 作为后台任务调度执行，
+        不会阻塞调用 add_message() 的那次请求。
         """
         messages = await self._get_working_memory(user_id, conv_id)
         if len(messages) < self.COMPRESS_AT:
@@ -248,27 +372,15 @@ class MemoryManager:
 
         to_compress = messages[:-5]   # 保留最近 5 条
         keep        = messages[-5:]
-
-        # LLM 摘要
         text = self._safe_text("\n".join(f"{m.role.value}: {m.content}" for m in to_compress))
-        prompt = self._safe_text(f"用 2-3 句话总结以下对话的关键信息：\n{text}")
-        try:
-            raw = await self._client.create(
-                max_tokens=256, temperature=0.0,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            summary = self._safe_text(raw).strip()
-        except Exception:
-            summary = f"对话包含 {len(to_compress)} 条消息（摘要生成失败）"
 
-        # 存摘要到 Redis
         skey = self._summary_key(user_id, conv_id)
-        old_summary = await self._redis.get(skey) or ""
-        new_summary = self._safe_text(f"{old_summary}\n{summary}").strip()
+        old_summary = self._safe_text(await self._redis.get(skey) or "")
+        new_summary = await self._summarize_single_pass(old_summary, text)
         await self._redis.setex(skey, 86400, new_summary)
 
-        # 旧消息存入情景记忆
-        await self._store_episodic(user_id, conv_id, text, summary)
+        # 旧消息存入情景记忆（存的是新摘要，检索时能看到最新提炼结果）
+        await self._store_episodic(user_id, conv_id, text, new_summary)
 
         # 重置工作记忆为最近 5 条
         key = self._wm_key(user_id, conv_id)
@@ -279,7 +391,46 @@ class MemoryManager:
                 "ts": m.timestamp.isoformat(), "metadata": m.metadata,
             }))
         await self._redis.expire(key, 86400)
-        logger.info(f"工作记忆压缩完成: {user_id}/{conv_id}，摘要 {len(summary)} 字")
+        logger.info(f"工作记忆压缩完成: {user_id}/{conv_id}，摘要 {len(new_summary)} 字")
+
+    async def _summarize_single_pass(self, old_summary: str, new_text: str) -> str:
+        """一次 LLM 调用，直接把"已有摘要"和"这次新增的原始对话"合并成一段
+        新的完整摘要——取代旧版分两步（先总结新消息成 new_summary，再把
+        new_summary 和 old_summary 合并）各调一次模型的做法：语义上是同一件
+        事，没必要串行调两次模型，还多引入一次信息压缩损失。
+
+        LLM 调用失败时退化为截断拼接，保留已有摘要内容而不是丢弃。
+        """
+        old_summary = self._safe_text(old_summary).strip()
+        new_text = self._safe_text(new_text).strip()
+
+        if old_summary:
+            prompt = f"""你是对话摘要器。这是已有的会话摘要：
+{old_summary}
+
+这是新增的对话内容：
+{new_text}
+
+请把两者合并为一段新的、完整的会话摘要，不超过 {self.SUMMARY_MAX_CHARS} 个中文字符。
+保留：用户偏好、关键实体、待办事项、约束条件、未解决问题。
+只输出摘要正文，不要编号，不要解释。"""
+        else:
+            prompt = f"用 2-3 句话总结以下对话的关键信息，保留用户偏好、关键实体、未解决问题：\n{new_text}"
+        prompt = self._safe_text(prompt)
+
+        try:
+            raw = await self._client.create(
+                max_tokens=256, temperature=0.0,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            summary = self._safe_text(raw).strip()
+            if summary:
+                return summary[: self.SUMMARY_MAX_CHARS]
+        except Exception as ex:
+            logger.warning(f"生成会话摘要失败，回退为截断拼接: {ex}")
+
+        fallback = f"{old_summary}\n对话包含新增内容（摘要生成失败）" if old_summary else "对话包含新增内容（摘要生成失败）"
+        return self._safe_text(fallback).strip()[-self.SUMMARY_MAX_CHARS:]
 
     # ── 内部辅助 ──────────────────────────────────────────────────────────────
 
@@ -346,7 +497,11 @@ class MemoryManager:
         return {}
 
     async def close(self) -> None:
-        """关闭异步 Redis 连接。"""
+        """关闭异步 Redis 连接前，先等还在跑的后台压缩/画像任务收尾，
+        避免它们在连接关掉之后才执行、访问一个已经关闭的 Redis 客户端。"""
+        pending = [t for t in self._background_tasks if not t.done()]
+        if pending:
+            await asyncio.gather(*pending, return_exceptions=True)
         await self._redis.aclose()
 
     @staticmethod

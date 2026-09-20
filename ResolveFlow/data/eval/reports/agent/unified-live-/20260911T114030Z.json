@@ -1,0 +1,173 @@
+{
+  "timestamp": "2026-09-11T11:40:30.643859+00:00",
+  "mode": "real_llm_local_unified_smoke",
+  "model": "qwen-plus",
+  "calls": 9,
+  "limit": 9,
+  "checks": {
+    "initial_policy": true,
+    "reference_resolved": true,
+    "awaits_confirmation": true,
+    "policy_while_pending": false,
+    "pending_preserved": true,
+    "no_business_change": true
+  },
+  "passed": false,
+  "turns": [
+    {
+      "message": "怎么退订？关闭后权益会马上消失吗？",
+      "route": "knowledge",
+      "status": "answered",
+      "response": "ResolveFlow 内部模拟产品：Basic 提供基础功能，Pro 提供高级功能；当前原型未定义价格、额度或具体功能清单，不应编造。订阅套餐与已生效权益是两个独立状态，升级后不一致时可查询并诊断，用户确认后同步权益。 [subscription-plans-v1]\n内部模拟规则：关闭自动续费只停止后续续订，不立即移除当前权益，也不自动退款。请明确提出关闭自动续费并提供订单号；系统查询当前状态后，须由用户确认具体操作。当前原型没有真实扣款调度器，也未提供实际到期日期；不能承诺具体到期日。 [subscription-renewal-v1]",
+      "intent": "account",
+      "knowledge_used": true,
+      "sources": [
+        {
+          "document_id": "subscription-plans-v1",
+          "title": "套餐与权益"
+        },
+        {
+          "document_id": "subscription-renewal-v1",
+          "title": "自动续费与退订"
+        }
+      ],
+      "interpretation": {
+        "mode": "native_llm",
+        "calls": 1,
+        "usage": [
+          {
+            "input_tokens": 1046,
+            "output_tokens": 44
+          }
+        ],
+        "errors": [],
+        "server_guard": "How-to consultation without explicit action request cannot become account execution",
+        "original_proposal": {
+          "goals": {
+            "entitlement": "read",
+            "renewal": "cancel"
+          },
+          "order_reference": null,
+          "missing_information": [],
+          "policy_topics": [
+            "renewal",
+            "plans"
+          ],
+          "unsupported_requests": []
+        }
+      },
+      "degradations": []
+    },
+    {
+      "message": "那就帮我关掉。",
+      "route": "action",
+      "status": "awaiting_clarification",
+      "response": "请提供订单号。",
+      "intent": "request",
+      "knowledge_used": false,
+      "sources": [],
+      "interpretation": {
+        "mode": "native_llm",
+        "calls": 1,
+        "usage": [
+          {
+            "input_tokens": 1246,
+            "output_tokens": 33
+          }
+        ],
+        "errors": [],
+        "proposal": {
+          "goals": {
+            "renewal": "cancel"
+          },
+          "order_reference": null,
+          "missing_information": [
+            "order_id"
+          ],
+          "policy_topics": [],
+          "unsupported_requests": []
+        }
+      },
+      "degradations": []
+    },
+    {
+      "message": "f6e5e3d4-781d-4b74-98df-5b6af769df62",
+      "route": "action",
+      "status": "awaiting_confirmation",
+      "response": "请确认是否为订单 f6e5e3d4-781d-4b74-98df-5b6af769df62 关闭自动续费（保留当前权益，不自动退款）。此确认不包含其他操作。",
+      "intent": "request",
+      "knowledge_used": false,
+      "sources": [],
+      "interpretation": {
+        "mode": "native_llm",
+        "calls": 1,
+        "usage": [
+          {
+            "input_tokens": 1339,
+            "output_tokens": 33
+          }
+        ],
+        "errors": [],
+        "proposal": {
+          "goals": {
+            "renewal": "cancel"
+          },
+          "order_reference": null,
+          "missing_information": [
+            "order_id"
+          ],
+          "policy_topics": [],
+          "unsupported_requests": []
+        }
+      },
+      "degradations": []
+    },
+    {
+      "message": "顺便解释一下退款政策，我现在不申请退款。",
+      "route": "paused_task",
+      "status": "awaiting_confirmation",
+      "response": "请确认是否为订单 f6e5e3d4-781d-4b74-98df-5b6af769df62 关闭自动续费（保留当前权益，不自动退款）。此确认不包含其他操作。\n本次消息没有批准、确认或改变原任务。请使用明确的确认/审批入口；更换目标请明确修订。",
+      "intent": "refund",
+      "knowledge_used": false,
+      "sources": [],
+      "interpretation": {
+        "mode": "native_llm",
+        "calls": 1,
+        "usage": [
+          {
+            "input_tokens": 1560,
+            "output_tokens": 81
+          }
+        ],
+        "errors": []
+      },
+      "degradations": []
+    }
+  ],
+  "error": null,
+  "native_usage_only": [
+    {
+      "input_tokens": 1046,
+      "output_tokens": 44
+    },
+    {
+      "input_tokens": 1246,
+      "output_tokens": 33
+    },
+    {
+      "input_tokens": 1339,
+      "output_tokens": 33
+    },
+    {
+      "input_tokens": 1185,
+      "output_tokens": 54
+    },
+    {
+      "input_tokens": 1560,
+      "output_tokens": 81
+    }
+  ],
+  "total_tokens": null,
+  "cost_usd": null,
+  "scope": "Four synthetic turns; real model with local SQLite memory and lexical knowledge, no Redis/Chroma live validation, no business writes"
+}

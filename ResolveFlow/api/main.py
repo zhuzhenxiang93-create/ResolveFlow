@@ -11,6 +11,7 @@ import os
 import pathlib
 import sys
 import uuid
+import time
 from contextlib import asynccontextmanager
 from typing import Any, Dict, List, Optional
 
@@ -21,7 +22,7 @@ if _ROOT not in sys.path:
 
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Response, UploadFile, File
+from fastapi import Depends, FastAPI, HTTPException, Response, UploadFile, File, Header
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import BaseModel, Field
@@ -103,17 +104,6 @@ async def lifespan(app: FastAPI):
     )
     _skill_manager.load()
 
-    # Agent 编排器
-    _orchestrator = AgentOrchestrator(
-        api_key=cfg["api_key"],
-        base_url=cfg.get("base_url"),
-        model=cfg["model"],
-        skill_manager=_skill_manager,
-        provider=cfg["provider"],
-        supervisor_max_subtasks=int(os.getenv("SUPERVISOR_MAX_SUBTASKS", "3")),
-        subtask_timeout_s=float(os.getenv("SUPERVISOR_SUBTASK_TIMEOUT_SECONDS", "30")),
-    )
-
     # 记忆管理器（Redis 工作记忆 + ChromaDB 情景记忆/用户画像）
     _memory = MemoryManager(
         redis_url=os.getenv("REDIS_URL", "redis://redis:6379/0"),
@@ -156,6 +146,10 @@ async def lifespan(app: FastAPI):
             logger.warning("无法加载演示知识政策 %s: %s", policy_path.name, ex)
     if demo_documents:
         await kb.add_documents_async(demo_documents)
+    subscription_docs = json.loads((pathlib.Path(_ROOT) / "data/knowledge/subscription_service_v1.json").read_text())
+    for doc in subscription_docs:
+        doc.setdefault("source", "subscription_service_v1")
+    await kb.add_documents_async(subscription_docs)
     logger.info(f"知识库已加载: {await kb.doc_count_async()} 个文档片段")
 
     def knowledge_fallback(params: Dict[str, Any], context: Optional[Dict[str, Any]], error: str):
@@ -177,6 +171,7 @@ async def lifespan(app: FastAPI):
             "properties": {
                 "query": {"type": "string"},
                 "top_k": {"type": "integer"},
+                "allowed_document_ids": {"type": "array"},
             },
             "required": ["query"],
         },
@@ -184,6 +179,19 @@ async def lifespan(app: FastAPI):
         supports_rerank=True,
         fallback=knowledge_fallback,
     ))
+
+    # Agent 编排器（在 tool_manager 就绪之后创建，让老系统闲聊/通用链路里的
+    # Agent 也能拿到共享知识库检索工具——见 agents/chat_tools.py 的说明）
+    _orchestrator = AgentOrchestrator(
+        api_key=cfg["api_key"],
+        base_url=cfg.get("base_url"),
+        model=cfg["model"],
+        skill_manager=_skill_manager,
+        provider=cfg["provider"],
+        supervisor_max_subtasks=int(os.getenv("SUPERVISOR_MAX_SUBTASKS", "3")),
+        subtask_timeout_s=float(os.getenv("SUPERVISOR_SUBTASK_TIMEOUT_SECONDS", "30")),
+        tool_manager=_tool_manager,
+    )
 
     # 性能监控（可选启动 Prometheus）
     prom_port = int(os.getenv("PROMETHEUS_PORT", "0")) or None
@@ -209,6 +217,7 @@ async def lifespan(app: FastAPI):
         knowledge_resolver=_build_knowledge_context,
     )
 
+    _configure_conversation_service()
     logger.info("ResolveFlow 已就绪")
     yield
 
@@ -228,6 +237,9 @@ app = FastAPI(
     docs_url="/docs",
 )
 
+from api.action_routes import router as action_router
+app.include_router(action_router)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -241,10 +253,13 @@ class ChatRequest(BaseModel):
     message:     str
     user_id:     str = "anonymous"
     conv_id:     Optional[str] = None
+    task_id: Optional[str] = None
+    order_id: Optional[str] = None
 
 
 class ChatResponse(BaseModel):
     conv_id:     str
+    action_task: Optional[Dict[str, Any]] = None
     response:    str
     intent:      str
     intent_group: str = "other"
@@ -264,18 +279,59 @@ class ChatResponse(BaseModel):
     execution_trace: List[Dict[str, Any]] = Field(default_factory=list)
     synthesis_method: str = "single_agent"
     degradations: List[str] = Field(default_factory=list)
+    memory_mode: Optional[str] = None
+    sources: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+def _configure_conversation_service():
+    from api.action_routes import conversation_service
+    service = conversation_service()
+    if _memory is not None:
+        service.memory = _memory
+    if _orchestrator is not None:
+        service.recognizer = _orchestrator._intent_recognizer
+        service.answer_orchestrator = _orchestrator
+    if _tool_manager is not None:
+        async def search(query, allowed_document_ids=None):
+            extra = {"allowed_document_ids": sorted(allowed_document_ids)} if allowed_document_ids else None
+            result = await _tool_manager.search_with_rewrite("knowledge_search", query, top_k=10, extra_params=extra)
+            return result.data if result.success and isinstance(result.data, list) else []
+        service.knowledge_search = search
+    return service
+
+
+def _require_any_role(authorization: str = Header(default="")) -> str:
+    """Any authenticated subject (user/reviewer/admin) — for read-only endpoints
+    that don't need per-owner scoping but should no longer be fully open."""
+    from core.auth import AuthError, subject_with_role
+    try:
+        return subject_with_role(authorization, "user", "reviewer", "admin")
+    except AuthError as ex:
+        raise HTTPException(401, str(ex)) from ex
+
+
+def _require_admin(authorization: str = Header(default="")) -> str:
+    """Writes/ops that affect every user (knowledge base mutation, skill
+    reload, monitor internals, evaluation runs) require the admin role."""
+    from core.auth import AuthError, subject_with_role
+    try:
+        return subject_with_role(authorization, "admin")
+    except AuthError as ex:
+        raise HTTPException(403, str(ex)) from ex
 
 
 # ── 路由 ──────────────────────────────────────────────────────────────────────
 @app.get("/health")
 async def health():
+    # Deliberately open: the Docker/Compose healthcheck and Prometheus both
+    # hit this without a token, and it leaks no per-user or business data.
     if _orchestrator is None:
         raise HTTPException(503, "服务未就绪")
     return {"status": "ok", "agents": _orchestrator.get_stats()}
 
 
 @app.get("/skills", tags=["Skills"])
-async def skills_summary():
+async def skills_summary(user=Depends(_require_any_role)):
     """查看当前已加载的 Skills，便于确认热加载结果和排查解析错误。"""
     if _skill_manager is None:
         raise HTTPException(503, "Skills 未初始化")
@@ -283,7 +339,7 @@ async def skills_summary():
 
 
 @app.post("/skills/reload", tags=["Skills"])
-async def reload_skills():
+async def reload_skills(user=Depends(_require_admin)):
     """运行时重新扫描 Skill 目录，不需要重启服务。"""
     if _skill_manager is None:
         raise HTTPException(503, "Skills 未初始化")
@@ -294,80 +350,30 @@ async def reload_skills():
 
 
 @app.post("/chat", response_model=ChatResponse)
-async def chat(req: ChatRequest):
+async def chat(req: ChatRequest, authorization: str = Header(default="")):
     """
-    主对话接口。完整流程：
-      记忆读取 → 意图识别 → Agent 路由 → 执行 → 记忆写入
+    统一对话接口：身份解析 → 目标理解（咨询/办理分流）→ 执行 → 记忆写入。
+
+    这是唯一的对话入口——不再有单独的"仅问答"或"仅办理"模式；纯知识问答和
+    受权限约束的业务办理共用同一条鉴权、同一个会话状态。旧的 mode=chat/action
+    直接调用编排器、绕过身份校验的入口已下线，见 wiki/unified-conversation.md。
     """
-    if _orchestrator is None or _memory is None:
-        raise HTTPException(503, "服务未就绪")
-
-    from agents.agent_orchestrator import Request as OrcReq
-    from memory.conversation_memory import MsgRole
-
-    conv_id = req.conv_id or str(uuid.uuid4())
-
-    # 1. 读取记忆上下文
-    mem_ctx = await _memory.get_context(req.user_id, conv_id, query=req.message)
-
-    # 2. 构建编排请求（含对话历史，用于意图识别上下文）
-    history = [
-        {"role": m.role.value, "content": m.content}
-        for m in mem_ctx.recent_messages[-5:]
-    ] if mem_ctx.recent_messages else None
-
-    intent_result = await _orchestrator.recognize_intent(req.message, history=history)
-    knowledge_text, knowledge_used = await _build_knowledge_context(req.message, intent=intent_result.intent)
-    context_parts = [mem_ctx.to_prompt_text()]
-    if knowledge_text:
-        context_parts.append(knowledge_text)
-    full_context = "\n\n".join(part for part in context_parts if part)
-
-    orch_req = OrcReq(
-        message=req.message,
-        user_id=req.user_id,
-        conv_id=conv_id,
-        context=full_context,
-        history=history,
-        entities=intent_result.entities,
-        intent=intent_result.intent,
-        intent_group=intent_result.intent_group,
-        urgency=intent_result.urgency,
-        intent_confidence=intent_result.confidence,
-    )
-
-    # 3. 执行
-    result = await _orchestrator.run(orch_req)
-
-    # 4. 写入记忆
-    await _memory.add_message(req.user_id, conv_id, MsgRole.USER, req.message)
-    await _memory.add_message(req.user_id, conv_id, MsgRole.ASSISTANT, result.response)
-
-    # 5. 异步更新用户画像（不阻塞响应）
-    asyncio.create_task(_memory.update_profile(req.user_id, conv_id))
-
-    return ChatResponse(
-        conv_id=conv_id,
-        response=result.response,
-        intent=result.intent.value if result.intent else "other",
-        intent_group=intent_result.intent_group,
-        agent_type=result.agent_type.value,
-        agent_types=[agent_type.value for agent_type in result.agent_types],
-        primary_agent=result.primary_agent.value if result.primary_agent else result.agent_type.value,
-        supporting_agents=[agent_type.value for agent_type in result.supporting_agents],
-        routing_reason=result.routing_reason,
-        routing_confidence=result.routing_confidence,
-        escalated=result.escalated,
-        latency_ms=round(result.latency_ms, 1),
-        knowledge_used=knowledge_used,
-        entities=intent_result.entities,
-        intent_confidence=round(intent_result.confidence, 4),
-        intent_source_scores=intent_result.source_scores,
-        task_plan=result.task_plan,
-        execution_trace=result.execution_trace,
-        synthesis_method=result.synthesis_method,
-        degradations=result.degradations,
-    )
+    from api.action_routes import owner
+    user = owner(authorization)
+    service = _configure_conversation_service()
+    started = time.monotonic()
+    try:
+        result = await service.send(user, req.message, conversation_id=req.conv_id, task_id=req.task_id, order_id=req.order_id)
+    except ValueError as ex:
+        raise HTTPException(400, str(ex)) from ex
+    task = result["task"]
+    return ChatResponse(conv_id=result["conversation_id"], response=result["response"], intent=result["intent"],
+                        agent_type=task["primary_agent"] if task else "general",
+                        escalated=result["status"] in {"needs_human", "awaiting_approval"},
+                        latency_ms=(time.monotonic() - started) * 1000, action_task=task,
+                        knowledge_used=result["knowledge_used"], intent_source_scores=result["intent_source_scores"],
+                        memory_mode=result["memory_mode"], sources=result["sources"],
+                        degradations=result["degradations"], routing_reason=result["route"], synthesis_method="unified_conversation")
 
 
 def _truncate_content(content: str, limit: int) -> str:
@@ -464,21 +470,50 @@ def _should_use_knowledge(message: str, intent=None) -> bool:
 
 
 @app.get("/monitor")
-async def monitor_summary():
-    """实时监控摘要：Agent 成功率、工具统计、告警、优化建议。"""
+async def monitor_summary(user=Depends(_require_admin)):
+    """实时监控摘要：Agent 成功率、工具统计、告警、优化建议。内部运维数据，要求 admin。"""
     if _monitor is None:
         raise HTTPException(503, "服务未就绪")
     return _monitor.summary()
 
 
+class ToolTraceResponse(BaseModel):
+    found: bool
+    trace: Dict[str, Any] = Field(default_factory=dict)
+
+
+class RecentToolTracesResponse(BaseModel):
+    items: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+@app.get("/trace/tool/{request_id}", response_model=ToolTraceResponse)
+async def get_tool_trace(request_id: str, user=Depends(_require_admin)):
+    """按 request_id 回放一次 /chat 请求里实际发生过的工具调用：调用了哪些工具、
+    是否成功、耗时、是否命中缓存/重排。仅保留最近 RESOLVEFLOW_TOOL_TRACE_MAX 条
+    （默认 200），进程重启即丢失——用于排查和演示，不是审计凭证。内部运维数据，要求 admin。"""
+    if _orchestrator is None:
+        raise HTTPException(503, "服务未就绪")
+    trace = _orchestrator.get_tool_trace(request_id)
+    return ToolTraceResponse(found=trace is not None, trace=trace or {})
+
+
+@app.get("/trace/tools", response_model=RecentToolTracesResponse)
+async def list_recent_tool_traces(limit: int = 20, user=Depends(_require_admin)):
+    """列出最近若干条请求的工具调用轨迹，按时间倒序。内部运维数据，要求 admin。"""
+    if _orchestrator is None:
+        raise HTTPException(503, "服务未就绪")
+    return RecentToolTracesResponse(items=_orchestrator.get_recent_tool_traces(limit=limit))
+
+
 @app.get("/metrics")
 async def prometheus_metrics():
-    """Prometheus 指标入口。"""
+    # 保持开放：Prometheus 抓取本身不方便每次带一个会过期的 JWT，
+    # 且这里只是标准 Prometheus 文本格式的低层指标，不含业务/用户数据。
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.post("/search")
-async def search(query: str, top_k: int = 5):
+async def search(query: str, top_k: int = 5, user=Depends(_require_any_role)):
     """
     演示检索优化链路：查询改写 → 并行召回 → 重排 → Top-K。
     展示 MCP 工具调用的核心亮点。
@@ -543,7 +578,7 @@ def _eval_budget_configured() -> bool:
 
 
 @app.post("/knowledge/add", tags=["知识库"])
-async def add_knowledge(body: BatchDocInput):
+async def add_knowledge(body: BatchDocInput, user=Depends(_require_admin)):
     """
     批量导入文档到知识库。
 
@@ -569,7 +604,7 @@ async def add_knowledge(body: BatchDocInput):
 
 
 @app.post("/knowledge/upload", tags=["知识库"])
-async def upload_knowledge(file: UploadFile = File(...)):
+async def upload_knowledge(file: UploadFile = File(...), user=Depends(_require_admin)):
     """
     上传文件导入知识库。
 
@@ -614,7 +649,7 @@ async def upload_knowledge(file: UploadFile = File(...)):
 
 
 @app.get("/knowledge/stats", tags=["知识库"])
-async def knowledge_stats():
+async def knowledge_stats(user=Depends(_require_any_role)):
     """查看知识库统计信息（文档片段总数）。"""
     tool = _tool_manager._tools.get("knowledge_search") if _tool_manager else None
     if tool is None:
@@ -624,7 +659,7 @@ async def knowledge_stats():
 
 
 @app.post("/eval/run")
-async def run_eval(body: Optional[EvalRunInput] = None):
+async def run_eval(body: Optional[EvalRunInput] = None, user=Depends(_require_admin)):
     """运行内置或已登记的金标评测用例，返回评测报告。"""
     if _evaluator is None:
         raise HTTPException(503, "服务未就绪")

@@ -5,7 +5,7 @@
         <div class="brand-mark">EM</div>
         <div>
           <h1>ResolveFlow Console</h1>
-          <p>统一调试 Python 与 Java 版本</p>
+          <p>调试 ResolveFlow 后端</p>
         </div>
       </section>
 
@@ -20,18 +20,10 @@
           <h2>后端</h2>
           <span class="pill">{{ currentBackend.label }}</span>
         </div>
-        <div class="segmented">
-          <button :class="{ active: settings.backend === 'java' }" @click="switchBackend('java')">Java</button>
-          <button :class="{ active: settings.backend === 'python' }" @click="switchBackend('python')">Python</button>
-        </div>
 
         <label>
-          <span>Java API</span>
-          <input v-model="settings.endpoints.java" @change="persist" placeholder="/api/java" />
-        </label>
-        <label>
-          <span>Python API</span>
-          <input v-model="settings.endpoints.python" @change="persist" placeholder="/api/python" />
+          <span>API 地址</span>
+          <input v-model="settings.endpoint" @change="persist" placeholder="/api/python" />
         </label>
         <label>
           <span>用户 ID</span>
@@ -46,6 +38,42 @@
           <button @click="checkHealth">健康检查</button>
           <button @click="loadStats">刷新状态</button>
         </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>身份令牌</h2>
+          <span class="pill soft">全站鉴权</span>
+        </div>
+        <p class="hint">
+          Python 后端现在全站都要本地签发的 JWT——`/chat` 及全部接口都不再信任匿名 user_id。
+          三个角色权限不同：user 聊天/办理业务，reviewer 审批（必须与用户是不同身份，服务端拒绝自批），
+          admin 管运维/知识库写入。用 <code>make mint-token SUBJECT=alice ROLE=user</code> 之类的命令签发。
+        </p>
+        <label>
+          <span>用户 Token</span>
+          <input v-model="settings.userToken" @change="persist" placeholder="role=user 的 JWT" />
+        </label>
+        <label>
+          <span>审核员 Token</span>
+          <input v-model="settings.reviewerToken" @change="persist" placeholder="role=reviewer 的 JWT（不同身份）" />
+        </label>
+        <label>
+          <span>管理员 Token</span>
+          <input v-model="settings.adminToken" @change="persist" placeholder="role=admin 的 JWT（监控/知识库写入）" />
+        </label>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <h2>模拟订单</h2>
+          <span class="pill soft">Demo</span>
+        </div>
+        <div class="actions">
+          <button @click="createSeedOrder" :disabled="busy || !settings.userToken">生成模拟订单</button>
+          <button v-if="seededOrderId" @click="insertOrderId">填入输入框</button>
+        </div>
+        <pre v-if="seededOrderId">{{ seededOrderId }}</pre>
       </section>
 
       <section class="panel status-panel">
@@ -95,7 +123,7 @@
           </article>
           <div v-if="messages.length === 0" class="empty-state">
             <h3>开始一次客服对话</h3>
-            <p>可切换 Java 或 Python 后端，前端会自动适配响应字段。</p>
+            <p>输入问题即可开始，右侧会显示任务状态与确认/审批操作。</p>
           </div>
         </div>
 
@@ -103,6 +131,70 @@
           <textarea v-model="draft" rows="3" placeholder="输入问题，例如：我想申请退款，订单号是 #12345"></textarea>
           <button :disabled="busy || !draft.trim()">{{ busy ? '发送中' : '发送' }}</button>
         </form>
+      </section>
+
+      <section class="task-panel" v-if="currentTask">
+        <div class="panel-heading">
+          <h2>当前任务</h2>
+          <span :class="['pill', 'task-status', statusClass(currentTask.status)]">{{ statusLabel(currentTask.status) }}</span>
+        </div>
+        <dl class="task-meta">
+          <div><dt>任务 ID</dt><dd>{{ currentTask.id }}</dd></div>
+          <div v-if="currentTask.order_id"><dt>订单</dt><dd>{{ currentTask.order_id }}</dd></div>
+          <div v-if="currentTask.primary_agent"><dt>主处理</dt><dd>{{ currentTask.primary_agent }}</dd></div>
+        </dl>
+
+        <div class="plan-steps" v-if="currentTask.plan?.steps?.length">
+          <div v-for="step in currentTask.plan.steps" :key="step.id" class="plan-step">
+            <span :class="['pill', 'soft', 'step-status', statusClass(step.status)]">{{ step.status }}</span>
+            <span>{{ step.tool }}</span>
+          </div>
+        </div>
+
+        <p v-if="currentTask.unresolved?.length" class="hint">未完成：{{ currentTask.unresolved.join('、') }}</p>
+
+        <div v-if="currentTask.status === 'awaiting_confirmation'" class="task-action-block">
+          <p>请确认：{{ currentTask.confirmation?.tool }}（订单 {{ currentTask.confirmation?.order_id }}）</p>
+          <div class="actions">
+            <button @click="respondConfirmation(true)" :disabled="busy">确认</button>
+            <button @click="respondConfirmation(false)" :disabled="busy">拒绝</button>
+          </div>
+        </div>
+
+        <div v-if="currentTask.status === 'awaiting_approval'" class="task-action-block">
+          <p>等待独立审核人批准，尚未退款。</p>
+          <div v-if="settings.reviewerToken" class="reviewer-panel">
+            <div class="panel-heading">
+              <h2>审核员操作</h2>
+              <span class="pill soft">独立身份</span>
+            </div>
+            <p class="hint">使用审核员 Token；服务端会拒绝审核员与任务所有者相同的自批请求。</p>
+            <div class="actions">
+              <button @click="respondApproval(true)" :disabled="busy">批准</button>
+              <button @click="respondApproval(false)" :disabled="busy">拒绝</button>
+            </div>
+          </div>
+          <p v-else class="hint">填入审核员 Token 后可在此演示批准/拒绝。</p>
+        </div>
+
+        <div v-if="currentTask.status === 'needs_human' && settings.reviewerToken" class="task-action-block reviewer-panel">
+          <div class="panel-heading">
+            <h2>审核员操作</h2>
+            <span class="pill soft">独立身份</span>
+          </div>
+          <div class="actions">
+            <button @click="releaseCurrentTask" :disabled="busy">人工释放</button>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button @click="cancelCurrentTask" :disabled="busy">取消任务</button>
+          <button @click="showReviseForm = !showReviseForm" :disabled="busy">修订任务</button>
+        </div>
+        <div v-if="showReviseForm" class="inline-form">
+          <input v-model="reviseDraft" placeholder="修订后的完整目标" />
+          <button @click="reviseCurrentTask" :disabled="busy || !reviseDraft.trim()">提交修订</button>
+        </div>
       </section>
 
       <section class="tools-grid">
@@ -154,14 +246,20 @@
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import {
   addKnowledge,
+  approveTask,
   backendMeta,
+  cancelTask,
+  confirmTask,
   createInitialSettings,
+  releaseTask,
   requestChat,
   requestHealth,
   requestKnowledgeStats,
   requestMonitor,
   requestSearch,
+  reviseTask,
   saveSettings,
+  seedOrder,
   uploadKnowledge
 } from './lib/backends'
 
@@ -178,12 +276,25 @@ const searchResults = ref([])
 const docTitle = ref('退款补充政策')
 const docContent = ref('大促期间退款审核时间可能延长到 3-5 个工作日。')
 const messageList = ref(null)
+const seededOrderId = ref('')
+const currentTask = ref(null)
+const showReviseForm = ref(false)
+const reviseDraft = ref('')
 
-const currentBackend = computed(() => backendMeta(settings.backend, settings))
-const docsUrl = computed(() => {
-  if (settings.backend === 'java') return `${currentBackend.value.baseUrl}/docs`
-  return `${currentBackend.value.baseUrl}/docs`
-})
+const STATUS_LABELS = {
+  awaiting_clarification: '待补充信息',
+  running: '执行中',
+  awaiting_confirmation: '待用户确认',
+  awaiting_approval: '待人工审批',
+  needs_human: '需人工处理',
+  completed: '已完成',
+  cancelled: '已取消',
+  rejected: '已拒绝',
+  superseded: '已被替代'
+}
+
+const currentBackend = computed(() => backendMeta(settings))
+const docsUrl = computed(() => `${currentBackend.value.baseUrl}/docs`)
 
 watch(
   () => settings.conversationId,
@@ -195,18 +306,26 @@ onMounted(() => {
   loadStats()
 })
 
-function switchBackend(type) {
-  settings.backend = type
-  persist()
-  healthOk.value = false
-  healthLabel.value = '未检查'
-  statusText.value = ''
-  searchResults.value = []
-  checkHealth()
+function statusLabel(status) {
+  return STATUS_LABELS[status] || status
+}
+
+function statusClass(status) {
+  if (['completed'].includes(status)) return 'status-good'
+  if (['awaiting_approval', 'awaiting_confirmation', 'ready', 'pending'].includes(status)) return 'status-pending'
+  if (['needs_human', 'rejected', 'blocked'].includes(status)) return 'status-alert'
+  return 'status-neutral'
 }
 
 function persist() {
   saveSettings(settings)
+}
+
+function applyTask(task, label) {
+  if (!task) return
+  currentTask.value = task
+  showReviseForm.value = false
+  messages.value.push({ id: crypto.randomUUID(), role: 'assistant', content: task.response || '', meta: label })
 }
 
 async function sendMessage() {
@@ -216,15 +335,19 @@ async function sendMessage() {
   draft.value = ''
   busy.value = true
   try {
-    const response = await requestChat(settings.backend, settings, content)
+    const response = await requestChat(settings, content)
     if (response.conversationId && !settings.conversationId) {
       settings.conversationId = response.conversationId
       persist()
+    }
+    if (response.actionTask) {
+      currentTask.value = response.actionTask
     }
     const meta = [
       response.intent,
       response.agentType,
       response.knowledgeUsed ? 'RAG' : '',
+      response.actionTask ? statusLabel(response.actionTask.status) : '',
       response.escalated ? '转人工' : ''
     ].filter(Boolean).join(' · ')
     messages.value.push({
@@ -247,9 +370,91 @@ async function sendMessage() {
   }
 }
 
+async function createSeedOrder() {
+  busy.value = true
+  try {
+    const order = await seedOrder(settings)
+    seededOrderId.value = order.id
+  } catch (error) {
+    statusText.value = error.message
+  } finally {
+    busy.value = false
+  }
+}
+
+function insertOrderId() {
+  draft.value = draft.value ? `${draft.value} ${seededOrderId.value}` : seededOrderId.value
+}
+
+async function respondConfirmation(accepted) {
+  if (!currentTask.value?.confirmation) return
+  busy.value = true
+  try {
+    const task = await confirmTask(settings, currentTask.value.id, currentTask.value.confirmation.id, accepted)
+    applyTask(task, accepted ? '已确认' : '已拒绝确认')
+  } catch (error) {
+    statusText.value = error.message
+  } finally {
+    busy.value = false
+  }
+}
+
+async function respondApproval(approved) {
+  if (!currentTask.value?.approval) return
+  busy.value = true
+  try {
+    const task = await approveTask(settings, currentTask.value.id, currentTask.value.approval.id, approved)
+    applyTask(task, approved ? '审核员已批准' : '审核员已拒绝')
+  } catch (error) {
+    statusText.value = error.message
+  } finally {
+    busy.value = false
+  }
+}
+
+async function releaseCurrentTask() {
+  if (!currentTask.value) return
+  busy.value = true
+  try {
+    const task = await releaseTask(settings, currentTask.value.id)
+    applyTask(task, '审核员已释放')
+  } catch (error) {
+    statusText.value = error.message
+  } finally {
+    busy.value = false
+  }
+}
+
+async function cancelCurrentTask() {
+  if (!currentTask.value) return
+  busy.value = true
+  try {
+    const task = await cancelTask(settings, currentTask.value.id)
+    applyTask(task, '已取消')
+  } catch (error) {
+    statusText.value = error.message
+  } finally {
+    busy.value = false
+  }
+}
+
+async function reviseCurrentTask() {
+  if (!currentTask.value || !reviseDraft.value.trim()) return
+  busy.value = true
+  try {
+    const task = await reviseTask(settings, currentTask.value.id, reviseDraft.value.trim())
+    reviseDraft.value = ''
+    applyTask(task, '已提交修订')
+  } catch (error) {
+    statusText.value = error.message
+  } finally {
+    busy.value = false
+  }
+}
+
 async function checkHealth() {
   try {
-    const data = await requestHealth(settings.backend, settings)
+    const data = await requestHealth(settings)
     healthOk.value = data.status === 'ok'
     healthLabel.value = data.status || 'ok'
     statusText.value = JSON.stringify(data, null, 2)
@@ -263,8 +468,8 @@ async function checkHealth() {
 async function loadStats() {
   try {
     const [stats, monitor] = await Promise.allSettled([
-      requestKnowledgeStats(settings.backend, settings),
-      requestMonitor(settings.backend, settings)
+      requestKnowledgeStats(settings),
+      requestMonitor(settings)
     ])
     if (stats.status === 'fulfilled') {
       knowledgeCount.value = stats.value.total_chunks ?? stats.value.totalChunks ?? '-'
@@ -280,7 +485,7 @@ async function loadStats() {
 async function searchKnowledge() {
   busy.value = true
   try {
-    const data = await requestSearch(settings.backend, settings, searchQuery.value, 5)
+    const data = await requestSearch(settings, searchQuery.value, 5)
     searchResults.value = data.results || []
   } catch (error) {
     statusText.value = error.message
@@ -292,7 +497,7 @@ async function searchKnowledge() {
 async function submitKnowledge() {
   busy.value = true
   try {
-    const data = await addKnowledge(settings.backend, settings, [
+    const data = await addKnowledge(settings, [
       { title: docTitle.value.trim(), content: docContent.value.trim() }
     ])
     statusText.value = JSON.stringify(data, null, 2)
@@ -310,7 +515,7 @@ async function handleUpload(event) {
   if (!file) return
   busy.value = true
   try {
-    const data = await uploadKnowledge(settings.backend, settings, file)
+    const data = await uploadKnowledge(settings, file)
     statusText.value = JSON.stringify(data, null, 2)
     await loadStats()
   } catch (error) {

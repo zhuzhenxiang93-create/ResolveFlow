@@ -22,3 +22,9 @@ httpx==0.28.1              # webhook 告警与 Qwen3 Reranker HTTP 客户端
 
 # ── 工具 ──────────────────────────────────────────────────────────────────────
 python-dotenv==1.0.1
+PyJWT==2.10.1               # Action 层最简 RBAC（user/reviewer/admin）签发/校验本地 JWT
+
+# ── Postgres 迁移 POC（可选，仅 agents/action_runtime_pg_poc.py 使用）──────────
+# 生产 Action 层仍是 SQLite；见 wiki/postgres-migration-plan.md。不装这个包完全
+# 不影响 make test / 主应用运行。
+asyncpg==0.31.0

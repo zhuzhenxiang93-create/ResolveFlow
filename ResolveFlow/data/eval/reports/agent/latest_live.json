@@ -1,0 +1,5956 @@
+{
+  "suite": "resolveflow-agent-internal-regression-v2-confirmation",
+  "mode": "offline_deterministic",
+  "sample_count": 12,
+  "scenario_distribution": {
+    "readonly": 2,
+    "repair": 2,
+    "approval": 1,
+    "composite": 1,
+    "takeover": 1,
+    "clarification": 1,
+    "rejection": 1,
+    "expiry": 1,
+    "policy": 1,
+    "partial": 1
+  },
+  "data_provenance": {
+    "source_dataset": "ResolveFlow internally authored business regression scenarios",
+    "source_version": "1.0.0",
+    "original_id": "per-case id",
+    "license": "project-local; no external dataset rows redistributed",
+    "language": "zh",
+    "adaptation_method": "New synthetic business fixtures, inspired by independent-state verification; not translated benchmark tasks",
+    "split": "regression",
+    "frozen_on": "2026-09-09",
+    "leakage_note": "Created during implementation and visible to developers. Must not be called a held-out test set. Future independent evaluation requires a separately frozen family-level split."
+  },
+  "data_sha256": "79b080461c4c4fce9b524e18eeee33d56623a38bea9b4e3fa5f3692879126696",
+  "metrics": {
+    "expected_outcome_rate": {
+      "numerator": 12,
+      "denominator": 12,
+      "value": 1.0,
+      "scope": "All internal regression scenarios; safe pauses count here, not as completed tasks"
+    },
+    "business_task_completion_rate": {
+      "numerator": 7,
+      "denominator": 12,
+      "value": 0.5833333333333334,
+      "scope": "All scenarios including intentional pauses/rejections; completion is requested-goal scoped"
+    },
+    "unassisted_completion_rate": {
+      "numerator": 5,
+      "denominator": 12,
+      "value": 0.4166666666666667,
+      "scope": "No reviewer; deterministic mode is NOT AI independent completion"
+    },
+    "correct_clarification_rate": {
+      "numerator": 1,
+      "denominator": 1,
+      "value": 1.0,
+      "scope": "Expected missing-information scenarios"
+    },
+    "correct_approval_pause_rate": {
+      "numerator": 5,
+      "denominator": 5,
+      "value": 1.0,
+      "scope": "Scenarios requiring review"
+    },
+    "correct_human_takeover_rate": {
+      "numerator": 3,
+      "denominator": 3,
+      "value": 1.0,
+      "scope": "Expected human handling, not AI task completion"
+    },
+    "checkpoint_recovery_rate": {
+      "numerator": 2,
+      "denominator": 2,
+      "value": 1.0,
+      "scope": "New runtime instance reads exactly the persisted task; not a SIGKILL test"
+    },
+    "unauthorized_operations": 0,
+    "duplicate_operations": 0,
+    "tool_errors": 0,
+    "tool_error_correction_rate": null,
+    "fallback_count": 0,
+    "user_confirmations": 7,
+    "unconfirmed_operations": 0,
+    "model_calls": 0,
+    "input_tokens": null,
+    "output_tokens": null,
+    "cost_usd": null,
+    "latency_mean_ms": 5.02030225,
+    "latency_p95_ms": 11.380457999999983
+  },
+  "rows": [
+    {
+      "id": "query",
+      "category": "readonly",
+      "status": "completed",
+      "expected_status": "completed",
+      "passed": true,
+      "state_verified": true,
+      "business_completed": true,
+      "independent_completion": true,
+      "initial_pause": true,
+      "approval_pause": false,
+      "user_confirmations": 0,
+      "expected_approval": false,
+      "recovery": null,
+      "unauthorized_operations": 0,
+      "unconfirmed_operations": 0,
+      "duplicate_operations": 0,
+      "latency_ms": 4.65770800000001,
+      "model_calls": 0,
+      "usage": [],
+      "tool_errors": 0,
+      "fallback_count": 0,
+      "execution_mode": "deterministic",
+      "task": {
+        "schema_version": 3,
+        "id": "9667fd34-dbea-4957-8bcc-94b119b9e5c5",
+        "owner": "eval-user",
+        "message": "查询订阅和账单",
+        "conversation_id": "5549c10f-22ba-4c68-9418-02a42e3b0714",
+        "goals": {
+          "entitlement": "read",
+          "billing": "read"
+        },
+        "status": "completed",
+        "order_id": "212e7471-d185-4514-8b22-df8fa641afc9",
+        "evidence": [
+          {
+            "tool": "query_subscription",
+            "agent": "technical",
+            "success": true,
+            "data": {
+              "plan": "pro",
+              "entitlement": "basic"
+            },
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.323643,
+            "order_version": 1,
+            "order_id": "212e7471-d185-4514-8b22-df8fa641afc9",
+            "sequence": 1,
+            "fallback": false
+          },
+          {
+            "tool": "query_billing",
+            "agent": "billing",
+            "success": true,
+            "data": {
+              "charges": 2,
+              "refunds": 0
+            },
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.324636,
+            "order_version": 1,
+            "order_id": "212e7471-d185-4514-8b22-df8fa641afc9",
+            "sequence": 2,
+            "fallback": false
+          }
+        ],
+        "actions": [],
+        "unresolved": [],
+        "verification": {
+          "entitlement": true,
+          "billing": true
+        },
+        "revision": 6,
+        "approval": null,
+        "approval_history": [],
+        "simulated": true,
+        "tool_messages": [],
+        "attempts": [
+          {
+            "call_id": "0d1f4013-7417-4abe-bf5f-71902c693111",
+            "tool": "query_subscription",
+            "arguments": "{\"order_id\": \"212e7471-d185-4514-8b22-df8fa641afc9\"}",
+            "timestamp": 1789099005.323665,
+            "success": true,
+            "evidence": {
+              "tool": "query_subscription",
+              "agent": "technical",
+              "success": true,
+              "data": {
+                "plan": "pro",
+                "entitlement": "basic"
+              },
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.323643,
+              "order_version": 1,
+              "order_id": "212e7471-d185-4514-8b22-df8fa641afc9",
+              "sequence": 1,
+              "fallback": false
+            },
+            "status": "running"
+          },
+          {
+            "call_id": "bff8a5e2-75f2-47a5-af9a-104bb661e7a1",
+            "tool": "query_billing",
+            "arguments": "{\"order_id\": \"212e7471-d185-4514-8b22-df8fa641afc9\"}",
+            "timestamp": 1789099005.324655,
+            "success": true,
+            "evidence": {
+              "tool": "query_billing",
+              "agent": "billing",
+              "success": true,
+              "data": {
+                "charges": 2,
+                "refunds": 0
+              },
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.324636,
+              "order_version": 1,
+              "order_id": "212e7471-d185-4514-8b22-df8fa641afc9",
+              "sequence": 2,
+              "fallback": false
+            },
+            "status": "completed"
+          }
+        ],
+        "handoffs": [
+          {
+            "from": "technical",
+            "to": "supervisor",
+            "timestamp": 1789099005.3236659,
+            "evidence_sequence": 1,
+            "verified_facts": {
+              "entitlement": true,
+              "billing": false
+            },
+            "unresolved": [
+              "billing"
+            ],
+            "actions": [],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "running"
+          },
+          {
+            "from": "billing",
+            "to": "supervisor",
+            "timestamp": 1789099005.324656,
+            "evidence_sequence": 2,
+            "verified_facts": {
+              "entitlement": true,
+              "billing": true
+            },
+            "unresolved": [],
+            "actions": [],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "completed"
+          }
+        ],
+        "plans": [
+          {
+            "version": 1,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:read"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:read"
+              },
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:read"
+              }
+            ],
+            "reason": "Explicit request scope"
+          },
+          {
+            "version": 2,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:read"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:read"
+              },
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:read"
+              }
+            ],
+            "reason": "Validated goal interpretation; no write consent granted"
+          },
+          {
+            "version": 3,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:read",
+                "status": "ready"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:read",
+                "status": "ready"
+              },
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:read",
+                "status": "ready"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          },
+          {
+            "version": 4,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:read",
+                "status": "completed"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:read",
+                "status": "completed"
+              },
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:read",
+                "status": "ready"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          },
+          {
+            "version": 5,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:read",
+                "status": "completed"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:read",
+                "status": "completed"
+              },
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:read",
+                "status": "completed"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          }
+        ],
+        "replans": 0,
+        "steps_used": 2,
+        "model_calls": 0,
+        "fallback_count": 0,
+        "usage": [],
+        "interpreted": true,
+        "interpretations": [
+          {
+            "mode": "offline_rules",
+            "calls": 0,
+            "usage": []
+          }
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": "查询订阅和账单"
+          }
+        ],
+        "confirmation": null,
+        "confirmation_history": [],
+        "execution_mode": "deterministic",
+        "response": "已核验：entitlement, billing。模拟任务完成。",
+        "primary_agent": "technical",
+        "supporting_agents": [
+          "billing"
+        ],
+        "plan": {
+          "version": 5,
+          "steps": [
+            {
+              "id": "query_subscription",
+              "goal": "entitlement",
+              "agent": "technical",
+              "tool": "query_subscription",
+              "dependencies": [],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "entitlement:read",
+              "status": "completed"
+            },
+            {
+              "id": "check_service",
+              "goal": "entitlement",
+              "agent": "technical",
+              "tool": "check_service",
+              "dependencies": [],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "entitlement:read",
+              "status": "completed"
+            },
+            {
+              "id": "query_billing",
+              "goal": "billing",
+              "agent": "billing",
+              "tool": "query_billing",
+              "dependencies": [],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "billing:read",
+              "status": "completed"
+            }
+          ],
+          "reason": "Reconcile dependencies against fresh business evidence"
+        }
+      },
+      "pre_review_state": {
+        "id": "212e7471-d185-4514-8b22-df8fa641afc9",
+        "plan": "pro",
+        "entitlement": "basic",
+        "service": "healthy",
+        "charges": 2,
+        "refunds": 0,
+        "version": 1,
+        "simulated": true
+      },
+      "final_state": {
+        "id": "212e7471-d185-4514-8b22-df8fa641afc9",
+        "plan": "pro",
+        "entitlement": "basic",
+        "service": "healthy",
+        "charges": 2,
+        "refunds": 0,
+        "version": 1,
+        "simulated": true
+      }
+    },
+    {
+      "id": "repair",
+      "category": "repair",
+      "status": "completed",
+      "expected_status": "completed",
+      "passed": true,
+      "state_verified": true,
+      "business_completed": true,
+      "independent_completion": true,
+      "initial_pause": true,
+      "approval_pause": false,
+      "user_confirmations": 1,
+      "expected_approval": false,
+      "recovery": null,
+      "unauthorized_operations": 0,
+      "unconfirmed_operations": 0,
+      "duplicate_operations": 0,
+      "latency_ms": 5.675709000000001,
+      "model_calls": 0,
+      "usage": [],
+      "tool_errors": 0,
+      "fallback_count": 0,
+      "execution_mode": "deterministic",
+      "task": {
+        "schema_version": 3,
+        "id": "f5cc6d58-f7ec-48fd-8bc2-8c0d928f9101",
+        "owner": "eval-user",
+        "message": "请修复升级后的权益",
+        "conversation_id": "f01e78a3-0baa-45af-bc52-a52f4d63f990",
+        "goals": {
+          "entitlement": "repair"
+        },
+        "status": "completed",
+        "order_id": "9fecc3d2-1f52-4f7c-b5ab-ef66b17dea52",
+        "evidence": [
+          {
+            "tool": "query_subscription",
+            "agent": "technical",
+            "success": true,
+            "data": {
+              "plan": "pro",
+              "entitlement": "basic"
+            },
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.328377,
+            "order_version": 1,
+            "order_id": "9fecc3d2-1f52-4f7c-b5ab-ef66b17dea52",
+            "sequence": 1,
+            "fallback": false
+          },
+          {
+            "tool": "check_service",
+            "agent": "technical",
+            "success": true,
+            "data": {
+              "service": "healthy"
+            },
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.329222,
+            "order_version": 1,
+            "order_id": "9fecc3d2-1f52-4f7c-b5ab-ef66b17dea52",
+            "sequence": 2,
+            "fallback": false
+          },
+          {
+            "tool": "sync_entitlements",
+            "agent": "technical",
+            "success": true,
+            "data": {},
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.3317912,
+            "order_version": 2,
+            "order_id": "9fecc3d2-1f52-4f7c-b5ab-ef66b17dea52",
+            "sequence": 3,
+            "fallback": false
+          }
+        ],
+        "actions": [
+          {
+            "tool": "sync_entitlements",
+            "status": "verified",
+            "idempotency_key": "f5cc6d58-f7ec-48fd-8bc2-8c0d928f9101:sync",
+            "confirmation_id": "2dad0e55-6fa7-4a2c-b088-195f3e68803b",
+            "timestamp": 1789099005.3317912
+          }
+        ],
+        "unresolved": [],
+        "verification": {
+          "entitlement": true
+        },
+        "revision": 11,
+        "approval": null,
+        "approval_history": [],
+        "simulated": true,
+        "tool_messages": [],
+        "attempts": [
+          {
+            "call_id": "f9178b61-369a-49fc-ad51-161e5630e740",
+            "tool": "query_subscription",
+            "arguments": "{\"order_id\": \"9fecc3d2-1f52-4f7c-b5ab-ef66b17dea52\"}",
+            "timestamp": 1789099005.328395,
+            "success": true,
+            "evidence": {
+              "tool": "query_subscription",
+              "agent": "technical",
+              "success": true,
+              "data": {
+                "plan": "pro",
+                "entitlement": "basic"
+              },
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.328377,
+              "order_version": 1,
+              "order_id": "9fecc3d2-1f52-4f7c-b5ab-ef66b17dea52",
+              "sequence": 1,
+              "fallback": false
+            },
+            "status": "running"
+          },
+          {
+            "call_id": "0ded715f-66fa-431c-83d1-c3f0332348a4",
+            "tool": "check_service",
+            "arguments": "{\"order_id\": \"9fecc3d2-1f52-4f7c-b5ab-ef66b17dea52\"}",
+            "timestamp": 1789099005.329237,
+            "success": true,
+            "evidence": {
+              "tool": "check_service",
+              "agent": "technical",
+              "success": true,
+              "data": {
+                "service": "healthy"
+              },
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.329222,
+              "order_version": 1,
+              "order_id": "9fecc3d2-1f52-4f7c-b5ab-ef66b17dea52",
+              "sequence": 2,
+              "fallback": false
+            },
+            "status": "running"
+          },
+          {
+            "call_id": "b7672b64-283f-4a78-9b5e-b40a45827225",
+            "tool": "sync_entitlements",
+            "arguments": "{\"order_id\": \"9fecc3d2-1f52-4f7c-b5ab-ef66b17dea52\"}",
+            "timestamp": 1789099005.331807,
+            "success": true,
+            "evidence": {
+              "tool": "sync_entitlements",
+              "agent": "technical",
+              "success": true,
+              "data": {},
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.3317912,
+              "order_version": 2,
+              "order_id": "9fecc3d2-1f52-4f7c-b5ab-ef66b17dea52",
+              "sequence": 3,
+              "fallback": false
+            },
+            "status": "completed"
+          }
+        ],
+        "handoffs": [
+          {
+            "from": "technical",
+            "to": "supervisor",
+            "timestamp": 1789099005.328395,
+            "evidence_sequence": 1,
+            "verified_facts": {
+              "entitlement": false
+            },
+            "unresolved": [
+              "entitlement"
+            ],
+            "actions": [],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "running"
+          },
+          {
+            "from": "technical",
+            "to": "supervisor",
+            "timestamp": 1789099005.329238,
+            "evidence_sequence": 2,
+            "verified_facts": {
+              "entitlement": false
+            },
+            "unresolved": [
+              "entitlement"
+            ],
+            "actions": [],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "running"
+          },
+          {
+            "from": "technical",
+            "to": "supervisor",
+            "timestamp": 1789099005.331808,
+            "evidence_sequence": 3,
+            "verified_facts": {
+              "entitlement": true
+            },
+            "unresolved": [],
+            "actions": [
+              {
+                "tool": "sync_entitlements",
+                "status": "verified",
+                "idempotency_key": "f5cc6d58-f7ec-48fd-8bc2-8c0d928f9101:sync",
+                "confirmation_id": "2dad0e55-6fa7-4a2c-b088-195f3e68803b",
+                "timestamp": 1789099005.3317912
+              }
+            ],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "completed"
+          }
+        ],
+        "plans": [
+          {
+            "version": 1,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              }
+            ],
+            "reason": "Explicit request scope"
+          },
+          {
+            "version": 2,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              }
+            ],
+            "reason": "Validated goal interpretation; no write consent granted"
+          },
+          {
+            "version": 3,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "ready"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "ready"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "pending"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          },
+          {
+            "version": 4,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "ready"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "pending"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          },
+          {
+            "version": 5,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "ready"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          },
+          {
+            "version": 6,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          }
+        ],
+        "replans": 0,
+        "steps_used": 3,
+        "model_calls": 0,
+        "fallback_count": 0,
+        "usage": [],
+        "interpreted": true,
+        "interpretations": [
+          {
+            "mode": "offline_rules",
+            "calls": 0,
+            "usage": []
+          }
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": "请修复升级后的权益"
+          }
+        ],
+        "confirmation": {
+          "id": "2dad0e55-6fa7-4a2c-b088-195f3e68803b",
+          "task_id": "f5cc6d58-f7ec-48fd-8bc2-8c0d928f9101",
+          "owner": "eval-user",
+          "order_id": "9fecc3d2-1f52-4f7c-b5ab-ef66b17dea52",
+          "tool": "sync_entitlements",
+          "parameters": {
+            "order_id": "9fecc3d2-1f52-4f7c-b5ab-ef66b17dea52",
+            "target_plan": "pro"
+          },
+          "plan_version": 5,
+          "order_version": 1,
+          "expires_at": 1789099905.329675,
+          "status": "accepted",
+          "binding": "02dbd39ee7e34c57db8b9b99981d1189768b3d2f079411ddbcf2bb281badf46c",
+          "accepted_at": 1789099005.330401
+        },
+        "confirmation_history": [],
+        "execution_mode": "deterministic",
+        "response": "已核验：entitlement。模拟任务完成。",
+        "primary_agent": "technical",
+        "supporting_agents": [],
+        "plan": {
+          "version": 6,
+          "steps": [
+            {
+              "id": "query_subscription",
+              "goal": "entitlement",
+              "agent": "technical",
+              "tool": "query_subscription",
+              "dependencies": [],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "entitlement:repair",
+              "status": "completed"
+            },
+            {
+              "id": "check_service",
+              "goal": "entitlement",
+              "agent": "technical",
+              "tool": "check_service",
+              "dependencies": [],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "entitlement:repair",
+              "status": "completed"
+            },
+            {
+              "id": "sync_entitlements",
+              "goal": "entitlement",
+              "agent": "technical",
+              "tool": "sync_entitlements",
+              "dependencies": [
+                "query_subscription",
+                "check_service"
+              ],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "entitlement:repair",
+              "status": "completed"
+            }
+          ],
+          "reason": "Reconcile dependencies against fresh business evidence"
+        }
+      },
+      "pre_review_state": {
+        "id": "9fecc3d2-1f52-4f7c-b5ab-ef66b17dea52",
+        "plan": "pro",
+        "entitlement": "pro",
+        "service": "healthy",
+        "charges": 2,
+        "refunds": 0,
+        "version": 2,
+        "simulated": true
+      },
+      "final_state": {
+        "id": "9fecc3d2-1f52-4f7c-b5ab-ef66b17dea52",
+        "plan": "pro",
+        "entitlement": "pro",
+        "service": "healthy",
+        "charges": 2,
+        "refunds": 0,
+        "version": 2,
+        "simulated": true
+      }
+    },
+    {
+      "id": "refund",
+      "category": "approval",
+      "status": "completed",
+      "expected_status": "completed",
+      "passed": true,
+      "state_verified": true,
+      "business_completed": true,
+      "independent_completion": false,
+      "initial_pause": true,
+      "approval_pause": true,
+      "user_confirmations": 1,
+      "expected_approval": true,
+      "recovery": null,
+      "unauthorized_operations": 0,
+      "unconfirmed_operations": 0,
+      "duplicate_operations": 0,
+      "latency_ms": 4.961916999999996,
+      "model_calls": 0,
+      "usage": [],
+      "tool_errors": 0,
+      "fallback_count": 0,
+      "execution_mode": "deterministic",
+      "task": {
+        "schema_version": 3,
+        "id": "6115f2f3-6c9b-4fa4-a46d-14e06689e804",
+        "owner": "eval-user",
+        "message": "请申请退款，重复扣款",
+        "conversation_id": "7320523b-e535-40c8-9145-40cc5e25c7a6",
+        "goals": {
+          "billing": "refund"
+        },
+        "status": "completed",
+        "order_id": "bafac16f-5071-4aa5-9850-227eef86cdd5",
+        "evidence": [
+          {
+            "tool": "query_billing",
+            "agent": "billing",
+            "success": true,
+            "data": {
+              "charges": 2,
+              "refunds": 0
+            },
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.335377,
+            "order_version": 1,
+            "order_id": "bafac16f-5071-4aa5-9850-227eef86cdd5",
+            "sequence": 1,
+            "fallback": false
+          },
+          {
+            "tool": "request_refund",
+            "agent": "billing",
+            "success": true,
+            "data": {
+              "id": "65d44426-0247-4766-9954-dfd9a1ebcb56",
+              "status": "pending",
+              "order_id": "bafac16f-5071-4aa5-9850-227eef86cdd5",
+              "count": 1,
+              "confirmation_id": "26dcef9b-d556-4b0d-a862-f003b3a8d0cb",
+              "action": "refund",
+              "plan_version": 4,
+              "order_version": 1,
+              "expires_at": 1789099905.337707,
+              "binding": "b6b41d8362a1996362e4377055436df31bda3153ebad8405e0f6db6b4af9f49a"
+            },
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.337713,
+            "order_version": 1,
+            "order_id": "bafac16f-5071-4aa5-9850-227eef86cdd5",
+            "sequence": 2,
+            "fallback": false
+          }
+        ],
+        "actions": [
+          {
+            "tool": "refund",
+            "status": "verified",
+            "idempotency_key": "65d44426-0247-4766-9954-dfd9a1ebcb56",
+            "reconciled": false,
+            "confirmation_id": "26dcef9b-d556-4b0d-a862-f003b3a8d0cb",
+            "timestamp": 1789099005.338727
+          }
+        ],
+        "unresolved": [],
+        "verification": {
+          "billing": true
+        },
+        "revision": 10,
+        "approval": {
+          "id": "65d44426-0247-4766-9954-dfd9a1ebcb56",
+          "status": "approved",
+          "order_id": "bafac16f-5071-4aa5-9850-227eef86cdd5",
+          "count": 1,
+          "confirmation_id": "26dcef9b-d556-4b0d-a862-f003b3a8d0cb",
+          "action": "refund",
+          "plan_version": 4,
+          "order_version": 1,
+          "expires_at": 1789099905.337707,
+          "binding": "b6b41d8362a1996362e4377055436df31bda3153ebad8405e0f6db6b4af9f49a",
+          "reviewer": "eval-reviewer"
+        },
+        "approval_history": [],
+        "simulated": true,
+        "tool_messages": [],
+        "attempts": [
+          {
+            "call_id": "2734fade-e963-48a7-9abf-0d03a839b214",
+            "tool": "query_billing",
+            "arguments": "{\"order_id\": \"bafac16f-5071-4aa5-9850-227eef86cdd5\"}",
+            "timestamp": 1789099005.335392,
+            "success": true,
+            "evidence": {
+              "tool": "query_billing",
+              "agent": "billing",
+              "success": true,
+              "data": {
+                "charges": 2,
+                "refunds": 0
+              },
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.335377,
+              "order_version": 1,
+              "order_id": "bafac16f-5071-4aa5-9850-227eef86cdd5",
+              "sequence": 1,
+              "fallback": false
+            },
+            "status": "running"
+          },
+          {
+            "call_id": "1ab565c7-8498-4919-aba8-9b3d8ba3ab50",
+            "tool": "request_refund",
+            "arguments": "{\"order_id\": \"bafac16f-5071-4aa5-9850-227eef86cdd5\"}",
+            "timestamp": 1789099005.337721,
+            "success": true,
+            "evidence": {
+              "tool": "request_refund",
+              "agent": "billing",
+              "success": true,
+              "data": {
+                "id": "65d44426-0247-4766-9954-dfd9a1ebcb56",
+                "status": "pending",
+                "order_id": "bafac16f-5071-4aa5-9850-227eef86cdd5",
+                "count": 1,
+                "confirmation_id": "26dcef9b-d556-4b0d-a862-f003b3a8d0cb",
+                "action": "refund",
+                "plan_version": 4,
+                "order_version": 1,
+                "expires_at": 1789099905.337707,
+                "binding": "b6b41d8362a1996362e4377055436df31bda3153ebad8405e0f6db6b4af9f49a"
+              },
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.337713,
+              "order_version": 1,
+              "order_id": "bafac16f-5071-4aa5-9850-227eef86cdd5",
+              "sequence": 2,
+              "fallback": false
+            },
+            "status": "awaiting_approval"
+          }
+        ],
+        "handoffs": [
+          {
+            "from": "billing",
+            "to": "supervisor",
+            "timestamp": 1789099005.335392,
+            "evidence_sequence": 1,
+            "verified_facts": {
+              "billing": false
+            },
+            "unresolved": [
+              "billing"
+            ],
+            "actions": [],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "running"
+          },
+          {
+            "from": "billing",
+            "to": "supervisor",
+            "timestamp": 1789099005.337722,
+            "evidence_sequence": 2,
+            "verified_facts": {
+              "billing": false
+            },
+            "unresolved": [
+              "billing"
+            ],
+            "actions": [],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "awaiting_approval"
+          }
+        ],
+        "plans": [
+          {
+            "version": 1,
+            "steps": [
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund"
+              }
+            ],
+            "reason": "Explicit request scope"
+          },
+          {
+            "version": 2,
+            "steps": [
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund"
+              }
+            ],
+            "reason": "Validated goal interpretation; no write consent granted"
+          },
+          {
+            "version": 3,
+            "steps": [
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "ready"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "pending"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          },
+          {
+            "version": 4,
+            "steps": [
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "completed"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "ready"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          },
+          {
+            "version": 5,
+            "steps": [
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "completed"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "completed"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          }
+        ],
+        "replans": 0,
+        "steps_used": 2,
+        "model_calls": 0,
+        "fallback_count": 0,
+        "usage": [],
+        "interpreted": true,
+        "interpretations": [
+          {
+            "mode": "offline_rules",
+            "calls": 0,
+            "usage": []
+          }
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": "请申请退款，重复扣款"
+          }
+        ],
+        "confirmation": {
+          "id": "26dcef9b-d556-4b0d-a862-f003b3a8d0cb",
+          "task_id": "6115f2f3-6c9b-4fa4-a46d-14e06689e804",
+          "owner": "eval-user",
+          "order_id": "bafac16f-5071-4aa5-9850-227eef86cdd5",
+          "tool": "request_refund",
+          "parameters": {
+            "order_id": "bafac16f-5071-4aa5-9850-227eef86cdd5",
+            "duplicate_charge_count": 1
+          },
+          "plan_version": 4,
+          "order_version": 1,
+          "expires_at": 1789099905.335844,
+          "status": "accepted",
+          "binding": "657f72a67c9fa502d67aece9a86cc54c9cc28bff1abd26df59e1b81141743fe5",
+          "accepted_at": 1789099005.336521
+        },
+        "confirmation_history": [],
+        "execution_mode": "deterministic",
+        "response": "已核验：billing。模拟任务完成。",
+        "primary_agent": "billing",
+        "supporting_agents": [],
+        "plan": {
+          "version": 5,
+          "steps": [
+            {
+              "id": "query_billing",
+              "goal": "billing",
+              "agent": "billing",
+              "tool": "query_billing",
+              "dependencies": [],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "billing:refund",
+              "status": "completed"
+            },
+            {
+              "id": "request_refund",
+              "goal": "billing",
+              "agent": "billing",
+              "tool": "request_refund",
+              "dependencies": [
+                "query_billing"
+              ],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "billing:refund",
+              "status": "completed"
+            }
+          ],
+          "reason": "Reconcile dependencies against fresh business evidence"
+        }
+      },
+      "pre_review_state": {
+        "id": "bafac16f-5071-4aa5-9850-227eef86cdd5",
+        "plan": "pro",
+        "entitlement": "basic",
+        "service": "healthy",
+        "charges": 2,
+        "refunds": 0,
+        "version": 1,
+        "simulated": true
+      },
+      "final_state": {
+        "id": "bafac16f-5071-4aa5-9850-227eef86cdd5",
+        "plan": "pro",
+        "entitlement": "basic",
+        "service": "healthy",
+        "charges": 2,
+        "refunds": 1,
+        "version": 2,
+        "simulated": true
+      }
+    },
+    {
+      "id": "combined",
+      "category": "composite",
+      "status": "completed",
+      "expected_status": "completed",
+      "passed": true,
+      "state_verified": true,
+      "business_completed": true,
+      "independent_completion": false,
+      "initial_pause": true,
+      "approval_pause": true,
+      "user_confirmations": 2,
+      "expected_approval": true,
+      "recovery": true,
+      "unauthorized_operations": 0,
+      "unconfirmed_operations": 0,
+      "duplicate_operations": 0,
+      "latency_ms": 10.771374999999999,
+      "model_calls": 0,
+      "usage": [],
+      "tool_errors": 0,
+      "fallback_count": 0,
+      "execution_mode": "deterministic",
+      "task": {
+        "schema_version": 3,
+        "id": "e7bb324b-fb6b-42f6-b85a-276a991503f3",
+        "owner": "eval-user",
+        "message": "请修复权益并申请退款",
+        "conversation_id": "f5306dbe-49ec-4d57-923b-d53bb77b1e29",
+        "goals": {
+          "entitlement": "repair",
+          "billing": "refund"
+        },
+        "status": "completed",
+        "order_id": "f299389f-d89d-44b0-b74c-626ed6f03b17",
+        "evidence": [
+          {
+            "tool": "query_subscription",
+            "agent": "technical",
+            "success": true,
+            "data": {
+              "plan": "pro",
+              "entitlement": "basic"
+            },
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.3419561,
+            "order_version": 1,
+            "order_id": "f299389f-d89d-44b0-b74c-626ed6f03b17",
+            "sequence": 1,
+            "fallback": false
+          },
+          {
+            "tool": "check_service",
+            "agent": "technical",
+            "success": true,
+            "data": {
+              "service": "healthy"
+            },
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.342876,
+            "order_version": 1,
+            "order_id": "f299389f-d89d-44b0-b74c-626ed6f03b17",
+            "sequence": 2,
+            "fallback": false
+          },
+          {
+            "tool": "sync_entitlements",
+            "agent": "technical",
+            "success": true,
+            "data": {},
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.34552,
+            "order_version": 2,
+            "order_id": "f299389f-d89d-44b0-b74c-626ed6f03b17",
+            "sequence": 3,
+            "fallback": false
+          },
+          {
+            "tool": "query_billing",
+            "agent": "billing",
+            "success": true,
+            "data": {
+              "charges": 2,
+              "refunds": 0
+            },
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.346474,
+            "order_version": 2,
+            "order_id": "f299389f-d89d-44b0-b74c-626ed6f03b17",
+            "sequence": 4,
+            "fallback": false
+          },
+          {
+            "tool": "request_refund",
+            "agent": "billing",
+            "success": true,
+            "data": {
+              "id": "fd889f3b-77cd-48b9-8b69-7676878de603",
+              "status": "pending",
+              "order_id": "f299389f-d89d-44b0-b74c-626ed6f03b17",
+              "count": 1,
+              "confirmation_id": "07c23101-cf28-4e3d-a100-798d415f082d",
+              "action": "refund",
+              "plan_version": 7,
+              "order_version": 2,
+              "expires_at": 1789099905.349487,
+              "binding": "f2c1a01df9ac8c832447f84dd68c48f082b96e5789792add4e67444f42270b27"
+            },
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.349493,
+            "order_version": 2,
+            "order_id": "f299389f-d89d-44b0-b74c-626ed6f03b17",
+            "sequence": 5,
+            "fallback": false
+          }
+        ],
+        "actions": [
+          {
+            "tool": "sync_entitlements",
+            "status": "verified",
+            "idempotency_key": "e7bb324b-fb6b-42f6-b85a-276a991503f3:sync",
+            "confirmation_id": "2c8c44e0-4ff0-44f0-a938-d8196b85a6fb",
+            "timestamp": 1789099005.34552
+          },
+          {
+            "tool": "refund",
+            "status": "verified",
+            "idempotency_key": "fd889f3b-77cd-48b9-8b69-7676878de603",
+            "reconciled": false,
+            "confirmation_id": "07c23101-cf28-4e3d-a100-798d415f082d",
+            "timestamp": 1789099005.350815
+          }
+        ],
+        "unresolved": [],
+        "verification": {
+          "entitlement": true,
+          "billing": true
+        },
+        "revision": 19,
+        "approval": {
+          "id": "fd889f3b-77cd-48b9-8b69-7676878de603",
+          "status": "approved",
+          "order_id": "f299389f-d89d-44b0-b74c-626ed6f03b17",
+          "count": 1,
+          "confirmation_id": "07c23101-cf28-4e3d-a100-798d415f082d",
+          "action": "refund",
+          "plan_version": 7,
+          "order_version": 2,
+          "expires_at": 1789099905.349487,
+          "binding": "f2c1a01df9ac8c832447f84dd68c48f082b96e5789792add4e67444f42270b27",
+          "reviewer": "eval-reviewer"
+        },
+        "approval_history": [],
+        "simulated": true,
+        "tool_messages": [],
+        "attempts": [
+          {
+            "call_id": "4a5d2ebe-89d6-4695-a248-96d829deafc8",
+            "tool": "query_subscription",
+            "arguments": "{\"order_id\": \"f299389f-d89d-44b0-b74c-626ed6f03b17\"}",
+            "timestamp": 1789099005.3419762,
+            "success": true,
+            "evidence": {
+              "tool": "query_subscription",
+              "agent": "technical",
+              "success": true,
+              "data": {
+                "plan": "pro",
+                "entitlement": "basic"
+              },
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.3419561,
+              "order_version": 1,
+              "order_id": "f299389f-d89d-44b0-b74c-626ed6f03b17",
+              "sequence": 1,
+              "fallback": false
+            },
+            "status": "running"
+          },
+          {
+            "call_id": "ed953daf-0ee4-4e9f-876f-39142dd67d7f",
+            "tool": "check_service",
+            "arguments": "{\"order_id\": \"f299389f-d89d-44b0-b74c-626ed6f03b17\"}",
+            "timestamp": 1789099005.342894,
+            "success": true,
+            "evidence": {
+              "tool": "check_service",
+              "agent": "technical",
+              "success": true,
+              "data": {
+                "service": "healthy"
+              },
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.342876,
+              "order_version": 1,
+              "order_id": "f299389f-d89d-44b0-b74c-626ed6f03b17",
+              "sequence": 2,
+              "fallback": false
+            },
+            "status": "running"
+          },
+          {
+            "call_id": "599391cf-c49a-4844-863c-70e17dd41d89",
+            "tool": "sync_entitlements",
+            "arguments": "{\"order_id\": \"f299389f-d89d-44b0-b74c-626ed6f03b17\"}",
+            "timestamp": 1789099005.3455381,
+            "success": true,
+            "evidence": {
+              "tool": "sync_entitlements",
+              "agent": "technical",
+              "success": true,
+              "data": {},
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.34552,
+              "order_version": 2,
+              "order_id": "f299389f-d89d-44b0-b74c-626ed6f03b17",
+              "sequence": 3,
+              "fallback": false
+            },
+            "status": "running"
+          },
+          {
+            "call_id": "af3f5fa9-9ea8-4bb6-a2ee-e9c8290a1c8c",
+            "tool": "query_billing",
+            "arguments": "{\"order_id\": \"f299389f-d89d-44b0-b74c-626ed6f03b17\"}",
+            "timestamp": 1789099005.346493,
+            "success": true,
+            "evidence": {
+              "tool": "query_billing",
+              "agent": "billing",
+              "success": true,
+              "data": {
+                "charges": 2,
+                "refunds": 0
+              },
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.346474,
+              "order_version": 2,
+              "order_id": "f299389f-d89d-44b0-b74c-626ed6f03b17",
+              "sequence": 4,
+              "fallback": false
+            },
+            "status": "running"
+          },
+          {
+            "call_id": "21fdf6a7-fc05-491a-a8f4-6b8c039cc81a",
+            "tool": "request_refund",
+            "arguments": "{\"order_id\": \"f299389f-d89d-44b0-b74c-626ed6f03b17\"}",
+            "timestamp": 1789099005.3495,
+            "success": true,
+            "evidence": {
+              "tool": "request_refund",
+              "agent": "billing",
+              "success": true,
+              "data": {
+                "id": "fd889f3b-77cd-48b9-8b69-7676878de603",
+                "status": "pending",
+                "order_id": "f299389f-d89d-44b0-b74c-626ed6f03b17",
+                "count": 1,
+                "confirmation_id": "07c23101-cf28-4e3d-a100-798d415f082d",
+                "action": "refund",
+                "plan_version": 7,
+                "order_version": 2,
+                "expires_at": 1789099905.349487,
+                "binding": "f2c1a01df9ac8c832447f84dd68c48f082b96e5789792add4e67444f42270b27"
+              },
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.349493,
+              "order_version": 2,
+              "order_id": "f299389f-d89d-44b0-b74c-626ed6f03b17",
+              "sequence": 5,
+              "fallback": false
+            },
+            "status": "awaiting_approval"
+          }
+        ],
+        "handoffs": [
+          {
+            "from": "technical",
+            "to": "supervisor",
+            "timestamp": 1789099005.3419762,
+            "evidence_sequence": 1,
+            "verified_facts": {
+              "entitlement": false,
+              "billing": false
+            },
+            "unresolved": [
+              "entitlement",
+              "billing"
+            ],
+            "actions": [],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "running"
+          },
+          {
+            "from": "technical",
+            "to": "supervisor",
+            "timestamp": 1789099005.342894,
+            "evidence_sequence": 2,
+            "verified_facts": {
+              "entitlement": false,
+              "billing": false
+            },
+            "unresolved": [
+              "entitlement",
+              "billing"
+            ],
+            "actions": [],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "running"
+          },
+          {
+            "from": "technical",
+            "to": "supervisor",
+            "timestamp": 1789099005.345539,
+            "evidence_sequence": 3,
+            "verified_facts": {
+              "entitlement": true,
+              "billing": false
+            },
+            "unresolved": [
+              "billing"
+            ],
+            "actions": [
+              {
+                "tool": "sync_entitlements",
+                "status": "verified",
+                "idempotency_key": "e7bb324b-fb6b-42f6-b85a-276a991503f3:sync",
+                "confirmation_id": "2c8c44e0-4ff0-44f0-a938-d8196b85a6fb",
+                "timestamp": 1789099005.34552
+              }
+            ],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "running"
+          },
+          {
+            "from": "billing",
+            "to": "supervisor",
+            "timestamp": 1789099005.346493,
+            "evidence_sequence": 4,
+            "verified_facts": {
+              "entitlement": true,
+              "billing": false
+            },
+            "unresolved": [
+              "billing"
+            ],
+            "actions": [
+              {
+                "tool": "sync_entitlements",
+                "status": "verified",
+                "idempotency_key": "e7bb324b-fb6b-42f6-b85a-276a991503f3:sync",
+                "confirmation_id": "2c8c44e0-4ff0-44f0-a938-d8196b85a6fb",
+                "timestamp": 1789099005.34552
+              }
+            ],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "running"
+          },
+          {
+            "from": "billing",
+            "to": "supervisor",
+            "timestamp": 1789099005.349501,
+            "evidence_sequence": 5,
+            "verified_facts": {
+              "entitlement": true,
+              "billing": false
+            },
+            "unresolved": [
+              "billing"
+            ],
+            "actions": [
+              {
+                "tool": "sync_entitlements",
+                "status": "verified",
+                "idempotency_key": "e7bb324b-fb6b-42f6-b85a-276a991503f3:sync",
+                "confirmation_id": "2c8c44e0-4ff0-44f0-a938-d8196b85a6fb",
+                "timestamp": 1789099005.34552
+              }
+            ],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "awaiting_approval"
+          }
+        ],
+        "plans": [
+          {
+            "version": 1,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund"
+              }
+            ],
+            "reason": "Explicit request scope"
+          },
+          {
+            "version": 2,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund"
+              }
+            ],
+            "reason": "Validated goal interpretation; no write consent granted"
+          },
+          {
+            "version": 3,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "ready"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "ready"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "pending"
+              },
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "ready"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "pending"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          },
+          {
+            "version": 4,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "ready"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "pending"
+              },
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "ready"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "pending"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          },
+          {
+            "version": 5,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "ready"
+              },
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "ready"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "pending"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          },
+          {
+            "version": 6,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "ready"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "pending"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          },
+          {
+            "version": 7,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "completed"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "ready"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          },
+          {
+            "version": 8,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "completed"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "completed"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          }
+        ],
+        "replans": 0,
+        "steps_used": 5,
+        "model_calls": 0,
+        "fallback_count": 0,
+        "usage": [],
+        "interpreted": true,
+        "interpretations": [
+          {
+            "mode": "offline_rules",
+            "calls": 0,
+            "usage": []
+          }
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": "请修复权益并申请退款"
+          }
+        ],
+        "confirmation": {
+          "id": "07c23101-cf28-4e3d-a100-798d415f082d",
+          "task_id": "e7bb324b-fb6b-42f6-b85a-276a991503f3",
+          "owner": "eval-user",
+          "order_id": "f299389f-d89d-44b0-b74c-626ed6f03b17",
+          "tool": "request_refund",
+          "parameters": {
+            "order_id": "f299389f-d89d-44b0-b74c-626ed6f03b17",
+            "duplicate_charge_count": 1
+          },
+          "plan_version": 7,
+          "order_version": 2,
+          "expires_at": 1789099905.34713,
+          "status": "accepted",
+          "binding": "cacb31074c09829d5e4b7f1553e22f2be16173dca9f4f150d85f4d73cd607423",
+          "accepted_at": 1789099005.347934
+        },
+        "confirmation_history": [
+          {
+            "id": "2c8c44e0-4ff0-44f0-a938-d8196b85a6fb",
+            "task_id": "e7bb324b-fb6b-42f6-b85a-276a991503f3",
+            "owner": "eval-user",
+            "order_id": "f299389f-d89d-44b0-b74c-626ed6f03b17",
+            "tool": "sync_entitlements",
+            "parameters": {
+              "order_id": "f299389f-d89d-44b0-b74c-626ed6f03b17",
+              "target_plan": "pro"
+            },
+            "plan_version": 5,
+            "order_version": 1,
+            "expires_at": 1789099905.343356,
+            "status": "accepted",
+            "binding": "ad6f57b5e039bd69a7fc8debca5dffd8c6f80b98927f4a1831dcb65ceec063de",
+            "accepted_at": 1789099005.344092
+          }
+        ],
+        "execution_mode": "deterministic",
+        "response": "已核验：entitlement, billing。模拟任务完成。",
+        "primary_agent": "technical",
+        "supporting_agents": [
+          "billing"
+        ],
+        "plan": {
+          "version": 8,
+          "steps": [
+            {
+              "id": "query_subscription",
+              "goal": "entitlement",
+              "agent": "technical",
+              "tool": "query_subscription",
+              "dependencies": [],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "entitlement:repair",
+              "status": "completed"
+            },
+            {
+              "id": "check_service",
+              "goal": "entitlement",
+              "agent": "technical",
+              "tool": "check_service",
+              "dependencies": [],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "entitlement:repair",
+              "status": "completed"
+            },
+            {
+              "id": "sync_entitlements",
+              "goal": "entitlement",
+              "agent": "technical",
+              "tool": "sync_entitlements",
+              "dependencies": [
+                "query_subscription",
+                "check_service"
+              ],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "entitlement:repair",
+              "status": "completed"
+            },
+            {
+              "id": "query_billing",
+              "goal": "billing",
+              "agent": "billing",
+              "tool": "query_billing",
+              "dependencies": [],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "billing:refund",
+              "status": "completed"
+            },
+            {
+              "id": "request_refund",
+              "goal": "billing",
+              "agent": "billing",
+              "tool": "request_refund",
+              "dependencies": [
+                "query_billing"
+              ],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "billing:refund",
+              "status": "completed"
+            }
+          ],
+          "reason": "Reconcile dependencies against fresh business evidence"
+        }
+      },
+      "pre_review_state": {
+        "id": "f299389f-d89d-44b0-b74c-626ed6f03b17",
+        "plan": "pro",
+        "entitlement": "pro",
+        "service": "healthy",
+        "charges": 2,
+        "refunds": 0,
+        "version": 2,
+        "simulated": true
+      },
+      "final_state": {
+        "id": "f299389f-d89d-44b0-b74c-626ed6f03b17",
+        "plan": "pro",
+        "entitlement": "pro",
+        "service": "healthy",
+        "charges": 2,
+        "refunds": 1,
+        "version": 3,
+        "simulated": true
+      }
+    },
+    {
+      "id": "outage",
+      "category": "takeover",
+      "status": "needs_human",
+      "expected_status": "needs_human",
+      "passed": true,
+      "state_verified": true,
+      "business_completed": false,
+      "independent_completion": false,
+      "initial_pause": true,
+      "approval_pause": false,
+      "user_confirmations": 0,
+      "expected_approval": false,
+      "recovery": null,
+      "unauthorized_operations": 0,
+      "unconfirmed_operations": 0,
+      "duplicate_operations": 0,
+      "latency_ms": 3.456249999999994,
+      "model_calls": 0,
+      "usage": [],
+      "tool_errors": 0,
+      "fallback_count": 0,
+      "execution_mode": "deterministic",
+      "task": {
+        "schema_version": 3,
+        "id": "d9d15bee-d46f-4d15-a0db-0790e2fbe17a",
+        "owner": "eval-user",
+        "message": "请修复权益",
+        "conversation_id": "922f652e-72ec-4ae6-aee7-8f9ebdc5b28e",
+        "goals": {
+          "entitlement": "repair"
+        },
+        "status": "needs_human",
+        "order_id": "0a31bc77-fb10-4c2b-b3fa-7ac6c8600a46",
+        "evidence": [
+          {
+            "tool": "query_subscription",
+            "agent": "technical",
+            "success": true,
+            "data": {
+              "plan": "pro",
+              "entitlement": "basic"
+            },
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.354146,
+            "order_version": 1,
+            "order_id": "0a31bc77-fb10-4c2b-b3fa-7ac6c8600a46",
+            "sequence": 1,
+            "fallback": false
+          },
+          {
+            "tool": "check_service",
+            "agent": "technical",
+            "success": true,
+            "data": {
+              "service": "down"
+            },
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.35502,
+            "order_version": 1,
+            "order_id": "0a31bc77-fb10-4c2b-b3fa-7ac6c8600a46",
+            "sequence": 2,
+            "fallback": false
+          }
+        ],
+        "actions": [],
+        "unresolved": [
+          "entitlement"
+        ],
+        "verification": {
+          "entitlement": false
+        },
+        "revision": 7,
+        "approval": null,
+        "approval_history": [],
+        "simulated": true,
+        "tool_messages": [],
+        "attempts": [
+          {
+            "call_id": "62bce618-7dc5-41ca-94aa-b1a5fe373733",
+            "tool": "query_subscription",
+            "arguments": "{\"order_id\": \"0a31bc77-fb10-4c2b-b3fa-7ac6c8600a46\"}",
+            "timestamp": 1789099005.354162,
+            "success": true,
+            "evidence": {
+              "tool": "query_subscription",
+              "agent": "technical",
+              "success": true,
+              "data": {
+                "plan": "pro",
+                "entitlement": "basic"
+              },
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.354146,
+              "order_version": 1,
+              "order_id": "0a31bc77-fb10-4c2b-b3fa-7ac6c8600a46",
+              "sequence": 1,
+              "fallback": false
+            },
+            "status": "running"
+          },
+          {
+            "call_id": "6d4e5a82-0490-42a7-93f8-bde69ee32ada",
+            "tool": "check_service",
+            "arguments": "{\"order_id\": \"0a31bc77-fb10-4c2b-b3fa-7ac6c8600a46\"}",
+            "timestamp": 1789099005.355036,
+            "success": true,
+            "evidence": {
+              "tool": "check_service",
+              "agent": "technical",
+              "success": true,
+              "data": {
+                "service": "down"
+              },
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.35502,
+              "order_version": 1,
+              "order_id": "0a31bc77-fb10-4c2b-b3fa-7ac6c8600a46",
+              "sequence": 2,
+              "fallback": false
+            },
+            "status": "running"
+          }
+        ],
+        "handoffs": [
+          {
+            "from": "technical",
+            "to": "supervisor",
+            "timestamp": 1789099005.354163,
+            "evidence_sequence": 1,
+            "verified_facts": {
+              "entitlement": false
+            },
+            "unresolved": [
+              "entitlement"
+            ],
+            "actions": [],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "running"
+          },
+          {
+            "from": "technical",
+            "to": "supervisor",
+            "timestamp": 1789099005.355037,
+            "evidence_sequence": 2,
+            "verified_facts": {
+              "entitlement": false
+            },
+            "unresolved": [
+              "entitlement"
+            ],
+            "actions": [],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "running"
+          }
+        ],
+        "plans": [
+          {
+            "version": 1,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              }
+            ],
+            "reason": "Explicit request scope"
+          },
+          {
+            "version": 2,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              }
+            ],
+            "reason": "Validated goal interpretation; no write consent granted"
+          },
+          {
+            "version": 3,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "ready"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "ready"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "pending"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          },
+          {
+            "version": 4,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "ready"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "pending"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          },
+          {
+            "version": 5,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "blocked",
+                "blocked_reason": "Service outage requires human handling"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          }
+        ],
+        "replans": 0,
+        "steps_used": 2,
+        "model_calls": 0,
+        "fallback_count": 0,
+        "usage": [],
+        "interpreted": true,
+        "interpretations": [
+          {
+            "mode": "offline_rules",
+            "calls": 0,
+            "usage": []
+          }
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": "请修复权益"
+          }
+        ],
+        "confirmation": null,
+        "confirmation_history": [],
+        "execution_mode": "deterministic",
+        "response": "已核验：；未完成：entitlement；依赖受阻，需要人工处理。",
+        "primary_agent": "technical",
+        "supporting_agents": [],
+        "plan": {
+          "version": 5,
+          "steps": [
+            {
+              "id": "query_subscription",
+              "goal": "entitlement",
+              "agent": "technical",
+              "tool": "query_subscription",
+              "dependencies": [],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "entitlement:repair",
+              "status": "completed"
+            },
+            {
+              "id": "check_service",
+              "goal": "entitlement",
+              "agent": "technical",
+              "tool": "check_service",
+              "dependencies": [],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "entitlement:repair",
+              "status": "completed"
+            },
+            {
+              "id": "sync_entitlements",
+              "goal": "entitlement",
+              "agent": "technical",
+              "tool": "sync_entitlements",
+              "dependencies": [
+                "query_subscription",
+                "check_service"
+              ],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "entitlement:repair",
+              "status": "blocked",
+              "blocked_reason": "Service outage requires human handling"
+            }
+          ],
+          "reason": "Reconcile dependencies against fresh business evidence"
+        }
+      },
+      "pre_review_state": {
+        "id": "0a31bc77-fb10-4c2b-b3fa-7ac6c8600a46",
+        "plan": "pro",
+        "entitlement": "basic",
+        "service": "down",
+        "charges": 2,
+        "refunds": 0,
+        "version": 1,
+        "simulated": true
+      },
+      "final_state": {
+        "id": "0a31bc77-fb10-4c2b-b3fa-7ac6c8600a46",
+        "plan": "pro",
+        "entitlement": "basic",
+        "service": "down",
+        "charges": 2,
+        "refunds": 0,
+        "version": 1,
+        "simulated": true
+      }
+    },
+    {
+      "id": "missing",
+      "category": "clarification",
+      "status": "awaiting_clarification",
+      "expected_status": "awaiting_clarification",
+      "passed": true,
+      "state_verified": true,
+      "business_completed": false,
+      "independent_completion": false,
+      "initial_pause": true,
+      "approval_pause": false,
+      "user_confirmations": 0,
+      "expected_approval": false,
+      "recovery": null,
+      "unauthorized_operations": 0,
+      "unconfirmed_operations": 0,
+      "duplicate_operations": 0,
+      "latency_ms": 1.3970840000000067,
+      "model_calls": 0,
+      "usage": [],
+      "tool_errors": 0,
+      "fallback_count": 0,
+      "execution_mode": "deterministic",
+      "task": {
+        "schema_version": 3,
+        "id": "36ea8edf-783a-4f4b-808b-5d3f6482ee0c",
+        "owner": "eval-user",
+        "message": "查询账单",
+        "conversation_id": "5500b9af-6fd0-446a-888f-d4020efff065",
+        "goals": {
+          "billing": "read"
+        },
+        "status": "awaiting_clarification",
+        "order_id": null,
+        "evidence": [],
+        "actions": [],
+        "unresolved": [
+          "billing"
+        ],
+        "verification": {},
+        "revision": 2,
+        "approval": null,
+        "approval_history": [],
+        "simulated": true,
+        "tool_messages": [],
+        "attempts": [],
+        "handoffs": [],
+        "plans": [
+          {
+            "version": 1,
+            "steps": [
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:read"
+              }
+            ],
+            "reason": "Explicit request scope"
+          },
+          {
+            "version": 2,
+            "steps": [
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:read"
+              }
+            ],
+            "reason": "Validated goal interpretation; no write consent granted"
+          }
+        ],
+        "replans": 0,
+        "steps_used": 0,
+        "model_calls": 0,
+        "fallback_count": 0,
+        "usage": [],
+        "interpreted": true,
+        "interpretations": [
+          {
+            "mode": "offline_rules",
+            "calls": 0,
+            "usage": []
+          }
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": "查询账单"
+          }
+        ],
+        "confirmation": null,
+        "confirmation_history": [],
+        "execution_mode": "deterministic",
+        "response": "请提供订单号。",
+        "primary_agent": "billing",
+        "supporting_agents": [],
+        "plan": {
+          "version": 2,
+          "steps": [
+            {
+              "id": "query_billing",
+              "goal": "billing",
+              "agent": "billing",
+              "tool": "query_billing",
+              "dependencies": [],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "billing:read"
+            }
+          ],
+          "reason": "Validated goal interpretation; no write consent granted"
+        }
+      },
+      "pre_review_state": {
+        "id": "bb083048-5f83-4459-9c2c-d82e99d135ae",
+        "plan": "pro",
+        "entitlement": "basic",
+        "service": "healthy",
+        "charges": 2,
+        "refunds": 0,
+        "version": 1,
+        "simulated": true
+      },
+      "final_state": {
+        "id": "bb083048-5f83-4459-9c2c-d82e99d135ae",
+        "plan": "pro",
+        "entitlement": "basic",
+        "service": "healthy",
+        "charges": 2,
+        "refunds": 0,
+        "version": 1,
+        "simulated": true
+      }
+    },
+    {
+      "id": "denied",
+      "category": "rejection",
+      "status": "rejected",
+      "expected_status": "rejected",
+      "passed": true,
+      "state_verified": true,
+      "business_completed": false,
+      "independent_completion": false,
+      "initial_pause": true,
+      "approval_pause": true,
+      "user_confirmations": 1,
+      "expected_approval": true,
+      "recovery": null,
+      "unauthorized_operations": 0,
+      "unconfirmed_operations": 0,
+      "duplicate_operations": 0,
+      "latency_ms": 5.693374999999986,
+      "model_calls": 0,
+      "usage": [],
+      "tool_errors": 0,
+      "fallback_count": 0,
+      "execution_mode": "deterministic",
+      "task": {
+        "schema_version": 3,
+        "id": "37b8e358-0b48-43ca-92c1-e1fd1adcb48d",
+        "owner": "eval-user",
+        "message": "请申请退款",
+        "conversation_id": "73c3fbee-6589-40b0-9cbb-861b4fd458ee",
+        "goals": {
+          "billing": "refund"
+        },
+        "status": "rejected",
+        "order_id": "4423bf8c-0c14-4fbd-9596-f57036919d74",
+        "evidence": [
+          {
+            "tool": "query_billing",
+            "agent": "billing",
+            "success": true,
+            "data": {
+              "charges": 2,
+              "refunds": 0
+            },
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.3617878,
+            "order_version": 1,
+            "order_id": "4423bf8c-0c14-4fbd-9596-f57036919d74",
+            "sequence": 1,
+            "fallback": false
+          },
+          {
+            "tool": "request_refund",
+            "agent": "billing",
+            "success": true,
+            "data": {
+              "id": "2c806666-eb9e-4cb7-babf-095f63044fda",
+              "status": "pending",
+              "order_id": "4423bf8c-0c14-4fbd-9596-f57036919d74",
+              "count": 1,
+              "confirmation_id": "74a0c9c7-360b-4e09-838b-44ebc469e21f",
+              "action": "refund",
+              "plan_version": 4,
+              "order_version": 1,
+              "expires_at": 1789099905.364842,
+              "binding": "b7c61d81feb6899b4d700d0debde7a2c43b5a8fc2a40c9f6bcc6b550da0d58f3"
+            },
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.3648489,
+            "order_version": 1,
+            "order_id": "4423bf8c-0c14-4fbd-9596-f57036919d74",
+            "sequence": 2,
+            "fallback": false
+          }
+        ],
+        "actions": [],
+        "unresolved": [
+          "billing"
+        ],
+        "verification": {
+          "billing": false
+        },
+        "revision": 10,
+        "approval": {
+          "id": "2c806666-eb9e-4cb7-babf-095f63044fda",
+          "status": "rejected",
+          "order_id": "4423bf8c-0c14-4fbd-9596-f57036919d74",
+          "count": 1,
+          "confirmation_id": "74a0c9c7-360b-4e09-838b-44ebc469e21f",
+          "action": "refund",
+          "plan_version": 4,
+          "order_version": 1,
+          "expires_at": 1789099905.364842,
+          "binding": "b7c61d81feb6899b4d700d0debde7a2c43b5a8fc2a40c9f6bcc6b550da0d58f3",
+          "reviewer": "eval-reviewer"
+        },
+        "approval_history": [],
+        "simulated": true,
+        "tool_messages": [],
+        "attempts": [
+          {
+            "call_id": "09da0f17-f269-4bfc-aab7-904997dcefa6",
+            "tool": "query_billing",
+            "arguments": "{\"order_id\": \"4423bf8c-0c14-4fbd-9596-f57036919d74\"}",
+            "timestamp": 1789099005.3618062,
+            "success": true,
+            "evidence": {
+              "tool": "query_billing",
+              "agent": "billing",
+              "success": true,
+              "data": {
+                "charges": 2,
+                "refunds": 0
+              },
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.3617878,
+              "order_version": 1,
+              "order_id": "4423bf8c-0c14-4fbd-9596-f57036919d74",
+              "sequence": 1,
+              "fallback": false
+            },
+            "status": "running"
+          },
+          {
+            "call_id": "dade63be-57df-4298-824c-46d8e6614d65",
+            "tool": "request_refund",
+            "arguments": "{\"order_id\": \"4423bf8c-0c14-4fbd-9596-f57036919d74\"}",
+            "timestamp": 1789099005.3648572,
+            "success": true,
+            "evidence": {
+              "tool": "request_refund",
+              "agent": "billing",
+              "success": true,
+              "data": {
+                "id": "2c806666-eb9e-4cb7-babf-095f63044fda",
+                "status": "pending",
+                "order_id": "4423bf8c-0c14-4fbd-9596-f57036919d74",
+                "count": 1,
+                "confirmation_id": "74a0c9c7-360b-4e09-838b-44ebc469e21f",
+                "action": "refund",
+                "plan_version": 4,
+                "order_version": 1,
+                "expires_at": 1789099905.364842,
+                "binding": "b7c61d81feb6899b4d700d0debde7a2c43b5a8fc2a40c9f6bcc6b550da0d58f3"
+              },
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.3648489,
+              "order_version": 1,
+              "order_id": "4423bf8c-0c14-4fbd-9596-f57036919d74",
+              "sequence": 2,
+              "fallback": false
+            },
+            "status": "awaiting_approval"
+          }
+        ],
+        "handoffs": [
+          {
+            "from": "billing",
+            "to": "supervisor",
+            "timestamp": 1789099005.3618062,
+            "evidence_sequence": 1,
+            "verified_facts": {
+              "billing": false
+            },
+            "unresolved": [
+              "billing"
+            ],
+            "actions": [],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "running"
+          },
+          {
+            "from": "billing",
+            "to": "supervisor",
+            "timestamp": 1789099005.3648582,
+            "evidence_sequence": 2,
+            "verified_facts": {
+              "billing": false
+            },
+            "unresolved": [
+              "billing"
+            ],
+            "actions": [],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "awaiting_approval"
+          }
+        ],
+        "plans": [
+          {
+            "version": 1,
+            "steps": [
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund"
+              }
+            ],
+            "reason": "Explicit request scope"
+          },
+          {
+            "version": 2,
+            "steps": [
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund"
+              }
+            ],
+            "reason": "Validated goal interpretation; no write consent granted"
+          },
+          {
+            "version": 3,
+            "steps": [
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "ready"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "pending"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          },
+          {
+            "version": 4,
+            "steps": [
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "completed"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "ready"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          }
+        ],
+        "replans": 0,
+        "steps_used": 2,
+        "model_calls": 0,
+        "fallback_count": 0,
+        "usage": [],
+        "interpreted": true,
+        "interpretations": [
+          {
+            "mode": "offline_rules",
+            "calls": 0,
+            "usage": []
+          }
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": "请申请退款"
+          }
+        ],
+        "confirmation": {
+          "id": "74a0c9c7-360b-4e09-838b-44ebc469e21f",
+          "task_id": "37b8e358-0b48-43ca-92c1-e1fd1adcb48d",
+          "owner": "eval-user",
+          "order_id": "4423bf8c-0c14-4fbd-9596-f57036919d74",
+          "tool": "request_refund",
+          "parameters": {
+            "order_id": "4423bf8c-0c14-4fbd-9596-f57036919d74",
+            "duplicate_charge_count": 1
+          },
+          "plan_version": 4,
+          "order_version": 1,
+          "expires_at": 1789099905.362171,
+          "status": "accepted",
+          "binding": "36e1e76cfee3ad1f8a2b9fb64e6181255b549f299e06b4bb43faa8ebf1e0abbf",
+          "accepted_at": 1789099005.362956
+        },
+        "confirmation_history": [],
+        "execution_mode": "deterministic",
+        "response": "审批已拒绝，未执行退款。",
+        "primary_agent": "billing",
+        "supporting_agents": [],
+        "plan": {
+          "version": 4,
+          "steps": [
+            {
+              "id": "query_billing",
+              "goal": "billing",
+              "agent": "billing",
+              "tool": "query_billing",
+              "dependencies": [],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "billing:refund",
+              "status": "completed"
+            },
+            {
+              "id": "request_refund",
+              "goal": "billing",
+              "agent": "billing",
+              "tool": "request_refund",
+              "dependencies": [
+                "query_billing"
+              ],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "billing:refund",
+              "status": "ready"
+            }
+          ],
+          "reason": "Reconcile dependencies against fresh business evidence"
+        }
+      },
+      "pre_review_state": {
+        "id": "4423bf8c-0c14-4fbd-9596-f57036919d74",
+        "plan": "pro",
+        "entitlement": "basic",
+        "service": "healthy",
+        "charges": 2,
+        "refunds": 0,
+        "version": 1,
+        "simulated": true
+      },
+      "final_state": {
+        "id": "4423bf8c-0c14-4fbd-9596-f57036919d74",
+        "plan": "pro",
+        "entitlement": "basic",
+        "service": "healthy",
+        "charges": 2,
+        "refunds": 0,
+        "version": 1,
+        "simulated": true
+      }
+    },
+    {
+      "id": "expired",
+      "category": "expiry",
+      "status": "needs_human",
+      "expected_status": "needs_human",
+      "passed": true,
+      "state_verified": true,
+      "business_completed": false,
+      "independent_completion": false,
+      "initial_pause": true,
+      "approval_pause": true,
+      "user_confirmations": 1,
+      "expected_approval": true,
+      "recovery": null,
+      "unauthorized_operations": 0,
+      "unconfirmed_operations": 0,
+      "duplicate_operations": 0,
+      "latency_ms": 7.821582999999993,
+      "model_calls": 0,
+      "usage": [],
+      "tool_errors": 0,
+      "fallback_count": 0,
+      "execution_mode": "deterministic",
+      "task": {
+        "schema_version": 3,
+        "id": "fbed129f-1ebc-496c-a5a0-dcfca2f55ffa",
+        "owner": "eval-user",
+        "message": "请申请退款",
+        "conversation_id": "443f8d98-559d-42ea-9d06-6b3500f1ab0a",
+        "goals": {
+          "billing": "refund"
+        },
+        "status": "needs_human",
+        "order_id": "87f3de0c-6ef0-4fb5-84fb-67f94d1f6a72",
+        "evidence": [
+          {
+            "tool": "query_billing",
+            "agent": "billing",
+            "success": true,
+            "data": {
+              "charges": 2,
+              "refunds": 0
+            },
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.36931,
+            "order_version": 1,
+            "order_id": "87f3de0c-6ef0-4fb5-84fb-67f94d1f6a72",
+            "sequence": 1,
+            "fallback": false
+          },
+          {
+            "tool": "request_refund",
+            "agent": "billing",
+            "success": true,
+            "data": {
+              "id": "3eb3eb25-50b9-443c-a4ba-733cc2fef064",
+              "status": "pending",
+              "order_id": "87f3de0c-6ef0-4fb5-84fb-67f94d1f6a72",
+              "count": 1,
+              "confirmation_id": "43cd6efa-ca65-42fe-a471-7ee68dd2b5f4",
+              "action": "refund",
+              "plan_version": 4,
+              "order_version": 1,
+              "expires_at": 1789099905.371458,
+              "binding": "fabae8779b50f5b19bc3009c74f1305efb31e47a542c4c293d961b3e3206bdcf"
+            },
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.3714628,
+            "order_version": 1,
+            "order_id": "87f3de0c-6ef0-4fb5-84fb-67f94d1f6a72",
+            "sequence": 2,
+            "fallback": false
+          }
+        ],
+        "actions": [],
+        "unresolved": [
+          "billing"
+        ],
+        "verification": {
+          "billing": false
+        },
+        "revision": 10,
+        "approval": {
+          "id": "3eb3eb25-50b9-443c-a4ba-733cc2fef064",
+          "status": "invalidated",
+          "order_id": "87f3de0c-6ef0-4fb5-84fb-67f94d1f6a72",
+          "count": 1,
+          "confirmation_id": "43cd6efa-ca65-42fe-a471-7ee68dd2b5f4",
+          "action": "refund",
+          "plan_version": 4,
+          "order_version": 1,
+          "expires_at": 1789099905.371458,
+          "binding": "fabae8779b50f5b19bc3009c74f1305efb31e47a542c4c293d961b3e3206bdcf"
+        },
+        "approval_history": [],
+        "simulated": true,
+        "tool_messages": [],
+        "attempts": [
+          {
+            "call_id": "0c14e5b0-9f4e-4da2-b302-411da2263a36",
+            "tool": "query_billing",
+            "arguments": "{\"order_id\": \"87f3de0c-6ef0-4fb5-84fb-67f94d1f6a72\"}",
+            "timestamp": 1789099005.369326,
+            "success": true,
+            "evidence": {
+              "tool": "query_billing",
+              "agent": "billing",
+              "success": true,
+              "data": {
+                "charges": 2,
+                "refunds": 0
+              },
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.36931,
+              "order_version": 1,
+              "order_id": "87f3de0c-6ef0-4fb5-84fb-67f94d1f6a72",
+              "sequence": 1,
+              "fallback": false
+            },
+            "status": "running"
+          },
+          {
+            "call_id": "ed5821c2-e824-48a6-b4c9-b3e83b653631",
+            "tool": "request_refund",
+            "arguments": "{\"order_id\": \"87f3de0c-6ef0-4fb5-84fb-67f94d1f6a72\"}",
+            "timestamp": 1789099005.37147,
+            "success": true,
+            "evidence": {
+              "tool": "request_refund",
+              "agent": "billing",
+              "success": true,
+              "data": {
+                "id": "3eb3eb25-50b9-443c-a4ba-733cc2fef064",
+                "status": "pending",
+                "order_id": "87f3de0c-6ef0-4fb5-84fb-67f94d1f6a72",
+                "count": 1,
+                "confirmation_id": "43cd6efa-ca65-42fe-a471-7ee68dd2b5f4",
+                "action": "refund",
+                "plan_version": 4,
+                "order_version": 1,
+                "expires_at": 1789099905.371458,
+                "binding": "fabae8779b50f5b19bc3009c74f1305efb31e47a542c4c293d961b3e3206bdcf"
+              },
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.3714628,
+              "order_version": 1,
+              "order_id": "87f3de0c-6ef0-4fb5-84fb-67f94d1f6a72",
+              "sequence": 2,
+              "fallback": false
+            },
+            "status": "awaiting_approval"
+          }
+        ],
+        "handoffs": [
+          {
+            "from": "billing",
+            "to": "supervisor",
+            "timestamp": 1789099005.369326,
+            "evidence_sequence": 1,
+            "verified_facts": {
+              "billing": false
+            },
+            "unresolved": [
+              "billing"
+            ],
+            "actions": [],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "running"
+          },
+          {
+            "from": "billing",
+            "to": "supervisor",
+            "timestamp": 1789099005.3714712,
+            "evidence_sequence": 2,
+            "verified_facts": {
+              "billing": false
+            },
+            "unresolved": [
+              "billing"
+            ],
+            "actions": [],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "awaiting_approval"
+          }
+        ],
+        "plans": [
+          {
+            "version": 1,
+            "steps": [
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund"
+              }
+            ],
+            "reason": "Explicit request scope"
+          },
+          {
+            "version": 2,
+            "steps": [
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund"
+              }
+            ],
+            "reason": "Validated goal interpretation; no write consent granted"
+          },
+          {
+            "version": 3,
+            "steps": [
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "ready"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "pending"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          },
+          {
+            "version": 4,
+            "steps": [
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "completed"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "ready"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          }
+        ],
+        "replans": 0,
+        "steps_used": 2,
+        "model_calls": 0,
+        "fallback_count": 0,
+        "usage": [],
+        "interpreted": true,
+        "interpretations": [
+          {
+            "mode": "offline_rules",
+            "calls": 0,
+            "usage": []
+          }
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": "请申请退款"
+          }
+        ],
+        "confirmation": {
+          "id": "43cd6efa-ca65-42fe-a471-7ee68dd2b5f4",
+          "task_id": "fbed129f-1ebc-496c-a5a0-dcfca2f55ffa",
+          "owner": "eval-user",
+          "order_id": "87f3de0c-6ef0-4fb5-84fb-67f94d1f6a72",
+          "tool": "request_refund",
+          "parameters": {
+            "order_id": "87f3de0c-6ef0-4fb5-84fb-67f94d1f6a72",
+            "duplicate_charge_count": 1
+          },
+          "plan_version": 4,
+          "order_version": 1,
+          "expires_at": 1789099905.36968,
+          "status": "accepted",
+          "binding": "4c6cc12211433315ad3c313b4aadc9e3248c883391f221ab0c3ef1d8baeffa85",
+          "accepted_at": 1789099005.370313
+        },
+        "confirmation_history": [],
+        "execution_mode": "deterministic",
+        "response": "审批已过期或业务/计划已改变，未执行退款。",
+        "primary_agent": "billing",
+        "supporting_agents": [],
+        "plan": {
+          "version": 4,
+          "steps": [
+            {
+              "id": "query_billing",
+              "goal": "billing",
+              "agent": "billing",
+              "tool": "query_billing",
+              "dependencies": [],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "billing:refund",
+              "status": "completed"
+            },
+            {
+              "id": "request_refund",
+              "goal": "billing",
+              "agent": "billing",
+              "tool": "request_refund",
+              "dependencies": [
+                "query_billing"
+              ],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "billing:refund",
+              "status": "ready"
+            }
+          ],
+          "reason": "Reconcile dependencies against fresh business evidence"
+        }
+      },
+      "pre_review_state": {
+        "id": "87f3de0c-6ef0-4fb5-84fb-67f94d1f6a72",
+        "plan": "pro",
+        "entitlement": "basic",
+        "service": "healthy",
+        "charges": 2,
+        "refunds": 0,
+        "version": 1,
+        "simulated": true
+      },
+      "final_state": {
+        "id": "87f3de0c-6ef0-4fb5-84fb-67f94d1f6a72",
+        "plan": "pro",
+        "entitlement": "basic",
+        "service": "healthy",
+        "charges": 2,
+        "refunds": 0,
+        "version": 1,
+        "simulated": true
+      }
+    },
+    {
+      "id": "no_permission",
+      "category": "readonly",
+      "status": "completed",
+      "expected_status": "completed",
+      "passed": true,
+      "state_verified": true,
+      "business_completed": true,
+      "independent_completion": true,
+      "initial_pause": true,
+      "approval_pause": false,
+      "user_confirmations": 0,
+      "expected_approval": false,
+      "recovery": null,
+      "unauthorized_operations": 0,
+      "unconfirmed_operations": 0,
+      "duplicate_operations": 0,
+      "latency_ms": 2.0002090000000026,
+      "model_calls": 0,
+      "usage": [],
+      "tool_errors": 0,
+      "fallback_count": 0,
+      "execution_mode": "deterministic",
+      "task": {
+        "schema_version": 3,
+        "id": "02c40ad9-682f-4b98-9181-e8b937062afa",
+        "owner": "eval-user",
+        "message": "重复扣款，先查询，不要退款",
+        "conversation_id": "aed82b96-d72b-4382-bdd6-68495ebe4c1e",
+        "goals": {
+          "billing": "read"
+        },
+        "status": "completed",
+        "order_id": "f064e151-c2cd-4c70-a24a-91567eb858d3",
+        "evidence": [
+          {
+            "tool": "query_billing",
+            "agent": "billing",
+            "success": true,
+            "data": {
+              "charges": 2,
+              "refunds": 0
+            },
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.378294,
+            "order_version": 1,
+            "order_id": "f064e151-c2cd-4c70-a24a-91567eb858d3",
+            "sequence": 1,
+            "fallback": false
+          }
+        ],
+        "actions": [],
+        "unresolved": [],
+        "verification": {
+          "billing": true
+        },
+        "revision": 4,
+        "approval": null,
+        "approval_history": [],
+        "simulated": true,
+        "tool_messages": [],
+        "attempts": [
+          {
+            "call_id": "bf7a91ad-2cba-4191-bcb8-8e6d13e587fa",
+            "tool": "query_billing",
+            "arguments": "{\"order_id\": \"f064e151-c2cd-4c70-a24a-91567eb858d3\"}",
+            "timestamp": 1789099005.378309,
+            "success": true,
+            "evidence": {
+              "tool": "query_billing",
+              "agent": "billing",
+              "success": true,
+              "data": {
+                "charges": 2,
+                "refunds": 0
+              },
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.378294,
+              "order_version": 1,
+              "order_id": "f064e151-c2cd-4c70-a24a-91567eb858d3",
+              "sequence": 1,
+              "fallback": false
+            },
+            "status": "completed"
+          }
+        ],
+        "handoffs": [
+          {
+            "from": "billing",
+            "to": "supervisor",
+            "timestamp": 1789099005.37831,
+            "evidence_sequence": 1,
+            "verified_facts": {
+              "billing": true
+            },
+            "unresolved": [],
+            "actions": [],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "completed"
+          }
+        ],
+        "plans": [
+          {
+            "version": 1,
+            "steps": [
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:read"
+              }
+            ],
+            "reason": "Explicit request scope"
+          },
+          {
+            "version": 2,
+            "steps": [
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:read"
+              }
+            ],
+            "reason": "Validated goal interpretation; no write consent granted"
+          },
+          {
+            "version": 3,
+            "steps": [
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:read",
+                "status": "ready"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          },
+          {
+            "version": 4,
+            "steps": [
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:read",
+                "status": "completed"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          }
+        ],
+        "replans": 0,
+        "steps_used": 1,
+        "model_calls": 0,
+        "fallback_count": 0,
+        "usage": [],
+        "interpreted": true,
+        "interpretations": [
+          {
+            "mode": "offline_rules",
+            "calls": 0,
+            "usage": []
+          }
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": "重复扣款，先查询，不要退款"
+          }
+        ],
+        "confirmation": null,
+        "confirmation_history": [],
+        "execution_mode": "deterministic",
+        "response": "已核验：billing。模拟任务完成。",
+        "primary_agent": "billing",
+        "supporting_agents": [],
+        "plan": {
+          "version": 4,
+          "steps": [
+            {
+              "id": "query_billing",
+              "goal": "billing",
+              "agent": "billing",
+              "tool": "query_billing",
+              "dependencies": [],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "billing:read",
+              "status": "completed"
+            }
+          ],
+          "reason": "Reconcile dependencies against fresh business evidence"
+        }
+      },
+      "pre_review_state": {
+        "id": "f064e151-c2cd-4c70-a24a-91567eb858d3",
+        "plan": "pro",
+        "entitlement": "basic",
+        "service": "healthy",
+        "charges": 2,
+        "refunds": 0,
+        "version": 1,
+        "simulated": true
+      },
+      "final_state": {
+        "id": "f064e151-c2cd-4c70-a24a-91567eb858d3",
+        "plan": "pro",
+        "entitlement": "basic",
+        "service": "healthy",
+        "charges": 2,
+        "refunds": 0,
+        "version": 1,
+        "simulated": true
+      }
+    },
+    {
+      "id": "policy",
+      "category": "policy",
+      "status": "completed",
+      "expected_status": "completed",
+      "passed": true,
+      "state_verified": true,
+      "business_completed": true,
+      "independent_completion": true,
+      "initial_pause": false,
+      "approval_pause": false,
+      "user_confirmations": 0,
+      "expected_approval": false,
+      "recovery": null,
+      "unauthorized_operations": 0,
+      "unconfirmed_operations": 0,
+      "duplicate_operations": 0,
+      "latency_ms": 0.6170840000000177,
+      "model_calls": 0,
+      "usage": [],
+      "tool_errors": 0,
+      "fallback_count": 0,
+      "execution_mode": "deterministic",
+      "task": {
+        "schema_version": 3,
+        "id": "9b4b1f26-69ec-4587-9771-8ec8ca2ac502",
+        "owner": "eval-user",
+        "message": "退款政策是什么",
+        "conversation_id": "bd6f56a9-0327-4ecc-9f24-56b3e4310310",
+        "goals": {
+          "policy": "read"
+        },
+        "status": "completed",
+        "order_id": null,
+        "evidence": [],
+        "actions": [],
+        "unresolved": [],
+        "verification": {
+          "policy": true
+        },
+        "revision": 0,
+        "approval": null,
+        "approval_history": [],
+        "simulated": true,
+        "tool_messages": [],
+        "attempts": [],
+        "handoffs": [],
+        "plans": [
+          {
+            "version": 1,
+            "steps": [],
+            "reason": "Explicit request scope"
+          }
+        ],
+        "replans": 0,
+        "steps_used": 0,
+        "model_calls": 0,
+        "fallback_count": 0,
+        "usage": [],
+        "interpreted": false,
+        "interpretations": [],
+        "messages": [],
+        "confirmation": null,
+        "confirmation_history": [],
+        "execution_mode": "deterministic",
+        "response": "演示政策：查询不修改业务；权益同步需明确请求，重复扣款退款需核验并由人工审批。",
+        "primary_agent": "billing",
+        "supporting_agents": [],
+        "plan": {
+          "version": 1,
+          "steps": [],
+          "reason": "Explicit request scope"
+        }
+      },
+      "pre_review_state": {
+        "id": "75a63e37-3bfd-4218-b560-98721c70c1ea",
+        "plan": "pro",
+        "entitlement": "basic",
+        "service": "healthy",
+        "charges": 2,
+        "refunds": 0,
+        "version": 1,
+        "simulated": true
+      },
+      "final_state": {
+        "id": "75a63e37-3bfd-4218-b560-98721c70c1ea",
+        "plan": "pro",
+        "entitlement": "basic",
+        "service": "healthy",
+        "charges": 2,
+        "refunds": 0,
+        "version": 1,
+        "simulated": true
+      }
+    },
+    {
+      "id": "partial",
+      "category": "partial",
+      "status": "needs_human",
+      "expected_status": "needs_human",
+      "passed": true,
+      "state_verified": true,
+      "business_completed": false,
+      "independent_completion": false,
+      "initial_pause": true,
+      "approval_pause": true,
+      "user_confirmations": 1,
+      "expected_approval": true,
+      "recovery": null,
+      "unauthorized_operations": 0,
+      "unconfirmed_operations": 0,
+      "duplicate_operations": 0,
+      "latency_ms": 11.380457999999983,
+      "model_calls": 0,
+      "usage": [],
+      "tool_errors": 0,
+      "fallback_count": 0,
+      "execution_mode": "deterministic",
+      "task": {
+        "schema_version": 3,
+        "id": "cbab32e4-9c22-4782-bde1-f71ef057d07a",
+        "owner": "eval-user",
+        "message": "请修复权益并申请退款",
+        "conversation_id": "bdd71b8b-a463-43d8-8d77-a75f04437303",
+        "goals": {
+          "entitlement": "repair",
+          "billing": "refund"
+        },
+        "status": "needs_human",
+        "order_id": "c25922eb-2a13-4b81-9983-64b4d4f76c98",
+        "evidence": [
+          {
+            "tool": "query_subscription",
+            "agent": "technical",
+            "success": true,
+            "data": {
+              "plan": "pro",
+              "entitlement": "basic"
+            },
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.383889,
+            "order_version": 1,
+            "order_id": "c25922eb-2a13-4b81-9983-64b4d4f76c98",
+            "sequence": 1,
+            "fallback": false
+          },
+          {
+            "tool": "check_service",
+            "agent": "technical",
+            "success": true,
+            "data": {
+              "service": "down"
+            },
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.384812,
+            "order_version": 1,
+            "order_id": "c25922eb-2a13-4b81-9983-64b4d4f76c98",
+            "sequence": 2,
+            "fallback": false
+          },
+          {
+            "tool": "query_billing",
+            "agent": "billing",
+            "success": true,
+            "data": {
+              "charges": 2,
+              "refunds": 0
+            },
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.385781,
+            "order_version": 1,
+            "order_id": "c25922eb-2a13-4b81-9983-64b4d4f76c98",
+            "sequence": 3,
+            "fallback": false
+          },
+          {
+            "tool": "request_refund",
+            "agent": "billing",
+            "success": true,
+            "data": {
+              "id": "758bfe7b-5cbd-4d98-8c4a-0a4f023babe7",
+              "status": "pending",
+              "order_id": "c25922eb-2a13-4b81-9983-64b4d4f76c98",
+              "count": 1,
+              "confirmation_id": "6a7fc072-1585-44b0-8ccd-b2bb7ba025d3",
+              "action": "refund",
+              "plan_version": 6,
+              "order_version": 1,
+              "expires_at": 1789099905.388361,
+              "binding": "16a3876ec4defd24d500bb529601eabdf2f940f201c5569711e2145c16040518"
+            },
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.388366,
+            "order_version": 1,
+            "order_id": "c25922eb-2a13-4b81-9983-64b4d4f76c98",
+            "sequence": 4,
+            "fallback": false
+          },
+          {
+            "tool": "query_subscription",
+            "agent": "technical",
+            "success": true,
+            "data": {
+              "plan": "pro",
+              "entitlement": "basic"
+            },
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.391072,
+            "order_version": 2,
+            "order_id": "c25922eb-2a13-4b81-9983-64b4d4f76c98",
+            "sequence": 5,
+            "fallback": false
+          },
+          {
+            "tool": "check_service",
+            "agent": "technical",
+            "success": true,
+            "data": {
+              "service": "down"
+            },
+            "source": "simulated_business_database",
+            "timestamp": 1789099005.392389,
+            "order_version": 2,
+            "order_id": "c25922eb-2a13-4b81-9983-64b4d4f76c98",
+            "sequence": 6,
+            "fallback": false
+          }
+        ],
+        "actions": [
+          {
+            "tool": "refund",
+            "status": "verified",
+            "idempotency_key": "758bfe7b-5cbd-4d98-8c4a-0a4f023babe7",
+            "reconciled": false,
+            "confirmation_id": "6a7fc072-1585-44b0-8ccd-b2bb7ba025d3",
+            "timestamp": 1789099005.3894541
+          }
+        ],
+        "unresolved": [
+          "entitlement"
+        ],
+        "verification": {
+          "entitlement": false,
+          "billing": true
+        },
+        "revision": 20,
+        "approval": {
+          "id": "758bfe7b-5cbd-4d98-8c4a-0a4f023babe7",
+          "status": "approved",
+          "order_id": "c25922eb-2a13-4b81-9983-64b4d4f76c98",
+          "count": 1,
+          "confirmation_id": "6a7fc072-1585-44b0-8ccd-b2bb7ba025d3",
+          "action": "refund",
+          "plan_version": 6,
+          "order_version": 1,
+          "expires_at": 1789099905.388361,
+          "binding": "16a3876ec4defd24d500bb529601eabdf2f940f201c5569711e2145c16040518",
+          "reviewer": "eval-reviewer"
+        },
+        "approval_history": [],
+        "simulated": true,
+        "tool_messages": [],
+        "attempts": [
+          {
+            "call_id": "9814e218-a234-463a-ab23-bb4eff43089e",
+            "tool": "query_subscription",
+            "arguments": "{\"order_id\": \"c25922eb-2a13-4b81-9983-64b4d4f76c98\"}",
+            "timestamp": 1789099005.3839092,
+            "success": true,
+            "evidence": {
+              "tool": "query_subscription",
+              "agent": "technical",
+              "success": true,
+              "data": {
+                "plan": "pro",
+                "entitlement": "basic"
+              },
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.383889,
+              "order_version": 1,
+              "order_id": "c25922eb-2a13-4b81-9983-64b4d4f76c98",
+              "sequence": 1,
+              "fallback": false
+            },
+            "status": "running"
+          },
+          {
+            "call_id": "01f1dea8-78d2-4b92-bfbb-1b9fc8aacad3",
+            "tool": "check_service",
+            "arguments": "{\"order_id\": \"c25922eb-2a13-4b81-9983-64b4d4f76c98\"}",
+            "timestamp": 1789099005.384829,
+            "success": true,
+            "evidence": {
+              "tool": "check_service",
+              "agent": "technical",
+              "success": true,
+              "data": {
+                "service": "down"
+              },
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.384812,
+              "order_version": 1,
+              "order_id": "c25922eb-2a13-4b81-9983-64b4d4f76c98",
+              "sequence": 2,
+              "fallback": false
+            },
+            "status": "running"
+          },
+          {
+            "call_id": "16387b30-d484-4c64-9348-85c9ecac3e28",
+            "tool": "query_billing",
+            "arguments": "{\"order_id\": \"c25922eb-2a13-4b81-9983-64b4d4f76c98\"}",
+            "timestamp": 1789099005.385801,
+            "success": true,
+            "evidence": {
+              "tool": "query_billing",
+              "agent": "billing",
+              "success": true,
+              "data": {
+                "charges": 2,
+                "refunds": 0
+              },
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.385781,
+              "order_version": 1,
+              "order_id": "c25922eb-2a13-4b81-9983-64b4d4f76c98",
+              "sequence": 3,
+              "fallback": false
+            },
+            "status": "running"
+          },
+          {
+            "call_id": "f3ed4b62-8073-4150-af3b-deb918b8b9f7",
+            "tool": "request_refund",
+            "arguments": "{\"order_id\": \"c25922eb-2a13-4b81-9983-64b4d4f76c98\"}",
+            "timestamp": 1789099005.388374,
+            "success": true,
+            "evidence": {
+              "tool": "request_refund",
+              "agent": "billing",
+              "success": true,
+              "data": {
+                "id": "758bfe7b-5cbd-4d98-8c4a-0a4f023babe7",
+                "status": "pending",
+                "order_id": "c25922eb-2a13-4b81-9983-64b4d4f76c98",
+                "count": 1,
+                "confirmation_id": "6a7fc072-1585-44b0-8ccd-b2bb7ba025d3",
+                "action": "refund",
+                "plan_version": 6,
+                "order_version": 1,
+                "expires_at": 1789099905.388361,
+                "binding": "16a3876ec4defd24d500bb529601eabdf2f940f201c5569711e2145c16040518"
+              },
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.388366,
+              "order_version": 1,
+              "order_id": "c25922eb-2a13-4b81-9983-64b4d4f76c98",
+              "sequence": 4,
+              "fallback": false
+            },
+            "status": "awaiting_approval"
+          },
+          {
+            "call_id": "7fd680ff-e351-4188-874c-082e36566699",
+            "tool": "query_subscription",
+            "arguments": "{\"order_id\": \"c25922eb-2a13-4b81-9983-64b4d4f76c98\"}",
+            "timestamp": 1789099005.391098,
+            "success": true,
+            "evidence": {
+              "tool": "query_subscription",
+              "agent": "technical",
+              "success": true,
+              "data": {
+                "plan": "pro",
+                "entitlement": "basic"
+              },
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.391072,
+              "order_version": 2,
+              "order_id": "c25922eb-2a13-4b81-9983-64b4d4f76c98",
+              "sequence": 5,
+              "fallback": false
+            },
+            "status": "running"
+          },
+          {
+            "call_id": "d1e2129c-a056-43c3-b06c-ab335b1b429a",
+            "tool": "check_service",
+            "arguments": "{\"order_id\": \"c25922eb-2a13-4b81-9983-64b4d4f76c98\"}",
+            "timestamp": 1789099005.392407,
+            "success": true,
+            "evidence": {
+              "tool": "check_service",
+              "agent": "technical",
+              "success": true,
+              "data": {
+                "service": "down"
+              },
+              "source": "simulated_business_database",
+              "timestamp": 1789099005.392389,
+              "order_version": 2,
+              "order_id": "c25922eb-2a13-4b81-9983-64b4d4f76c98",
+              "sequence": 6,
+              "fallback": false
+            },
+            "status": "running"
+          }
+        ],
+        "handoffs": [
+          {
+            "from": "technical",
+            "to": "supervisor",
+            "timestamp": 1789099005.3839092,
+            "evidence_sequence": 1,
+            "verified_facts": {
+              "entitlement": false,
+              "billing": false
+            },
+            "unresolved": [
+              "entitlement",
+              "billing"
+            ],
+            "actions": [],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "running"
+          },
+          {
+            "from": "technical",
+            "to": "supervisor",
+            "timestamp": 1789099005.384829,
+            "evidence_sequence": 2,
+            "verified_facts": {
+              "entitlement": false,
+              "billing": false
+            },
+            "unresolved": [
+              "entitlement",
+              "billing"
+            ],
+            "actions": [],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "running"
+          },
+          {
+            "from": "billing",
+            "to": "supervisor",
+            "timestamp": 1789099005.385801,
+            "evidence_sequence": 3,
+            "verified_facts": {
+              "entitlement": false,
+              "billing": false
+            },
+            "unresolved": [
+              "entitlement",
+              "billing"
+            ],
+            "actions": [],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "running"
+          },
+          {
+            "from": "billing",
+            "to": "supervisor",
+            "timestamp": 1789099005.388374,
+            "evidence_sequence": 4,
+            "verified_facts": {
+              "entitlement": false,
+              "billing": false
+            },
+            "unresolved": [
+              "entitlement",
+              "billing"
+            ],
+            "actions": [],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "awaiting_approval"
+          },
+          {
+            "from": "technical",
+            "to": "supervisor",
+            "timestamp": 1789099005.391098,
+            "evidence_sequence": 5,
+            "verified_facts": {
+              "entitlement": false,
+              "billing": true
+            },
+            "unresolved": [
+              "entitlement"
+            ],
+            "actions": [
+              {
+                "tool": "refund",
+                "status": "verified",
+                "idempotency_key": "758bfe7b-5cbd-4d98-8c4a-0a4f023babe7",
+                "reconciled": false,
+                "confirmation_id": "6a7fc072-1585-44b0-8ccd-b2bb7ba025d3",
+                "timestamp": 1789099005.3894541
+              }
+            ],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "running"
+          },
+          {
+            "from": "technical",
+            "to": "supervisor",
+            "timestamp": 1789099005.392407,
+            "evidence_sequence": 6,
+            "verified_facts": {
+              "entitlement": false,
+              "billing": true
+            },
+            "unresolved": [
+              "entitlement"
+            ],
+            "actions": [
+              {
+                "tool": "refund",
+                "status": "verified",
+                "idempotency_key": "758bfe7b-5cbd-4d98-8c4a-0a4f023babe7",
+                "reconciled": false,
+                "confirmation_id": "6a7fc072-1585-44b0-8ccd-b2bb7ba025d3",
+                "timestamp": 1789099005.3894541
+              }
+            ],
+            "failures": [],
+            "next_step": "Refresh dependent plan against evidence",
+            "status": "running"
+          }
+        ],
+        "plans": [
+          {
+            "version": 1,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund"
+              }
+            ],
+            "reason": "Explicit request scope"
+          },
+          {
+            "version": 2,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund"
+              }
+            ],
+            "reason": "Validated goal interpretation; no write consent granted"
+          },
+          {
+            "version": 3,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "ready"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "ready"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "pending"
+              },
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "ready"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "pending"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          },
+          {
+            "version": 4,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "ready"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "pending"
+              },
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "ready"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "pending"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          },
+          {
+            "version": 5,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "blocked",
+                "blocked_reason": "Service outage requires human handling"
+              },
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "ready"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "pending"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          },
+          {
+            "version": 6,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "blocked",
+                "blocked_reason": "Service outage requires human handling"
+              },
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "completed"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "ready"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          },
+          {
+            "version": 7,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "ready"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "ready"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "pending"
+              },
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "completed"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "completed"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          },
+          {
+            "version": 8,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "ready"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "pending"
+              },
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "completed"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "completed"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          },
+          {
+            "version": 9,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "blocked",
+                "blocked_reason": "Service outage requires human handling"
+              },
+              {
+                "id": "query_billing",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "query_billing",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "completed"
+              },
+              {
+                "id": "request_refund",
+                "goal": "billing",
+                "agent": "billing",
+                "tool": "request_refund",
+                "dependencies": [
+                  "query_billing"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "billing:refund",
+                "status": "completed"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          }
+        ],
+        "replans": 0,
+        "steps_used": 6,
+        "model_calls": 0,
+        "fallback_count": 0,
+        "usage": [],
+        "interpreted": true,
+        "interpretations": [
+          {
+            "mode": "offline_rules",
+            "calls": 0,
+            "usage": []
+          }
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": "请修复权益并申请退款"
+          }
+        ],
+        "confirmation": {
+          "id": "6a7fc072-1585-44b0-8ccd-b2bb7ba025d3",
+          "task_id": "cbab32e4-9c22-4782-bde1-f71ef057d07a",
+          "owner": "eval-user",
+          "order_id": "c25922eb-2a13-4b81-9983-64b4d4f76c98",
+          "tool": "request_refund",
+          "parameters": {
+            "order_id": "c25922eb-2a13-4b81-9983-64b4d4f76c98",
+            "duplicate_charge_count": 1
+          },
+          "plan_version": 6,
+          "order_version": 1,
+          "expires_at": 1789099905.386267,
+          "status": "accepted",
+          "binding": "9ead504f8d3bdbfcabb76ce458e03261ccd4446880aaf92c40d56e54fc94b01f",
+          "accepted_at": 1789099005.386993
+        },
+        "confirmation_history": [],
+        "execution_mode": "deterministic",
+        "response": "已核验：billing；未完成：entitlement；依赖受阻，需要人工处理。",
+        "primary_agent": "technical",
+        "supporting_agents": [
+          "billing"
+        ],
+        "plan": {
+          "version": 9,
+          "steps": [
+            {
+              "id": "query_subscription",
+              "goal": "entitlement",
+              "agent": "technical",
+              "tool": "query_subscription",
+              "dependencies": [],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "entitlement:repair",
+              "status": "completed"
+            },
+            {
+              "id": "check_service",
+              "goal": "entitlement",
+              "agent": "technical",
+              "tool": "check_service",
+              "dependencies": [],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "entitlement:repair",
+              "status": "completed"
+            },
+            {
+              "id": "sync_entitlements",
+              "goal": "entitlement",
+              "agent": "technical",
+              "tool": "sync_entitlements",
+              "dependencies": [
+                "query_subscription",
+                "check_service"
+              ],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "entitlement:repair",
+              "status": "blocked",
+              "blocked_reason": "Service outage requires human handling"
+            },
+            {
+              "id": "query_billing",
+              "goal": "billing",
+              "agent": "billing",
+              "tool": "query_billing",
+              "dependencies": [],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "billing:refund",
+              "status": "completed"
+            },
+            {
+              "id": "request_refund",
+              "goal": "billing",
+              "agent": "billing",
+              "tool": "request_refund",
+              "dependencies": [
+                "query_billing"
+              ],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "billing:refund",
+              "status": "completed"
+            }
+          ],
+          "reason": "Reconcile dependencies against fresh business evidence"
+        }
+      },
+      "pre_review_state": {
+        "id": "c25922eb-2a13-4b81-9983-64b4d4f76c98",
+        "plan": "pro",
+        "entitlement": "basic",
+        "service": "down",
+        "charges": 2,
+        "refunds": 0,
+        "version": 1,
+        "simulated": true
+      },
+      "final_state": {
+        "id": "c25922eb-2a13-4b81-9983-64b4d4f76c98",
+        "plan": "pro",
+        "entitlement": "basic",
+        "service": "down",
+        "charges": 2,
+        "refunds": 1,
+        "version": 2,
+        "simulated": true
+      }
+    },
+    {
+      "id": "already_done",
+      "category": "repair",
+      "status": "completed",
+      "expected_status": "completed",
+      "passed": true,
+      "state_verified": true,
+      "business_completed": true,
+      "independent_completion": true,
+      "initial_pause": true,
+      "approval_pause": false,
+      "user_confirmations": 0,
+      "expected_approval": false,
+      "recovery": true,
+      "unauthorized_operations": 0,
+      "unconfirmed_operations": 0,
+      "duplicate_operations": 0,
+      "latency_ms": 1.8108750000000173,
+      "model_calls": 0,
+      "usage": [],
+      "tool_errors": 0,
+      "fallback_count": 0,
+      "execution_mode": "deterministic",
+      "task": {
+        "schema_version": 3,
+        "id": "e0843b2b-1d53-47af-930e-367a70cb2a10",
+        "owner": "eval-user",
+        "message": "请修复权益",
+        "conversation_id": "d5c186aa-bfa5-4eb0-b5f8-9c5d53edd0b4",
+        "goals": {
+          "entitlement": "repair"
+        },
+        "status": "completed",
+        "order_id": "09843afe-60aa-4f8a-a56c-63971798427e",
+        "evidence": [],
+        "actions": [],
+        "unresolved": [],
+        "verification": {
+          "entitlement": true
+        },
+        "revision": 3,
+        "approval": null,
+        "approval_history": [],
+        "simulated": true,
+        "tool_messages": [],
+        "attempts": [],
+        "handoffs": [],
+        "plans": [
+          {
+            "version": 1,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              }
+            ],
+            "reason": "Explicit request scope"
+          },
+          {
+            "version": 2,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair"
+              }
+            ],
+            "reason": "Validated goal interpretation; no write consent granted"
+          },
+          {
+            "version": 3,
+            "steps": [
+              {
+                "id": "query_subscription",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "query_subscription",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "check_service",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "check_service",
+                "dependencies": [],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              },
+              {
+                "id": "sync_entitlements",
+                "goal": "entitlement",
+                "agent": "technical",
+                "tool": "sync_entitlements",
+                "dependencies": [
+                  "query_subscription",
+                  "check_service"
+                ],
+                "required_information": [
+                  "order_id"
+                ],
+                "success_condition": "entitlement:repair",
+                "status": "completed"
+              }
+            ],
+            "reason": "Reconcile dependencies against fresh business evidence"
+          }
+        ],
+        "replans": 0,
+        "steps_used": 0,
+        "model_calls": 0,
+        "fallback_count": 0,
+        "usage": [],
+        "interpreted": true,
+        "interpretations": [
+          {
+            "mode": "offline_rules",
+            "calls": 0,
+            "usage": []
+          }
+        ],
+        "messages": [
+          {
+            "role": "user",
+            "content": "请修复权益"
+          }
+        ],
+        "confirmation": null,
+        "confirmation_history": [],
+        "execution_mode": "deterministic",
+        "response": "已核验：entitlement。模拟任务完成。",
+        "primary_agent": "technical",
+        "supporting_agents": [],
+        "plan": {
+          "version": 3,
+          "steps": [
+            {
+              "id": "query_subscription",
+              "goal": "entitlement",
+              "agent": "technical",
+              "tool": "query_subscription",
+              "dependencies": [],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "entitlement:repair",
+              "status": "completed"
+            },
+            {
+              "id": "check_service",
+              "goal": "entitlement",
+              "agent": "technical",
+              "tool": "check_service",
+              "dependencies": [],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "entitlement:repair",
+              "status": "completed"
+            },
+            {
+              "id": "sync_entitlements",
+              "goal": "entitlement",
+              "agent": "technical",
+              "tool": "sync_entitlements",
+              "dependencies": [
+                "query_subscription",
+                "check_service"
+              ],
+              "required_information": [
+                "order_id"
+              ],
+              "success_condition": "entitlement:repair",
+              "status": "completed"
+            }
+          ],
+          "reason": "Reconcile dependencies against fresh business evidence"
+        }
+      },
+      "pre_review_state": {
+        "id": "09843afe-60aa-4f8a-a56c-63971798427e",
+        "plan": "pro",
+        "entitlement": "pro",
+        "service": "healthy",
+        "charges": 2,
+        "refunds": 0,
+        "version": 1,
+        "simulated": true
+      },
+      "final_state": {
+        "id": "09843afe-60aa-4f8a-a56c-63971798427e",
+        "plan": "pro",
+        "entitlement": "pro",
+        "service": "healthy",
+        "charges": 2,
+        "refunds": 0,
+        "version": 1,
+        "simulated": true
+      }
+    }
+  ],
+  "limitations": [
+    "Internal developer-visible regression set, not held-out model evaluation or official benchmark score",
+    "Latency includes local harness approval, excludes real human wait; nearest-rank P95",
+    "Operation counts concern simulated persisted entitlement/refund fields only",
+    "No tool errors injected in this scenario suite; fault correction is covered by separate unit tests",
+    "No real payment, tenant directory, user satisfaction or production throughput measured"
+  ],
+  "code_version": {
+    "git_commit": "3284effa7d09ec809a05dfbfde983c4f44ffe71a",
+    "dirty": true,
+    "backend_python_sha256": "f5f526241d01348e6a2e30e1ed85b21fda582cf5f448b712f2604fd2c87046bc"
+  },
+  "run_id": "fe50c0d7-4af0-4011-a021-7a41e3e27467",
+  "timestamp": "2026-09-11T03:56:45.420863+00:00",
+  "requested_mode": "live_llm",
+  "live_unavailable": "Live validation not executed; missing configuration: LLM_API_KEY, LLM_MODEL, AGENT_EVAL_MAX_USD, AGENT_EVAL_INPUT_USD_PER_M, AGENT_EVAL_OUTPUT_USD_PER_M",
+  "model_configuration": null
+}

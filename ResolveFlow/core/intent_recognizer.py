@@ -150,8 +150,11 @@ class IntentRecognizer:
         model: str = "claude-3-5-sonnet-20241022",
         confidence_threshold: float = 0.5,
         provider: Optional[str] = None,
+        client=None,
+        use_llm: bool = True,
     ):
-        self.client    = LLMClient(api_key=api_key, base_url=base_url, model=model, provider=provider)
+        self.client    = client or (LLMClient(api_key=api_key, base_url=base_url, model=model, provider=provider) if use_llm else None)
+        self.use_llm = use_llm
         self.model     = model
         self.threshold = confidence_threshold
         # 第三方兼容 API（如 DeepSeek）通常不支持 Embedding，禁用该策略。
@@ -217,14 +220,6 @@ class IntentRecognizer:
         self._cache[key] = result
         return result
 
-    def learn(self, message: str, correct: IntentCategory) -> None:
-        """在线学习：将纠正样本加入模板，清除对应 Embedding 缓存。"""
-        tpls = _TEMPLATES.setdefault(correct, [])
-        if message not in tpls:
-            tpls.append(message)
-            self._tpl_embeddings.pop(correct, None)  # 下次重新计算
-            logger.info(f"学习新样本 → {correct.value}: {message[:40]}")
-
     # ── 三路识别策略 ──────────────────────────────────────────────────────────
 
     async def _llm_recognize(
@@ -233,6 +228,8 @@ class IntentRecognizer:
         history: Optional[List[Dict[str, str]]],
     ) -> Dict[str, Any]:
         """策略 1：LLM 语义理解（Few-shot + 上下文）。"""
+        if not self.use_llm:
+            return {"intent": IntentCategory.OTHER, "confidence": 0.0}
         message = self._clean_text(message)
         # 构建 Few-shot 示例
         examples = "\n".join(
@@ -407,21 +404,8 @@ class IntentRecognizer:
             idx += n
 
     async def _embed_text(self, text: str) -> List[float]:
-        """
-        生成文本向量。
-
-        如果未来接入的官方/兼容客户端提供 embeddings.create，会优先使用远端向量；
-        当前 Anthropic SDK 没有该资源时，退化为字符 n-gram 哈希向量。这样不会因为
-        Embedding 服务缺失导致三路融合中断。
-        """
-        embeddings = getattr(self.client, "embeddings", None)
-        if embeddings is not None:
-            try:
-                resp = await embeddings.create(model="voyage-3-lite", input=[text])
-                return list(resp.data[0].embedding)
-            except Exception as ex:
-                logger.warning(f"远端 Embedding 失败，使用本地向量兜底: {ex}")
-
+        """生成文本向量。当前使用的 Anthropic/OpenAI 兼容客户端都不提供 embeddings
+        资源，直接使用字符 n-gram 哈希向量做语义近似匹配。"""
         return self._local_embedding(text)
 
     @staticmethod
@@ -499,13 +483,3 @@ class IntentRecognizer:
         if not isinstance(value, str):
             value = str(value)
         return value.encode("utf-8", errors="ignore").decode("utf-8")
-
-    @property
-    def cache_stats(self) -> Dict[str, Any]:
-        total = self.cache_hits + self.cache_misses
-        return {
-            "size": len(self._cache),
-            "hits": self.cache_hits,
-            "misses": self.cache_misses,
-            "hit_rate": self.cache_hits / total if total else 0.0,
-        }

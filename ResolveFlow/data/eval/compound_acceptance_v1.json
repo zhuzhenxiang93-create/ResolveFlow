@@ -1,0 +1,58 @@
+{
+  "version": "1.0",
+  "source": "Written this session to validate the general_remainder field and the tightened unsupported_requests boundary added to GoalProposal for full N-way compound-request support. Not part of the frozen p0_acceptance_v1.json set — that stays untouched. See wiki/product_positioning.md.",
+  "cases": [
+    {
+      "id": "pure-action-refund",
+      "category": "single_topic_action",
+      "message": "请帮我申请重复扣款退款",
+      "expect_domains": ["billing"],
+      "expect_remainder": false
+    },
+    {
+      "id": "pure-policy-renewal",
+      "category": "single_topic_policy",
+      "message": "退订政策是什么",
+      "expect_domains": ["policy"],
+      "expect_remainder": false
+    },
+    {
+      "id": "pure-general-no-subscription",
+      "category": "single_topic_general",
+      "message": "帮我查一下物流",
+      "expect_domains": []
+    },
+    {
+      "id": "compound-action-general",
+      "category": "two_part_action_general",
+      "message": "帮我查一下物流，另外我的会员费好像被重复扣款了",
+      "expect_domains": ["billing"],
+      "expect_remainder": true,
+      "expect_remainder_contains": ["物流"]
+    },
+    {
+      "id": "compound-policy-general",
+      "category": "two_part_policy_general",
+      "message": "退订政策是什么，另外物流查询一下",
+      "expect_domains": ["policy"],
+      "expect_remainder": true,
+      "expect_remainder_contains": ["物流"]
+    },
+    {
+      "id": "compound-three-way",
+      "category": "three_part",
+      "message": "我的包裹一直显示物流异常没更新，同时APP总是闪退登录不了，还有会员费好像被多扣了一笔",
+      "expect_domains_any": ["billing"],
+      "expect_remainder": true,
+      "expect_remainder_contains": ["物流"],
+      "expect_remainder_contains_any": ["闪退", "登录", "APP", "app"]
+    },
+    {
+      "id": "compound-with-unsupported",
+      "category": "compound_with_unsupported",
+      "message": "帮我申请重复扣款退款，另外我要退掉之前买的实体台灯",
+      "expect_domains": ["billing"],
+      "expect_unsupported": true
+    }
+  ]
+}

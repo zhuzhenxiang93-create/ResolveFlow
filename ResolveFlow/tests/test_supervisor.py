@@ -239,6 +239,33 @@ class SynthesizerTests(unittest.TestCase):
         self.assertTrue(any(item.startswith("polarity:") for item in synthesis.conflicts))
         self.assertIn("需要核实", synthesis.content)
 
+    def test_shared_keyword_in_unrelated_sentences_is_not_a_conflict(self):
+        # Neither side ever has the topic word "退款" and a number in the SAME
+        # clause — the old whole-text keyword scan still flagged this as a numeric
+        # conflict (7 vs 1 anywhere in text that also mentions 退款 anywhere); the
+        # sentence-scoped check correctly finds no valid clause to compare.
+        synthesis = ResponseSynthesizer().synthesize(
+            original_request="x",
+            plan=plan(SubTask("a", "one", "general"), SubTask("b", "two", "billing")),
+            results=[
+                result("a", "general", "商品退货预计需要7个工作日处理。与退款流程无关。"),
+                result("b", "billing", "账单确认无误，无需退款；另有一项登录记录，耗时预计1小时。"),
+            ],
+        )
+        self.assertEqual(synthesis.conflicts, [])
+        self.assertFalse(synthesis.escalated)
+
+    def test_same_clause_numeric_conflict_still_escalates(self):
+        synthesis = ResponseSynthesizer().synthesize(
+            original_request="x",
+            plan=plan(SubTask("a", "one", "general"), SubTask("b", "two", "billing")),
+            results=[
+                result("a", "general", "背景说明与本次无关。退款预计7天到账。"),
+                result("b", "billing", "另有一句不相关内容。退款预计70天到账。"),
+            ],
+        )
+        self.assertTrue(any(item.startswith("numeric:") for item in synthesis.conflicts))
+
     def test_numeric_conflict_escalates(self):
         synthesis = ResponseSynthesizer().synthesize(
             original_request="x",
@@ -272,6 +299,44 @@ class SynthesizerTests(unittest.TestCase):
         )
         self.assertTrue(synthesis.escalated)
         self.assertIn("all_subtasks_failed", synthesis.degradations)
+
+    def test_extra_results_are_not_compared_for_conflicts(self):
+        # A pre-verified action/policy result may share a keyword ("退款") with an
+        # unrelated remainder subtask and carry different numbers — that coincidence
+        # must not trigger detect_conflicts(), which cannot tell the two apart from
+        # a real contradiction about the same fact.
+        synthesis = ResponseSynthesizer().synthesize(
+            original_request="x",
+            plan=plan(SubTask("a", "one", "general")),
+            results=[result("a", "general", "退款政策：符合条件的商品可在7天内退款。")],
+            extra_results=[result("action_primary", "action", "本次核实到 2 笔重复扣款，已发起退款申请。")],
+        )
+        self.assertEqual(synthesis.conflicts, [])
+        self.assertFalse(synthesis.escalated)
+        self.assertIn("会员业务", synthesis.content)
+        self.assertIn("订单与通用事项", synthesis.content)
+
+    def test_extra_results_escalation_signal_is_preserved(self):
+        extra = result("action_primary", "action", "已提交人工审批。")
+        extra.escalated = True
+        synthesis = ResponseSynthesizer().synthesize(
+            original_request="x",
+            plan=plan(SubTask("a", "one", "general")),
+            results=[result("a", "general", "物流预计 3 天送达。")],
+            extra_results=[extra],
+        )
+        self.assertTrue(synthesis.escalated)
+
+    def test_extra_results_alone_are_not_treated_as_all_failed(self):
+        synthesis = ResponseSynthesizer().synthesize(
+            original_request="x",
+            plan=plan(SubTask("a", "one", "general")),
+            results=[result("a", "general", success=False)],
+            extra_results=[result("action_primary", "action", "已完成核实。")],
+        )
+        self.assertIn("已完成核实", synthesis.content)
+        self.assertIn("暂未完成", synthesis.content)
+        self.assertNotIn("all_subtasks_failed", synthesis.degradations)
 
 
 class _Stats:
@@ -399,6 +464,46 @@ class OrchestratorIntegrationTests(unittest.TestCase):
         self.assertIsNone(output.task_plan)
         self.assertEqual(output.synthesis_method, "single_agent")
         self.assertEqual(len(orchestrator._pool[AgentType.GENERAL][0].requests), 1)
+
+    @staticmethod
+    def _remainder_request():
+        return Request(
+            message="帮我查一下物流",
+            user_id="u",
+            conv_id="c",
+            intent=IntentCategory.LOGISTICS,
+            intent_group="general",
+            urgency=UrgencyLevel.LOW,
+            intent_confidence=0.9,
+        )
+
+    def test_run_compound_includes_both_primary_and_remainder_sections(self):
+        orchestrator = self.orchestrator()
+        primary = result("action_primary", "action", "已核实 2 笔重复扣款，已发起退款申请。")
+        output = asyncio.run(orchestrator.run_compound(self._remainder_request(), primary))
+        self.assertIn("会员业务", output.response)
+        self.assertIn("已核实 2 笔重复扣款", output.response)
+        self.assertIn("handled:", output.response)
+        self.assertFalse(output.escalated)
+        self.assertEqual(output.execution_trace[0]["task_id"], "action_primary")
+        self.assertIsNotNone(output.task_plan)
+
+    def test_run_compound_preserves_primary_escalation_signal(self):
+        orchestrator = self.orchestrator()
+        primary = result("action_primary", "action", "已提交人工审批。")
+        primary.escalated = True
+        output = asyncio.run(orchestrator.run_compound(self._remainder_request(), primary))
+        self.assertTrue(output.escalated)
+
+    def test_run_compound_does_not_pollute_task_planner_allowed_types(self):
+        # "action"/"policy" must never need to be registered as an AgentType — they
+        # bypass TaskPlanner/DAGScheduler entirely via extra_results, so the remainder
+        # plan produced here should only ever contain real AgentType subtasks.
+        orchestrator = self.orchestrator()
+        primary = result("policy_primary", "policy", "会员费退款政策说明。")
+        output = asyncio.run(orchestrator.run_compound(self._remainder_request(), primary))
+        plan_agent_types = {task["agent_type"] for task in output.task_plan["subtasks"]}
+        self.assertTrue(plan_agent_types.issubset({agent.value for agent in AgentType}))
 
 
 if __name__ == "__main__":

@@ -1,0 +1,72 @@
+{
+  "timestamp": "2026-09-11T05:07:43.510992+00:00",
+  "mode": "real_llm_internal_acceptance",
+  "model": "qwen-plus",
+  "source": "three developer-authored synthetic read-only requests",
+  "sample_count": 1,
+  "passed": 1,
+  "actual_calls": 1,
+  "max_calls": 2,
+  "cost_usd": null,
+  "scope": "Not a benchmark or production validation; simulated business state",
+  "cases": [
+    {
+      "message": "怎么退订？关闭自动续费后会员权益会立即消失吗？",
+      "passed": true,
+      "status": "completed",
+      "goals": {
+        "policy": "read"
+      },
+      "response": "ResolveFlow 内部模拟产品：Basic 提供基础功能，Pro 提供高级功能；当前原型未定义价格、额度或具体功能清单，不应编造。订阅套餐与已生效权益是两个独立状态，升级后不一致时可查询并诊断，用户确认后同步权益。 [subscription-plans-v1]\n内部模拟规则：关闭自动续费只停止后续续订，不立即移除当前权益，也不自动退款。请明确提出关闭自动续费并提供订单号；系统查询当前状态后，须由用户确认具体操作。当前原型没有真实扣款调度器，也未提供实际到期日期；不能承诺具体到期日。 [subscription-renewal-v1]",
+      "latency_ms": 2837,
+      "usage": [
+        {
+          "input_tokens": 836,
+          "output_tokens": 44
+        }
+      ],
+      "model_calls": 1,
+      "fallback_count": 0,
+      "interpretations": [
+        {
+          "mode": "native_llm",
+          "calls": 1,
+          "usage": [
+            {
+              "input_tokens": 836,
+              "output_tokens": 44
+            }
+          ],
+          "errors": [],
+          "original_proposal": {
+            "goals": {
+              "renewal": "cancel",
+              "entitlement": "read"
+            },
+            "order_reference": null,
+            "missing_information": [],
+            "policy_topics": [
+              "renewal",
+              "plans"
+            ],
+            "unsupported_requests": []
+          },
+          "server_guard": "How-to consultation without explicit action request cannot become account execution",
+          "proposal": {
+            "goals": {
+              "policy": "read"
+            },
+            "order_reference": null,
+            "missing_information": [],
+            "policy_topics": [
+              "plans",
+              "renewal"
+            ],
+            "unsupported_requests": []
+          }
+        }
+      ],
+      "actions": []
+    }
+  ]
+}
