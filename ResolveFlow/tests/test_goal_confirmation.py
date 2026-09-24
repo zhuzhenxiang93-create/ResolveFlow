@@ -366,13 +366,12 @@ class ConfirmationAPITests(unittest.TestCase):
             self.addCleanup(runtime.cache_clear)
             with TestClient(app) as client:
                 headers = {"Authorization": "Bearer " + mint_token("user", "alice")}
-                order = client.post("/agent/demo/orders", headers=headers).json()
-                t = client.post("/agent/tasks", headers=headers, json={"message": "请申请退款"}).json()
-                base = "/agent/tasks/" + t["id"]
-                t = client.post(base + "/continue", headers=headers, json={"order_id": order["id"]}).json()
-                body = {"confirmation_id": t["confirmations"]["request_refund"]["id"], "accepted": True}
-                self.assertEqual(client.post(base + "/confirmation", json=body).status_code, 401)
-                self.assertEqual(client.post(base + "/confirmation", headers={"Authorization": "Bearer " + mint_token("reviewer", "bob")}, json=body).status_code, 401)
-                self.assertEqual(client.post(base + "/confirmation", headers=headers, json={**body, "approved": True}).status_code, 422)
-                t = client.post(base + "/confirmation", headers=headers, json=body).json()
-                self.assertEqual(t["status"], "awaiting_approval")
+                rows=client.post("/agent/demo/orders",headers=headers).json()["objects"]
+                oid=next(o["id"] for o in rows if o["id"].endswith("pro"))
+                case=client.post("/agent/tasks",headers=headers,json={"message":"申请退款 "+oid}).json()["commerce_case"]
+                base="/commerce/cases/"+case["id"]+"/decision"
+                body={"action_id":case["operations"][0]["id"],"decision":"confirm"}
+                self.assertEqual(client.post(base,json=body).status_code,401)
+                self.assertEqual(client.post(base,headers={"Authorization":"Bearer "+mint_token("reviewer","bob")},json=body).status_code,401)
+                self.assertEqual(client.post(base,headers=headers,json={**body,"approved":True}).status_code,422)
+                self.assertEqual(client.post(base,headers=headers,json=body).json()["status"],"awaiting_approval")

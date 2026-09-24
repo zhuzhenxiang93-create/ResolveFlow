@@ -76,7 +76,9 @@ class CommerceTests(unittest.TestCase):
     def test_subscription_04_cancel_renewal_preserves(self):
         before=self.obj('pro');self.step(self.case('pro','cancel_renewal'),'confirm');after=self.obj('pro');self.assertFalse(after['auto_renew']);self.assertEqual(after['entitlement'],before['entitlement']);self.assertFalse(after['refunds'])
     def test_subscription_05_terminate_no_refund(self):
-        self.step(self.case('pro','terminate'),'confirm');self.assertEqual(self.obj('pro')['entitlement'],'none');self.assertFalse(self.obj('pro')['refunds'])
+        before=self.obj('pro')
+        self.assertEqual(self.case('pro','terminate')['operations'][0]['status'],'ineligible')
+        self.assertEqual(self.obj('pro')['entitlement'],before['entitlement']);self.assertFalse(self.obj('pro')['refunds'])
     def test_subscription_06_repair(self):
         self.step(self.case('pro','repair'),'confirm');self.assertEqual(self.obj('pro')['entitlement'],self.obj('pro')['plan'])
     def test_subscription_07_no_self_review(self):

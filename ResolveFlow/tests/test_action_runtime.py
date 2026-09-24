@@ -180,13 +180,13 @@ class RouteTests(unittest.TestCase):
             with TestClient(app) as client:
                 self.assertEqual(client.post("/agent/demo/orders").status_code, 401)
                 headers = {"Authorization": "Bearer " + mint_token("user", "alice")}
-                order = client.post("/agent/demo/orders", headers=headers).json()
-                task = client.post("/agent/tasks", headers=headers, json={"message": "请申请退款，重复扣款"}).json()
-                url = "/agent/tasks/" + task["id"]
-                task = client.post(url + "/continue", headers=headers, json={"order_id": order["id"]}).json()
-                task = client.post(url + "/confirmation", headers=headers, json={"confirmation_id": task["confirmations"]["request_refund"]["id"], "accepted": True}).json()
-                body = {"approval_id": task["approvals"]["request_refund"]["id"], "approved": True}
-                self.assertEqual(client.post(url + "/approval", headers=headers, json=body).status_code, 403)
-                result = client.post(url + "/approval", headers={"Authorization": "Bearer " + mint_token("reviewer", "bob")}, json=body)
-                self.assertEqual(result.json()["status"], "completed")
+                rows=client.post("/agent/demo/orders",headers=headers).json()["objects"]
+                oid=next(o["id"] for o in rows if o["id"].endswith("pro"))
+                case=client.post("/agent/tasks",headers=headers,json={"message":"申请退款 "+oid}).json()["commerce_case"]
+                body={"approval_id":"old","approved":True}
+                url="/agent/tasks/"+case["id"]+"/approval"
+                self.assertEqual(client.post(url,headers=headers,json=body).status_code,403)
+                result=client.post(url,headers={"Authorization":"Bearer "+mint_token("reviewer","bob")},json=body)
+                self.assertEqual(result.status_code,410)
+                self.assertEqual(client.get("/agent/tasks/"+case["id"],headers=headers).json()["status"],"awaiting_confirmation")
             runtime.cache_clear()

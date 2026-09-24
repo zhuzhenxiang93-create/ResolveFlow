@@ -53,6 +53,8 @@ class Session:
         line = line.strip()
         if not line:
             return None
+        if self.service:
+            return await self.handle_unified(line)
         command, _, argument = line.partition(" ")
         argument = argument.strip()
         if command == "/help":
@@ -118,16 +120,47 @@ class Session:
             await self.service.observe(self.task)
         return self.task
 
+    async def handle_unified(self, line):
+        from business.commerce import CommerceStore
+        store=CommerceStore(self.runtime.path)
+        command, _, argument=line.partition(" ")
+        argument=argument.strip()
+        if command=="/help":
+            return "统一售后：/seed 初始化购买；/resume 任务ID；/conversation 会话ID；/status；/confirm 操作ID；/reject 操作ID；/new 问题；/debug。退款需独立审核。"
+        if command=="/seed":return {"objects":store.seed(self.owner)}
+        if command=="/session":return self.conversation_id or "尚未开始会话"
+        if command=="/debug":return json.dumps(self.last_result or {},ensure_ascii=False,indent=2)
+        if command=="/conversation":
+            self.conversation_id,_,_=self.service._conversation(self.owner,argument)
+            self.task=None
+            return {"cases":store.cases(self.owner,self.conversation_id)}
+        if command=="/resume":
+            self.task=self.service.execution.get(argument,self.owner)
+            self.conversation_id=self.task["conversation_id"]
+            return self.task
+        if command=="/status":return store.get_case(self.owner,self.task["id"]) if self.task else {"cases":store.cases(self.owner,self.conversation_id)}
+        if command in {"/confirm","/reject"}:
+            if not self.task or not argument:raise ValueError("必须选择任务并提供具体操作ID")
+            self.task=store.transition(self.owner,self.task["id"],argument,"confirm" if command=="/confirm" else "cancel",self.owner)
+            return self.task
+        if command in {"/cancel","/continue","/revise"}:raise ValueError("请在统一对话中明确修订，或 /reject 具体操作ID；旧授权不能复用")
+        if command=="/new":return await self.converse(argument,True)
+        if command.startswith("/"):raise ValueError("未知命令")
+        return await self.converse(line)
+
     async def converse(self, message, new_task=False):
         result = await self.service.send(self.owner, message, conversation_id=self.conversation_id, new_task=new_task)
         self.last_result = result
         self.conversation_id = result["conversation_id"]
-        self.task = result["task"] or self.task
+        self.task = result.get("commerce_case") or self.task
         return result
 
 
 def display(value):
     if value is None:
+        return
+    if isinstance(value, dict) and "operations" in value:
+        print(json.dumps(value, ensure_ascii=False, indent=2))
         return
     if isinstance(value, dict) and "route" in value:
         if value.get("task"):
@@ -156,7 +189,8 @@ async def main():
         client = LLMClient(api_key=cfg["LLM_API_KEY"], model=cfg["LLM_MODEL"],
                            base_url=cfg.get("LLM_BASE_URL"), provider=cfg.get("LLM_PROVIDER", "openai"), max_retries=0)
     try:
-        runtime = ActionRuntime(cfg.get("AGENT_STATE_PATH") or ROOT / "data/agent/state.sqlite3",
+        from business.execution import ExecutionContext
+        runtime = ExecutionContext(cfg.get("AGENT_STATE_PATH") or ROOT / "data/agent/state.sqlite3",
                                 client=client, allow_fallback=False, model_timeout=30)
         session = Session(runtime, unified=True)
         print("ResolveFlow | " + ("离线规则" if args.offline else "真实模型 " + client.model))

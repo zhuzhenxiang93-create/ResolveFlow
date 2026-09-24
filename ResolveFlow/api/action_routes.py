@@ -13,7 +13,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 
-from agents.action_runtime import ActionRuntime
+from business.execution import ExecutionContext
 from agents.agent_orchestrator import AgentOrchestrator
 from core.auth import AuthError, ROLES, mint_token, subject_with_role
 
@@ -72,7 +72,7 @@ def runtime():
                            # LLM_PROVIDER 的隐式 fallback。
                            provider=os.getenv("LLM_PROVIDER", "openai"))
     path = os.getenv("AGENT_STATE_PATH", str(Path(__file__).resolve().parents[1] / "data" / "agent" / "state.sqlite3"))
-    return ActionRuntime(path, client=client, allow_fallback=False)
+    return ExecutionContext(path, client=client)
 
 
 @lru_cache(maxsize=8)
@@ -126,119 +126,76 @@ async def conversation(req: ConversationRequest, user=Depends(owner)):
         raise HTTPException(400, str(ex)) from ex
 
 
+def retired():
+    raise HTTPException(410, {"code": "legacy_execution_retired",
+        "message": "旧执行接口已停用。请通过 /chat 重新申请，并使用返回的 commerce_case 中具体操作；旧确认和审批不可复用。",
+        "chat_endpoint": "/chat", "decision_endpoint": "/commerce/cases/{case_id}/decision"})
+
+
 @router.get("/review/tasks")
 def review_queue(actor=Depends(reviewer)):
-    # A reviewer is a separate role, not scoped to one owner — the queue spans
-    # every user's tasks that are pending approval or stuck on a human.
-    with runtime().connect() as db:
-        rows = db.execute("SELECT body FROM tasks WHERE json_extract(body, '$.status') IN (?, ?) ORDER BY rowid DESC LIMIT 100",
-                          ("awaiting_approval", "needs_human")).fetchall()
-    return {"tasks": [{k: t.get(k) for k in ("id", "owner", "status", "order_id", "response", "approvals")}
-                      for t in (json.loads(row[0]) for row in rows)], "limit": 100}
+    from business.commerce import CommerceStore
+    return {"tasks": CommerceStore(runtime().path).review_queue(), "execution_engine": "commerce"}
 
 
 @router.get("/review/tasks/{task_id}")
 def review_detail(task_id: str, actor=Depends(reviewer)):
+    from business.commerce import CommerceStore
+    store=CommerceStore(runtime().path)
+    with store.connect() as db:
+        table = "commerce_cases" if task_id.startswith("C-") else "tasks"
+        if not db.execute("SELECT 1 FROM sqlite_master WHERE name=?",(table,)).fetchone():
+            raise HTTPException(404,"Task not found")
+        row=db.execute("SELECT owner FROM " + table + " WHERE id=?",(task_id,)).fetchone()
+    if not row:raise HTTPException(404,"Task not found")
+    return {"task": ExecutionContext(runtime().path).get(task_id,row[0]),
+            "note": "查询结果不代表审批；执行统一使用 /commerce 接口。"}
+
+
+@router.post("/demo/orders")
+def seed(user=Depends(owner)):
+    from business.commerce import CommerceStore
+    return {"objects": CommerceStore(runtime().path).seed(user), "simulated": True}
+
+
+@router.post("/tasks")
+async def start(req: StartRequest, user=Depends(owner)):
+    return await conversation_service().send(user, req.message, conversation_id=req.conversation_id)
+
+
+@router.get("/tasks/{task_id}")
+def get_task(task_id: str, user=Depends(owner)):
     try:
-        rt = runtime()
-        owner_id = rt.owner_of(task_id)
-        with rt.connect() as db:
-            task = rt._load(db, task_id, owner_id)
-            order = rt._order(db, task)
-        # Independent goals can each have their own pending approval now;
-        # surface whether ANY of them has expired rather than assuming there
-        # is only ever one.
-        pending = [a for a in task.get("approvals", {}).values() if a["status"] == "pending"]
-        return {"task": task, "current_order": order, "read_at": time.time(),
-                "approval_expired": any(a["expires_at"] <= time.time() for a in pending),
-                "note": "Evidence is historical. Approval endpoint revalidates consent, versions, expiry and business preconditions."}
+        return ExecutionContext(runtime().path).get(task_id, user)
     except ValueError as ex:
         raise HTTPException(404, str(ex)) from ex
 
 
 @router.post("/tasks/{task_id}/confirmation")
 async def confirm(task_id: str, req: ConfirmationRequest, user=Depends(owner)):
-    try:
-        task = runtime().confirm(task_id, user, req.confirmation_id, req.accepted)
-        if task["status"] == "running":
-            task = await AgentOrchestrator.execute_action(runtime(), owner=user, task_id=task_id)
-        await conversation_service().observe(task)
-        return task
-    except ValueError as ex:
-        raise HTTPException(400, str(ex)) from ex
-
-
-@router.post("/demo/orders")
-def seed(user=Depends(owner)):
-    return runtime().seed(user)
-
-
-@router.post("/tasks")
-async def start(req: StartRequest, user=Depends(owner)):
-    task = await AgentOrchestrator.execute_action(runtime(), owner=user, message=req.message, conversation_id=req.conversation_id)
-    await conversation_service().observe(task)
-    return task
-
-
-@router.get("/tasks/{task_id}")
-def get_task(task_id: str, user=Depends(owner)):
-    try:
-        return runtime().get(task_id, user)
-    except ValueError as ex:
-        raise HTTPException(404, str(ex)) from ex
+    retired()
 
 
 @router.post("/tasks/{task_id}/continue")
 async def resume(task_id: str, req: ContinueRequest, user=Depends(owner)):
-    try:
-        task = await AgentOrchestrator.execute_action(runtime(), owner=user, task_id=task_id, order_id=req.order_id,
-                                                     message=req.message, conversation_id=req.conversation_id)
-        await conversation_service().observe(task)
-        return task
-    except ValueError as ex:
-        raise HTTPException(400, str(ex)) from ex
+    retired()
 
 
 @router.post("/tasks/{task_id}/cancel")
 async def cancel(task_id: str, user=Depends(owner)):
-    try:
-        task = runtime().cancel(task_id, user)
-        await conversation_service().observe(task)
-        return task
-    except ValueError as ex:
-        raise HTTPException(400, str(ex)) from ex
+    retired()
 
 
 @router.post("/tasks/{task_id}/revise")
 async def revise(task_id: str, req: StartRequest, user=Depends(owner)):
-    try:
-        task = runtime().revise(task_id, user, req.message)
-        await conversation_service().observe(task)
-        return task
-    except ValueError as ex:
-        raise HTTPException(400, str(ex)) from ex
+    retired()
 
 
 @router.post("/tasks/{task_id}/approval")
 async def approve(task_id: str, req: ApprovalRequest, actor=Depends(reviewer)):
-    try:
-        owner_id = runtime().owner_of(task_id)
-        task = runtime().approve(task_id, owner_id, req.approval_id, req.approved, actor)
-        if task["status"] == "running":
-            task = await AgentOrchestrator.execute_action(runtime(), owner=owner_id, task_id=task_id)
-        await conversation_service().observe(task)
-        return task
-    except ValueError as ex:
-        raise HTTPException(400, str(ex)) from ex
+    retired()
 
 
 @router.post("/tasks/{task_id}/release")
 async def release_handoff(task_id: str, actor=Depends(reviewer)):
-    try:
-        owner_id = runtime().owner_of(task_id)
-        runtime().release_handoff(task_id, owner_id, actor)
-        task = await AgentOrchestrator.execute_action(runtime(), owner=owner_id, task_id=task_id)
-        await conversation_service().observe(task)
-        return task
-    except ValueError as ex:
-        raise HTTPException(400, str(ex)) from ex
+    retired()

@@ -85,11 +85,11 @@ class ConversationServiceScopeTests(unittest.IsolatedAsyncioTestCase):
         self.runtime = ActionRuntime(self.temp.name + "/db", allow_fallback=False)
         self.runtime.goal_interpreter = PolicyOnly(["refund"])
         self.service = ConversationService(self.runtime)
-        self.subscription_refund_ids = {d["id"] for d in self.service.documents if d["topic"] == "refund"}
+        self.subscription_refund_ids = {d["id"] for d in self.service.documents if d.get("domain") in {"subscription", "general"}}
 
     async def test_full_rag_is_called_with_the_topic_scoped_document_ids(self):
         self.service.knowledge_search = AsyncMock(return_value=[
-            {"document_id": next(iter(self.subscription_refund_ids)), "title": "订阅退款", "content": "已核实的订阅退款规则"}
+            {"document_id": next(iter(self.subscription_refund_ids)), "title": "订阅退款", "content": "已核实的订阅退款规则", "lexical_rank": 1}
         ])
         result = await self.service.send("user", "会员费退款政策是什么")
         self.service.knowledge_search.assert_awaited_once()

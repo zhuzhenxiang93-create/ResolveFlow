@@ -82,6 +82,8 @@ class RouteEnforcementTests(unittest.TestCase):
         self.addCleanup(runtime.cache_clear)
         app = FastAPI()
         app.include_router(router)
+        from api.commerce_routes import router as commerce_router
+        app.include_router(commerce_router)
         self.client = TestClient(app)
         self.addCleanup(self.client.close)
 
@@ -121,11 +123,13 @@ class RouteEnforcementTests(unittest.TestCase):
 
     def test_two_distinct_users_cannot_see_each_others_tasks(self):
         alice, bob = self.bearer("alice", "user"), self.bearer("bob", "user")
-        order = self.client.post("/agent/demo/orders", headers=alice).json()
-        task = self.client.post("/agent/tasks", headers=alice, json={"message": "查询账单"}).json()
-        self.assertEqual(self.client.get("/agent/tasks/" + task["id"], headers=alice).status_code, 200)
-        self.assertEqual(self.client.get("/agent/tasks/" + task["id"], headers=bob).status_code, 404)
-        self.assertEqual(self.client.post("/agent/demo/orders", headers=bob).json()["id"] != order["id"], True)
+        rows=self.client.post("/agent/demo/orders",headers=alice).json()["objects"]
+        oid=next(o["id"] for o in rows if o["id"].endswith("basic"))
+        task=self.client.post("/agent/tasks",headers=alice,json={"message":"取消订阅 "+oid}).json()["commerce_case"]
+        self.assertEqual(self.client.get("/agent/tasks/"+task["id"],headers=alice).status_code,200)
+        self.assertEqual(self.client.get("/agent/tasks/"+task["id"],headers=bob).status_code,404)
+        other=self.client.post("/agent/demo/orders",headers=bob).json()["objects"]
+        self.assertFalse({o["id"] for o in rows} & {o["id"] for o in other})
 
     def test_reviewer_cannot_approve_their_own_task(self):
         # Mint a token for the SAME subject under both roles — this is exactly
@@ -134,19 +138,18 @@ class RouteEnforcementTests(unittest.TestCase):
         same_subject = "carol"
         user_headers = self.bearer(same_subject, "user")
         reviewer_headers = self.bearer(same_subject, "reviewer")
-        order = self.client.post("/agent/demo/orders", headers=user_headers).json()
-        task = self.client.post("/agent/tasks", headers=user_headers, json={"message": "请申请退款，重复扣款"}).json()
-        base = "/agent/tasks/" + task["id"]
-        task = self.client.post(base + "/continue", headers=user_headers, json={"order_id": order["id"]}).json()
-        task = self.client.post(base + "/confirmation", headers=user_headers,
-                                json={"confirmation_id": task["confirmations"]["request_refund"]["id"], "accepted": True}).json()
-        body = {"approval_id": task["approvals"]["request_refund"]["id"], "approved": True}
-        response = self.client.post(base + "/approval", headers=reviewer_headers, json=body)
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("Independent", response.json()["detail"])
-        # The task itself is untouched — no silent partial state change.
-        unchanged = self.client.get(base, headers=user_headers).json()
-        self.assertEqual(unchanged["status"], "awaiting_approval")
+        rows=self.client.post("/agent/demo/orders",headers=user_headers).json()["objects"]
+        oid=next(o["id"] for o in rows if o["id"].endswith("pro"))
+        task=self.client.post("/agent/tasks",headers=user_headers,json={"message":"申请退款 "+oid}).json()["commerce_case"]
+        aid=task["operations"][0]["id"]
+        self.client.post("/commerce/cases/"+task["id"]+"/decision",headers=user_headers,json={"action_id":aid,"decision":"confirm"})
+        response=self.client.post("/commerce/review/"+task["id"],headers=reviewer_headers,json={"action_id":aid,"decision":"approve"})
+        self.assertEqual(response.status_code,400)
+        unchanged=self.client.get("/agent/tasks/"+task["id"],headers=user_headers).json()
+        self.assertEqual(unchanged["status"],"awaiting_approval")
+        from business.commerce import CommerceStore
+        from api.action_routes import runtime
+        self.assertFalse(CommerceStore(runtime().path).detail(same_subject,oid)["refunds"])
 
 
 if __name__ == "__main__":

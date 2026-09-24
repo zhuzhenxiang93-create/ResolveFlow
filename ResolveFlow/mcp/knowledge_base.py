@@ -216,7 +216,8 @@ class KnowledgeBase:
         instance._lexical_only = True
         instance._lexical_index = BM25Index()
         instance._lexical_index.upsert([instance._result_record(d["id"], d["content"],
-            {"document_id": d["id"], "title": d["title"], "search_terms": d.get("search_terms", [])}) for d in documents])
+            {**{k: d[k] for k in ("source", "domain", "version", "effective_at", "topic") if k in d},
+             "document_id": d["id"], "title": d["title"], "search_terms": d.get("search_terms", [])}) for d in documents])
         return instance
 
     def search(
@@ -239,7 +240,7 @@ class KnowledgeBase:
             hits = self._lexical_index.search(query, top_k * 4 if scope else top_k)
             if scope is not None:
                 hits = [h for h in hits if h.get("document_id") in scope]
-            return hits[:top_k]
+            return [{**hit, "lexical_rank": index + 1} for index, hit in enumerate(hits[:top_k])]
         return self._search_impl(query, top_k, scope)
 
     def _search_impl(

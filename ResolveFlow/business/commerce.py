@@ -10,7 +10,7 @@ import time
 import uuid
 from contextlib import contextmanager
 
-POLICY = "demo-commerce-v1"
+POLICY = "demo-commerce-v2"
 DAY = 86400
 WRITE_OPS = {"refund", "cancel_renewal", "terminate", "cancel_order", "repair"}
 LABELS = {"refund": "申请退款", "cancel_renewal": "关闭自动续费（保留本期权益）", "terminate": "立即终止订阅（不自动退款）", "cancel_order": "取消未支付订单", "repair": "同步订阅权益", "read": "查询", "logistics": "查询物流", "invoice": "查询发票", "progress": "查询售后进度"}
@@ -34,6 +34,19 @@ class CommerceStore:
             CREATE TABLE IF NOT EXISTS commerce_audit(id TEXT PRIMARY KEY, case_id TEXT NOT NULL, actor TEXT NOT NULL, event TEXT NOT NULL, body TEXT NOT NULL, created REAL NOT NULL);
             ''')
             db.execute("INSERT OR IGNORE INTO commerce_migrations VALUES(1,?)", (time.time(),))
+            # Preserve identifiers and ownership without inventing financial evidence.
+            if db.execute("SELECT 1 FROM sqlite_master WHERE name='orders'").fetchone():
+                for row in db.execute("SELECT id,owner,body FROM orders").fetchall():
+                    old = json.loads(row["body"])
+                    body = {"source": "legacy_snapshot", "evidence_complete": False,
+                            "plan": old.get("plan"), "entitlement": old.get("entitlement"),
+                            "auto_renew": old.get("auto_renew"), "service": old.get("service"),
+                            "currency": None, "simulated": True,
+                            "missing_evidence": ["payment_records", "billing_period", "refund_amounts"]}
+                    db.execute("INSERT OR IGNORE INTO commerce_objects VALUES(?,?,?,?,?,1,?)",
+                               (row["id"], row["owner"], "subscription", "历史订阅 " + str(old.get("plan", "")),
+                                "evidence_required", json.dumps(body)))
+            db.execute("INSERT OR IGNORE INTO commerce_migrations VALUES(2,?)", (time.time(),))
 
     @contextmanager
     def connect(self):
@@ -121,6 +134,14 @@ class CommerceStore:
              "currency": "CNY", "item_id": item_id, "payment_id": payment_id, "eligible": True,
              "effect": "只查询，不修改业务", "requires_review": op == "refund", "simulated": True}
         if op not in WRITE_OPS:
+            return q
+        if obj.get("evidence_complete") is False:
+            q.update(eligible=False, reason="历史记录缺少具体账单、计费周期和退款金额证据；请补齐核实后重新申请，旧计数不能作为执行依据")
+            return q
+        if op == "terminate":
+            if obj["domain"] != "subscription":
+                raise ValueError("该操作仅适用于订阅")
+            q.update(eligible=False, reason="不提供独立立即收回权益的操作。取消订阅会关闭续费并保留本期权益；本期退款须另行申请确认")
             return q
         if op in {"cancel_renewal", "terminate", "repair"}:
             if obj["domain"] != "subscription":

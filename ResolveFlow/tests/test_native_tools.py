@@ -84,25 +84,16 @@ class UnifiedAPITests(unittest.TestCase):
             headers = {"Authorization": "Bearer " + mint_token("user", "alice")}
             payload = {"message": "请修复升级后的权益，并申请重复扣款退款", "user_id": "forged"}
             self.assertEqual(client.post("/chat", json=payload).status_code, 401)
-            order = client.post("/agent/demo/orders", headers=headers).json()
-            task = client.post("/chat", headers=headers, json=payload).json()["action_task"]
-            self.assertEqual(task["owner"], "alice")
-            payload.update(task_id=task["id"], order_id=order["id"])
-            result = client.post("/chat", headers=headers, json=payload).json()
-            for _ in range(2):
-                t = result["action_task"]
-                if t["status"] == "awaiting_confirmation":
-                    # Both goals' confirmations can be pending at once now;
-                    # accept whichever one is still pending each round.
-                    pending_id = next(c["id"] for c in t["confirmations"].values() if c["status"] == "pending")
-                    confirmed = client.post("/agent/tasks/" + t["id"] + "/confirmation", headers=headers,
-                                            json={"confirmation_id": pending_id, "accepted": True}).json()
-                    result = {"action_task": confirmed}
-            self.assertEqual(result["action_task"]["status"], "awaiting_approval")
-            approval_id = result["action_task"]["approvals"]["request_refund"]["id"]
-            response = client.post("/agent/tasks/" + task["id"] + "/approval",
-                                   headers={"Authorization": "Bearer " + mint_token("reviewer", "bob")},
-                                   json={"approval_id": approval_id, "approved": True})
-            self.assertEqual(response.json()["status"], "completed")
-            result = client.post("/chat", headers=headers, json=payload).json()
-            self.assertEqual(result["action_task"]["status"], "completed")
+            rows = client.post("/agent/demo/orders", headers=headers).json()["objects"]
+            oid = next(o["id"] for o in rows if o["id"].endswith("pro"))
+            payload["message"] = "申请重复扣款退款 " + oid
+            case = client.post("/chat", headers=headers, json=payload).json()["commerce_case"]
+            self.assertEqual(case["owner"], "alice")
+            aid=case["operations"][0]["id"]
+            result=client.post("/commerce/cases/"+case["id"]+"/decision",headers=headers,json={"action_id":aid,"decision":"confirm"}).json()
+            self.assertEqual(result["status"],"awaiting_approval")
+            review={"Authorization":"Bearer "+mint_token("reviewer","bob")}
+            for decision in ("approve","settle"):
+                result=client.post("/commerce/review/"+case["id"],headers=review,json={"action_id":aid,"decision":decision}).json()
+            self.assertEqual(result["status"],"completed")
+            self.assertEqual(client.get("/agent/tasks/"+case["id"],headers=headers).json()["status"],"completed")

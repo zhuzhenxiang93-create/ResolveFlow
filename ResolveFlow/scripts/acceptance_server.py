@@ -32,7 +32,7 @@ class OfflineSummary:
     async def create(self,**kwargs):raise RuntimeError('Automatic profile/summary unavailable without model')
 
 def configure(live=False,directory='/tmp/resolveflow-acceptance'):
-    from agents.action_runtime import ActionRuntime
+    from business.execution import ExecutionContext
     from agents.conversation_service import ConversationService
     from agents.agent_orchestrator import AgentOrchestrator
     from core.intent_recognizer import IntentRecognizer
@@ -49,7 +49,7 @@ def configure(live=False,directory='/tmp/resolveflow-acceptance'):
         cfg={**dotenv_values(ROOT/'.env'),**dotenv_values(ROOT/'.env.agent.local')}
         raw=LLMClient(api_key=cfg['LLM_API_KEY'],model=cfg['LLM_MODEL'],provider=cfg.get('LLM_PROVIDER','openai'),base_url=cfg.get('LLM_BASE_URL'),max_retries=0)
         client=BudgetClient(raw,directory/'model-calls.json')
-    runtime=ActionRuntime(directory/'state.sqlite3',client=client,allow_fallback=False)
+    runtime=ExecutionContext(directory/'state.sqlite3',client=client)
     memory=MemoryManager(redis_url='redis://127.0.0.1:16379/0',chroma_host='127.0.0.1',chroma_port=18001,chroma_path=str(directory/'chroma'),api_key='offline-placeholder')
     memory._client=client or OfflineSummary()
     recognizer=IntentRecognizer(api_key='',client=client,use_llm=bool(client),base_url='local-compatible')

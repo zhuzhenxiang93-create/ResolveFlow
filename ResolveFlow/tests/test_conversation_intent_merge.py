@@ -61,15 +61,12 @@ class RecognizerCallCountTests(unittest.IsolatedAsyncioTestCase):
         service.recognizer.recognize.assert_not_called()
 
     async def test_goal_interpreter_failure_never_calls_recognizer(self):
-        self.runtime.goal_interpreter = Scripted()
-
-        async def failing_interpret(message, context):
-            return None, {"mode": "failed", "errors": ["timeout"], "usage": []}
-        self.runtime.goal_interpreter.interpret = failing_interpret
-        service = ConversationService(self.runtime)
-        service.recognizer.recognize = AsyncMock()
-        result = await service.send("user", "帮我查一下")
-        self.assertEqual(result["route"], "needs_human")
+        self.runtime.client=AsyncMock()
+        self.runtime.client.create_tool_turn.side_effect=TimeoutError()
+        service=ConversationService(self.runtime)
+        service.recognizer.recognize=AsyncMock()
+        result=await service.send("user","帮我查一下")
+        self.assertEqual(result["interpretation"]["mode"],"model_error")
         service.recognizer.recognize.assert_not_called()
 
     async def test_chat_route_calls_recognizer_exactly_once(self):

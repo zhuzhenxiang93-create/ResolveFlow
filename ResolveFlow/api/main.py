@@ -149,9 +149,9 @@ async def lifespan(app: FastAPI):
     if demo_documents:
         await kb.add_documents_async(demo_documents)
     subscription_docs = json.loads((pathlib.Path(_ROOT) / "data/knowledge/subscription_service_v1.json").read_text())
-    for doc in subscription_docs:
-        doc.setdefault("source", "subscription_service_v1")
-    await kb.add_documents_async(subscription_docs)
+    # Retire subscription-only rules from the active knowledge index; source files
+    # remain available for historical/offline regression, never current answers.
+    await asyncio.to_thread(kb.delete_documents, [d["id"] for d in subscription_docs])
     logger.info(f"知识库已加载: {await kb.doc_count_async()} 个文档片段")
 
     def knowledge_fallback(params: Dict[str, Any], context: Optional[Dict[str, Any]], error: str):

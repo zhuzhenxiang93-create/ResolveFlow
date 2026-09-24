@@ -64,18 +64,6 @@
         </label>
       </section>
 
-      <section class="panel">
-        <div class="panel-heading">
-          <h2>模拟订单</h2>
-          <span class="pill soft">Demo</span>
-        </div>
-        <div class="actions">
-          <button @click="createSeedOrder" :disabled="busy || !settings.userToken">生成模拟订单</button>
-          <button v-if="seededOrderId" @click="insertOrderId">填入输入框</button>
-        </div>
-        <pre v-if="seededOrderId">{{ seededOrderId }}</pre>
-      </section>
-
       <section class="panel status-panel">
         <div class="panel-heading">
           <h2>状态</h2>
@@ -136,79 +124,7 @@
 
       <CommercePanel :settings="settings" :latest="latestCommerce" :candidates="commerceCandidates" @ask="askCommerce" @select="selectCommerce" @updated="commerceUpdated" />
 
-      <section class="task-panel" v-if="currentTask">
-        <div class="panel-heading">
-          <h2>当前任务</h2>
-          <span :class="['pill', 'task-status', statusClass(currentTask.status)]">{{ statusLabel(currentTask.status) }}</span>
-        </div>
-        <dl class="task-meta">
-          <div><dt>任务 ID</dt><dd>{{ currentTask.id }}</dd></div>
-          <div v-if="currentTask.order_id"><dt>订单</dt><dd>{{ currentTask.order_id }}</dd></div>
-          <div v-if="currentTask.primary_agent"><dt>主处理</dt><dd>{{ currentTask.primary_agent }}</dd></div>
-        </dl>
 
-        <div class="plan-steps" v-if="currentTask.plan?.steps?.length">
-          <div v-for="step in currentTask.plan.steps" :key="step.id" class="plan-step">
-            <span :class="['pill', 'soft', 'step-status', statusClass(step.status)]">{{ step.status }}</span>
-            <span>{{ step.tool }}</span>
-          </div>
-        </div>
-
-        <p v-if="currentTask.unresolved?.length" class="hint">未完成：{{ currentTask.unresolved.join('、') }}</p>
-
-        <div v-if="currentTask.status === 'awaiting_confirmation'" class="task-action-block">
-          <!-- Independent goals can each have their own pending confirmation
-               at once now, so list every one instead of assuming there is
-               only ever a single `currentTask.confirmation`. -->
-          <div v-for="c in pendingConfirmations" :key="c.id" class="confirmation-item">
-            <p>请确认：{{ c.tool }}（订单 {{ c.order_id }}）</p>
-            <div class="actions">
-              <button @click="respondConfirmation(c.id, true)" :disabled="busy">确认</button>
-              <button @click="respondConfirmation(c.id, false)" :disabled="busy">拒绝</button>
-            </div>
-          </div>
-        </div>
-
-        <div v-if="currentTask.status === 'awaiting_approval'" class="task-action-block">
-          <p>等待独立审核人批准，尚未退款。</p>
-          <div v-if="settings.reviewerToken" class="reviewer-panel">
-            <div class="panel-heading">
-              <h2>审核员操作</h2>
-              <span class="pill soft">独立身份</span>
-            </div>
-            <p class="hint">使用审核员 Token；服务端会拒绝审核员与任务所有者相同的自批请求。</p>
-            <!-- Same as above: independent goals can each have their own
-                 pending approval at once. -->
-            <div v-for="a in pendingApprovals" :key="a.id" class="approval-item">
-              <p class="hint">{{ a.tool }}（订单 {{ a.order_id }}）</p>
-              <div class="actions">
-                <button @click="respondApproval(a.id, true)" :disabled="busy">批准</button>
-                <button @click="respondApproval(a.id, false)" :disabled="busy">拒绝</button>
-              </div>
-            </div>
-          </div>
-          <p v-else class="hint">填入审核员 Token 后可在此演示批准/拒绝。</p>
-        </div>
-
-        <div v-if="currentTask.status === 'needs_human' && settings.reviewerToken" class="task-action-block reviewer-panel">
-          <div class="panel-heading">
-            <h2>审核员操作</h2>
-            <span class="pill soft">独立身份</span>
-          </div>
-          <div class="actions">
-            <button @click="releaseCurrentTask" :disabled="busy">人工释放</button>
-          </div>
-        </div>
-
-        <div class="actions">
-          <button @click="cancelCurrentTask" :disabled="busy">取消任务</button>
-          <button @click="showReviseForm = !showReviseForm" :disabled="busy">修订任务</button>
-        </div>
-        <div v-if="showReviseForm" class="inline-form">
-          <input v-model="reviseDraft" placeholder="修订后的完整目标" />
-          <button @click="reviseCurrentTask" :disabled="busy || !reviseDraft.trim()">提交修订</button>
-        </div>
-      </section>
 
       <section class="tools-grid">
         <article class="tool-panel">

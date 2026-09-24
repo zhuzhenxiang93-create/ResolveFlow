@@ -109,5 +109,7 @@ async def delete_memory(user=Depends(owner)):
         exists = db.execute("SELECT 1 FROM sqlite_master WHERE name='commerce_dialogs'").fetchone()
         if exists:
             db.execute("DELETE FROM commerce_dialogs WHERE owner=?", (user,))
+        if db.execute("SELECT 1 FROM sqlite_master WHERE name='commerce_consultations'").fetchone():
+            db.execute("DELETE FROM commerce_consultations WHERE owner=?", (user,))
         db.execute("UPDATE unified_conversations SET last_order=NULL WHERE owner=?", (user,))
     return {"deleted": True, "note": "已删除对话记忆与偏好；业务记录和审计保留"}
