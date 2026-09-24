@@ -21,14 +21,16 @@ def summary(payload, reviewer=False):
             lines.append("套餐/权益: %s/%s | 扣款: %s笔 | 退款: %s笔" % (order["plan"], order["entitlement"], order["charges"], order["refunds"]))
         else:
             lines.append("当前订单快照未加载；/show 刷新后再审核。")
-        approval = task.get("approval")
-        if approval:
-            lines.append("审批: %s | %s | %s" % (approval["id"], approval["status"], "已过期" if approval["expires_at"] <= time.time() else "有效期内，提交时重新校验"))
-            lines.append("对象: %s | 动作: %s | 笔数: %s" % (approval["order_id"], approval["action"], approval["count"]))
+        approvals = task.get("approvals") or {}
+        if approvals:
+            # Independent goals can each have their own approval now; list
+            # all of them rather than assuming there is only ever one.
+            for approval in approvals.values():
+                lines.append("审批: %s | %s | %s" % (approval["id"], approval["status"], "已过期" if approval["expires_at"] <= time.time() else "有效期内，提交时重新校验"))
+                lines.append("对象: %s | 动作: %s | 笔数: %s" % (approval["order_id"], approval["action"], approval["count"]))
         else:
             lines.append("当前没有可批准的申请。")
-        consent = task.get("confirmation")
-        if consent:
+        for consent in (task.get("confirmations") or {}).values():
             lines.append("用户确认: %s | %s" % (consent["tool"], consent["status"]))
         lines.append("历史工具记录: %s条（不等于当前状态；/debug 查看原始证据）" % len(task.get("evidence", [])))
         latest = {e["tool"]: e for e in task.get("evidence", [])}
@@ -42,9 +44,13 @@ def summary(payload, reviewer=False):
                 lines.append("最近异常: " + error["error_type"] + " | 纠正次数: " + str(task.get("no_tool_corrections", 0)))
     status = task["status"]
     if status == "awaiting_confirmation":
-        c = task["confirmation"]
-        lines.append(("下一步: 等待用户对具体操作重新确认。" if reviewer else
-                      "同意: /confirm " + c["id"] + "\n拒绝: /reject " + c["id"]))
+        pending = [c for c in task.get("confirmations", {}).values() if c["status"] == "pending"]
+        if reviewer:
+            lines.append("下一步: 等待用户对具体操作重新确认。")
+        else:
+            # Independent goals can each have their own pending confirmation
+            # at once; list every one instead of assuming there is only one.
+            lines.extend("同意: /confirm " + c["id"] + "\n拒绝: /reject " + c["id"] for c in pending)
     elif status == "awaiting_approval":
         lines.append("下一步: /approve 审批ID 或 /reject 审批ID" if reviewer else "下一步: 等待独立人工审批，之后 /continue；这里不能自行批准。")
     elif status == "needs_human":

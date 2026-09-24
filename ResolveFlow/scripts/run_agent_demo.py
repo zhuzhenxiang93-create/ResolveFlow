@@ -15,13 +15,16 @@ async def main():
         task = await runtime.advance(task["id"], "demo", order["id"])
         for _ in range(2):
             assert task["status"] == "awaiting_confirmation"
-            print(json.dumps({"stage": "user_confirmation_required", "confirmation": task["confirmation"]}, ensure_ascii=False))
-            runtime.confirm(task["id"], "demo", task["confirmation"]["id"], True)
+            # Both goals' confirmations can be proposed at once now; work
+            # through whichever is still pending each round.
+            pending = next(c for c in task["confirmations"].values() if c["status"] == "pending")
+            print(json.dumps({"stage": "user_confirmation_required", "confirmation": pending}, ensure_ascii=False))
+            runtime.confirm(task["id"], "demo", pending["id"], True)
             task = await runtime.advance(task["id"], "demo")
         assert task["status"] == "awaiting_approval"
         print(json.dumps({"stage": "approval_required", "task": task}, ensure_ascii=False))
         restarted = ActionRuntime(directory + "/state.sqlite3")
-        task = restarted.approve(task["id"], "demo", task["approval"]["id"], True, "demo-reviewer")
+        task = restarted.approve(task["id"], "demo", task["approvals"]["request_refund"]["id"], True, "demo-reviewer")
         assert task["status"] == "completed" and not task["unresolved"]
         print(json.dumps({"stage": "verified", "task": task}, ensure_ascii=False))
 

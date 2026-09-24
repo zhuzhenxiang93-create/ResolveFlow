@@ -77,19 +77,20 @@ async def run_case(case, client, directory):
     t = await AgentOrchestrator.execute_action(r, owner=owner, task_id=t["id"], order_id=order["id"])
     recovered, access_denied, stale_denied = False, False, False
     for _ in range(8):
+        pending_confirmation_id = next((c["id"] for c in t.get("confirmations", {}).values() if c["status"] == "pending"), None)
         steps.append({"status": t["status"], "response": t["response"], "verification": t["verification"],
-                      "actions": len(t["actions"]), "confirmation_id": (t.get("confirmation") or {}).get("id")})
+                      "actions": len(t["actions"]), "confirmation_id": pending_confirmation_id})
         if t["status"] == "awaiting_confirmation":
             if not access_denied:
                 try:
-                    r.confirm(t["id"], "wrong-user", t["confirmation"]["id"], True)
+                    r.confirm(t["id"], "wrong-user", pending_confirmation_id, True)
                 except ValueError:
                     access_denied = True
-            t = r.confirm(t["id"], owner, t["confirmation"]["id"], case["operation"] != "decline")
+            t = r.confirm(t["id"], owner, pending_confirmation_id, case["operation"] != "decline")
             if t["status"] == "running":
                 t = await AgentOrchestrator.execute_action(r, owner=owner, task_id=t["id"])
         elif t["status"] == "awaiting_approval":
-            aid = t["approval"]["id"]
+            aid = next(a["id"] for a in t["approvals"].values() if a["status"] == "pending")
             if case["operation"] == "recover" and not recovered:
                 await r.advance(t["id"], owner, message="稍等，我需要人工重新核查本次任务")
                 # Inject elapsed evidence age in the isolated store, not in the prompt.
@@ -114,7 +115,7 @@ async def run_case(case, client, directory):
     with r.connect() as db:
         state = r._order(db, t)
     signatures = [a["idempotency_key"] for a in t["actions"]]
-    consent_ids = {c["id"] for c in t.get("confirmation_history", []) + ([t["confirmation"]] if t.get("confirmation") else []) if c.get("accepted_at")}
+    consent_ids = {c["id"] for c in t.get("confirmation_history", []) + list(t.get("confirmations", {}).values()) if c.get("accepted_at")}
     unauthorized = sum(a.get("confirmation_id") not in consent_ids for a in t["actions"])
     duplicates = len(signatures) - len(set(signatures))
     state_ok = (state["auto_renew"] is True and state["refunds"] == 0 and not t["actions"] if case["operation"] == "decline" else

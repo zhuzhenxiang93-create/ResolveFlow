@@ -1,0 +1,39 @@
+{
+  "scope": "controlled deterministic language ablation; real SQLite and Redis/Chroma; timings are single observations, not benchmarks",
+  "results": [
+    {
+      "backend": "sqlite",
+      "style": {
+        "enabled_chars": 53,
+        "disabled_chars": 122,
+        "enabled_ms": 3.65,
+        "disabled_ms": 0.95,
+        "same_current_amount": true
+      },
+      "continuity": {
+        "enabled_clarifications": 0,
+        "disabled_clarifications": 1,
+        "enabled_response": "Pro 月度会员 · active · 实付 CNY 198.00 · 自动续费开启 · 权益 basic",
+        "disabled_response": "请确认要处理的商品订单或订阅账单：未找到匹配记录，请选择自己的购买记录"
+      },
+      "deletion_clears_all": true
+    },
+    {
+      "backend": "redis_chroma",
+      "style": {
+        "enabled_chars": 53,
+        "disabled_chars": 122,
+        "enabled_ms": 91.16,
+        "disabled_ms": 1.28,
+        "same_current_amount": true
+      },
+      "continuity": {
+        "enabled_clarifications": 0,
+        "disabled_clarifications": 1,
+        "enabled_response": "Pro 月度会员 · active · 实付 CNY 198.00 · 自动续费开启 · 权益 basic",
+        "disabled_response": "请确认要处理的商品订单或订阅账单：未找到匹配记录，请选择自己的购买记录"
+      },
+      "deletion_clears_all": true
+    }
+  ]
+}

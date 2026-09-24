@@ -43,7 +43,7 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(task["verification"]["billing"])
         self.assertEqual({e["agent"] for e in task["evidence"]}, {"technical", "billing"})
         runtime = ActionRuntime(self.path)
-        args = (task["id"], "alice", task["approval"]["id"], True, "reviewer")
+        args = (task["id"], "alice", task["approvals"]["request_refund"]["id"], True, "reviewer")
         done = runtime.approve(*args)
         self.assertEqual(done["status"], "completed")
         self.assertEqual(runtime.approve(*args), done)
@@ -55,11 +55,34 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         task = await self.pending()
         with self.assertRaises(ValueError):
             self.runtime.get(task["id"], "bob")
-        denied = self.runtime.approve(task["id"], "alice", task["approval"]["id"], False, "r")
+        denied = self.runtime.approve(task["id"], "alice", task["approvals"]["request_refund"]["id"], False, "r")
         self.assertEqual(denied["status"], "rejected")
         foreign = self.runtime.create("bob", "重复扣款")
         result = await self.runtime.advance(foreign["id"], "bob", self.order["id"])
         self.assertEqual(result["status"], "awaiting_clarification")
+
+    async def test_bare_order_id_reply_does_not_reinterpret_and_drop_goals(self):
+        # Real-world shape of the bug: the user is asked "请提供订单号。" and replies
+        # with NOTHING but the order id (typed straight into the chat box, so it
+        # arrives as `message`, not a separate structured order_id argument). Before
+        # the fix, that message — being neither task["message"] nor the previous
+        # message — always triggered a fresh goal re-interpretation; the offline
+        # rules fallback `understand()` finds no domain keywords in a bare UUID and
+        # returns {} goals, which differs from the already-established {"billing":
+        # "refund"} and trips the "检测到目标变化" guard, silently pausing a task the
+        # user never actually tried to change. The fix skips re-interpretation
+        # entirely when the message is nothing but the order id just extracted from
+        # it, since that adds no goal-relevant information beyond what regex
+        # extraction already captured deterministically.
+        task = self.runtime.create("alice", "帮我申请重复扣款退款")
+        first = await self.runtime.advance(task["id"], "alice")
+        self.assertEqual(first["status"], "awaiting_clarification")
+        self.assertEqual(first["goals"], {"billing": "refund"})
+        second = await self.runtime.advance(task["id"], "alice", message=self.order["id"])
+        self.assertEqual(second["goals"], {"billing": "refund"})
+        self.assertNotEqual(second["status"], "needs_human")
+        self.assertNotIn("目标变化", second["response"])
+        self.assertEqual(second["order_id"], self.order["id"])
 
     async def test_llm_early_finish_cannot_claim_success(self):
         self.runtime.client = ScriptedClient(["finish"])
@@ -92,7 +115,7 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         task = self.runtime.create("alice", "请申请退款，重复扣款")
         results = await asyncio.gather(*[
             self.runtime.advance(task["id"], "alice", self.order["id"]) for _ in range(2)])
-        self.assertEqual(results[0]["approval"]["id"], results[1]["approval"]["id"])
+        self.assertEqual(results[0]["approvals"]["request_refund"]["id"], results[1]["approvals"]["request_refund"]["id"])
         with self.assertRaises(ValueError):
             self.runtime.approve(task["id"], "alice", "forged", True, "r")
 
@@ -113,7 +136,7 @@ class RuntimeTests(unittest.IsolatedAsyncioTestCase):
         result = await self.runtime.advance(task["id"], "alice", self.order["id"])
         self.assertFalse(result["attempts"][0]["success"])
         with patch.object(self.runtime, "_write_order", return_value=None):
-            result = self.runtime.approve(task["id"], "alice", result["approval"]["id"], True, "r")
+            result = self.runtime.approve(task["id"], "alice", result["approvals"]["request_refund"]["id"], True, "r")
         self.assertNotEqual(result["status"], "completed")
         self.assertFalse(result["verification"]["billing"])
 
@@ -161,8 +184,8 @@ class RouteTests(unittest.TestCase):
                 task = client.post("/agent/tasks", headers=headers, json={"message": "请申请退款，重复扣款"}).json()
                 url = "/agent/tasks/" + task["id"]
                 task = client.post(url + "/continue", headers=headers, json={"order_id": order["id"]}).json()
-                task = client.post(url + "/confirmation", headers=headers, json={"confirmation_id": task["confirmation"]["id"], "accepted": True}).json()
-                body = {"approval_id": task["approval"]["id"], "approved": True}
+                task = client.post(url + "/confirmation", headers=headers, json={"confirmation_id": task["confirmations"]["request_refund"]["id"], "accepted": True}).json()
+                body = {"approval_id": task["approvals"]["request_refund"]["id"], "approved": True}
                 self.assertEqual(client.post(url + "/approval", headers=headers, json=body).status_code, 403)
                 result = client.post(url + "/approval", headers={"Authorization": "Bearer " + mint_token("reviewer", "bob")}, json=body)
                 self.assertEqual(result.json()["status"], "completed")

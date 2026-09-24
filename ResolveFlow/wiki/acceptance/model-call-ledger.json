@@ -1,0 +1,275 @@
+[
+  {
+    "number": 1,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 3969,
+      "output_tokens": 53
+    }
+  },
+  {
+    "number": 2,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4017,
+      "output_tokens": 53
+    }
+  },
+  {
+    "number": 3,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4066,
+      "output_tokens": 53
+    }
+  },
+  {
+    "number": 4,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4313,
+      "output_tokens": 55
+    }
+  },
+  {
+    "number": 5,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4572,
+      "output_tokens": 53
+    }
+  },
+  {
+    "number": 6,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4783,
+      "output_tokens": 72
+    }
+  },
+  {
+    "number": 7,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4251,
+      "output_tokens": 27
+    }
+  },
+  {
+    "number": 8,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4266,
+      "output_tokens": 55
+    }
+  },
+  {
+    "number": 9,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4260,
+      "output_tokens": 90
+    }
+  },
+  {
+    "number": 10,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4261,
+      "output_tokens": 54
+    }
+  },
+  {
+    "number": 11,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4255,
+      "output_tokens": 48
+    }
+  },
+  {
+    "number": 12,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4258,
+      "output_tokens": 37
+    }
+  },
+  {
+    "number": 13,
+    "method": "create",
+    "status": "success"
+  },
+  {
+    "number": 14,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4259,
+      "output_tokens": 36
+    }
+  },
+  {
+    "number": 15,
+    "method": "create",
+    "status": "success"
+  },
+  {
+    "number": 16,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4259,
+      "output_tokens": 36
+    }
+  },
+  {
+    "number": 17,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4787,
+      "output_tokens": 16
+    }
+  },
+  {
+    "number": 18,
+    "method": "create",
+    "status": "success"
+  },
+  {
+    "number": 19,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4746,
+      "output_tokens": 16
+    }
+  },
+  {
+    "number": 20,
+    "method": "create",
+    "status": "success"
+  },
+  {
+    "number": 21,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4673,
+      "output_tokens": 16
+    }
+  },
+  {
+    "number": 22,
+    "method": "create",
+    "status": "success"
+  },
+  {
+    "number": 23,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4659,
+      "output_tokens": 53
+    }
+  },
+  {
+    "number": 24,
+    "method": "create",
+    "status": "success"
+  },
+  {
+    "number": 25,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4640,
+      "output_tokens": 37
+    }
+  },
+  {
+    "number": 26,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4312,
+      "output_tokens": 27
+    }
+  },
+  {
+    "number": 27,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4328,
+      "output_tokens": 62
+    }
+  },
+  {
+    "number": 28,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4321,
+      "output_tokens": 92
+    }
+  },
+  {
+    "number": 29,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4322,
+      "output_tokens": 50
+    }
+  },
+  {
+    "number": 30,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4316,
+      "output_tokens": 49
+    }
+  },
+  {
+    "number": 31,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4319,
+      "output_tokens": 37
+    }
+  },
+  {
+    "number": 32,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4321,
+      "output_tokens": 60
+    }
+  },
+  {
+    "number": 33,
+    "method": "create_tool_turn",
+    "status": "success",
+    "usage": {
+      "input_tokens": 4321,
+      "output_tokens": 55
+    }
+  }
+]

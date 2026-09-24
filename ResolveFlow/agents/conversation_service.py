@@ -4,11 +4,14 @@ import json
 import re
 import time
 import uuid
+from contextvars import ContextVar
+
+_TURN_EVIDENCE = ContextVar("turn_evidence", default=None)
 from pathlib import Path
 
 from agents.action_runtime import TERMINAL
 from agents.subscription_knowledge import policy_refund_is_actually_goods, refund_target_is_ambiguous
-from agents.supervisor import SubTaskResult, TaskStatus
+from agents.supervisor import SubTaskResult, TaskPlanner, TaskStatus
 from core.intent_recognizer import IntentCategory, IntentRecognizer
 from memory.conversation_memory import MsgRole
 from memory.local_conversation_memory import LocalConversationMemory
@@ -31,6 +34,7 @@ class ConversationService:
         self.documents = json.loads((ROOT / "data/knowledge/subscription_service_v1.json").read_text())
         self.kb = KnowledgeBase.lexical_documents(self.documents)
         self.knowledge_search = knowledge_search
+        self.knowledge_document_ids = None
         with runtime.connect() as db:
             db.execute("CREATE TABLE IF NOT EXISTS unified_conversations(id TEXT PRIMARY KEY, owner TEXT NOT NULL, task_id TEXT, last_order TEXT)")
             db.execute("CREATE TABLE IF NOT EXISTS unified_leases(id TEXT PRIMARY KEY, token TEXT, expires REAL)")
@@ -79,6 +83,17 @@ class ConversationService:
                 db.execute("DELETE FROM unified_leases WHERE id=? AND token=?", (conv, token))
 
     async def _send(self, owner, message, conv, active_id, last_order, order_id, new_task):
+        _TURN_EVIDENCE.set({"sources": [], "degradations": []})
+        from business.conversation import CommerceConversation
+        commerce = CommerceConversation(self.runtime, self.memory, self.knowledge_search, self.knowledge_document_ids)
+        try:
+            commerce_result = await commerce.send(owner, conv, message, selection=order_id)
+        except Exception as ex:
+            import logging
+            logging.getLogger(__name__).exception("Commerce operation failed (%s)", type(ex).__name__)
+            commerce_result = await commerce._answer(owner, conv, message, "业务查询暂时失败，请重试并核对任务状态。", mode="commerce_error")
+        if commerce_result is not None:
+            return commerce_result
         errors = []
         try:
             memory = await asyncio.wait_for(self.memory.get_context(owner, conv, message), 5)
@@ -160,6 +175,26 @@ class ConversationService:
                 "goals": stripped_goals, "policy_topics": stripped_topics, "general_remainder": remainder,
             })
             record["server_guard"] = "goods_refund_policy_redirect"
+        if (proposal is not None and route != "needs_clarification"
+                and not proposal.general_remainder and (proposal.goals or proposal.unsupported_requests)
+                and proposal.goals.get("service") is None
+                and any(term in message for term in TaskPlanner._DOMAIN_TERMS["technical"])):
+            # Known real-model reliability gap, not a missing feature: the system prompt
+            # already tells GoalInterpreter to ALWAYS restate an independent off-topic
+            # technical complaint (e.g. a login/401 error mentioned alongside a refund
+            # request) into general_remainder, so _maybe_compound can hand it to the old
+            # orchestrator. A single LLM call doesn't always comply — a salient primary
+            # goal (a clear "重复扣款" refund ask) can pull attention away from a shorter
+            # secondary complaint, and it then silently vanishes instead of ever reaching
+            # _maybe_compound. Reuse TaskPlanner's own "technical" keyword list (the same
+            # one that already fronts the old multi-agent chat's domain routing) as a
+            # deterministic backstop: only fires when the model flagged NO remainder at
+            # all and the text clearly reads as a technical-fault mention, and skips it
+            # when the model already captured it as the "service" goal instead. A false
+            # positive here only adds one extra, harmless technical note to the merged
+            # answer — it never changes which action gets executed.
+            proposal = proposal.model_copy(update={"general_remainder": message})
+            record["server_guard"] = "technical_remainder_backstop"
         if route == "needs_clarification":
             pass
         elif proposal is None:
@@ -178,7 +213,8 @@ class ConversationService:
             route = "knowledge"
             topics = proposal.policy_topics
             for topic in topics:
-                selected = {d["id"] for d in self.documents if d["topic"] == topic}
+                selected = (self.knowledge_document_ids("subscription") if self.knowledge_document_ids else
+                            {d["id"] for d in self.documents if d["topic"] == topic})
                 docs = []
                 if self.knowledge_search:
                     # Scope is enforced by the retriever itself (allowed_document_ids), not by
@@ -218,6 +254,19 @@ class ConversationService:
                     context=memory.to_prompt_text(), history=history, intent=intent.intent, intent_group=intent.intent_group,
                     intent_confidence=intent.confidence, urgency=intent.urgency, entities=intent.entities))
                 answer = result.response
+                for trace in result.tool_traces:
+                    knowledge.extend(trace.get("sources", []))
+                    errors.extend(trace.get("degradations", []))
+                if result.error_diagnostics:
+                    # The user-visible answer stays the orchestrator's own generic
+                    # "抱歉..." apology unchanged — this only makes the sanitized
+                    # failure reason (category/error_type/http_status, never the raw
+                    # exception) queryable via `interpretation.diagnostics`, the same
+                    # place GoalInterpreter failures already surface theirs, instead of
+                    # only ever reaching a server-side log line.
+                    record.setdefault("diagnostics", []).extend(
+                        {**d, "source": "agent_orchestrator"} for d in result.error_diagnostics)
+                    errors.append("agent_call_failed")
             else:
                 answer = "你好，我可以解释订阅政策、查询账户，并在你确认后办理权益修复、关闭续费或退款申请。" if intent.intent == IntentCategory.GREETING else "请说明要咨询的订阅规则、查询的信息或希望办理的操作。"
         elif task and task["status"] in {"awaiting_confirmation", "awaiting_approval", "needs_human"}:
@@ -248,9 +297,12 @@ class ConversationService:
             await asyncio.wait_for(self.memory.update_profile(owner, conv), 15)
         except Exception:
             errors.append("memory_write_or_profile_unavailable")
+        extra_evidence = _TURN_EVIDENCE.get() or {}
+        knowledge.extend(extra_evidence.get("sources", []))
+        errors.extend(extra_evidence.get("degradations", []))
         return {"conversation_id": conv, "response": answer, "route": route, "task": result_task,
                 "intent": intent_value, "intent_source_scores": intent_source_scores, "interpretation": record,
-                "knowledge_used": bool(knowledge), "sources": [{"document_id": d["document_id"], "title": d.get("title", "")} for d in knowledge],
+                "knowledge_used": bool(knowledge), "sources": [{k: d.get(k, "") for k in ("document_id", "title", "source", "domain", "version")} for d in knowledge],
                 "memory_mode": getattr(self.memory, "mode", "redis_chroma"), "degradations": errors,
                 "status": status_override or (result_task["status"] if result_task else ("needs_human" if proposal is None else "answered"))}
 
@@ -269,6 +321,11 @@ class ConversationService:
             Request(message=proposal.general_remainder, user_id=owner, conv_id=conv,
                     context=memory.to_prompt_text(), history=history),
             primary_result=primary_result)
+        evidence = _TURN_EVIDENCE.get()
+        if evidence is not None:
+            for trace in getattr(compound, "tool_traces", []):
+                evidence["sources"].extend(trace.get("sources", []))
+                evidence["degradations"].extend(trace.get("degradations", []))
         return compound.response
 
 

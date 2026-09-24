@@ -139,8 +139,8 @@ class RouteEnforcementTests(unittest.TestCase):
         base = "/agent/tasks/" + task["id"]
         task = self.client.post(base + "/continue", headers=user_headers, json={"order_id": order["id"]}).json()
         task = self.client.post(base + "/confirmation", headers=user_headers,
-                                json={"confirmation_id": task["confirmation"]["id"], "accepted": True}).json()
-        body = {"approval_id": task["approval"]["id"], "approved": True}
+                                json={"confirmation_id": task["confirmations"]["request_refund"]["id"], "accepted": True}).json()
+        body = {"approval_id": task["approvals"]["request_refund"]["id"], "approved": True}
         response = self.client.post(base + "/approval", headers=reviewer_headers, json=body)
         self.assertEqual(response.status_code, 400)
         self.assertIn("Independent", response.json()["detail"])

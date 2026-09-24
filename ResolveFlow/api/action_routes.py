@@ -66,7 +66,11 @@ def runtime():
         from core.llm_client import LLMClient
         client = LLMClient(api_key=os.environ["LLM_API_KEY"],
                            base_url=os.getenv("LLM_BASE_URL"),
-                           model=os.environ["LLM_MODEL"])
+                           model=os.environ["LLM_MODEL"],
+                           # 和 _llm_cfg()（api/main.py）共用同一组 LLM_* 变量，
+                           # 这里显式传 provider，不依赖 LLMClient 内部对
+                           # LLM_PROVIDER 的隐式 fallback。
+                           provider=os.getenv("LLM_PROVIDER", "openai"))
     path = os.getenv("AGENT_STATE_PATH", str(Path(__file__).resolve().parents[1] / "data" / "agent" / "state.sqlite3"))
     return ActionRuntime(path, client=client, allow_fallback=False)
 
@@ -129,7 +133,7 @@ def review_queue(actor=Depends(reviewer)):
     with runtime().connect() as db:
         rows = db.execute("SELECT body FROM tasks WHERE json_extract(body, '$.status') IN (?, ?) ORDER BY rowid DESC LIMIT 100",
                           ("awaiting_approval", "needs_human")).fetchall()
-    return {"tasks": [{k: t.get(k) for k in ("id", "owner", "status", "order_id", "response", "approval")}
+    return {"tasks": [{k: t.get(k) for k in ("id", "owner", "status", "order_id", "response", "approvals")}
                       for t in (json.loads(row[0]) for row in rows)], "limit": 100}
 
 
@@ -141,9 +145,12 @@ def review_detail(task_id: str, actor=Depends(reviewer)):
         with rt.connect() as db:
             task = rt._load(db, task_id, owner_id)
             order = rt._order(db, task)
-        approval = task.get("approval")
+        # Independent goals can each have their own pending approval now;
+        # surface whether ANY of them has expired rather than assuming there
+        # is only ever one.
+        pending = [a for a in task.get("approvals", {}).values() if a["status"] == "pending"]
         return {"task": task, "current_order": order, "read_at": time.time(),
-                "approval_expired": bool(approval and approval["expires_at"] <= time.time()),
+                "approval_expired": any(a["expires_at"] <= time.time() for a in pending),
                 "note": "Evidence is historical. Approval endpoint revalidates consent, versions, expiry and business preconditions."}
     except ValueError as ex:
         raise HTTPException(404, str(ex)) from ex

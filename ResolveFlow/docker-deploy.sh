@@ -70,7 +70,7 @@ check_env_file() {
         if [ -f ".env.example" ]; then
             cp .env.example .env
             print_info "已创建 .env 文件，请编辑配置"
-            print_warn "特别注意：请设置 ANTHROPIC_API_KEY"
+            print_warn "特别注意：请设置 LLM_API_KEY"
         else
             print_error ".env.example 文件不存在"
             exit 1

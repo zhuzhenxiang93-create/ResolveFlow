@@ -70,8 +70,11 @@ def main():
                             continue
                         path, body = "/release", None
                     else:
-                        approval = selected.get("approval") or {}
-                        if selected["status"] != "awaiting_approval" or ident != approval.get("id"):
+                        # Independent goals can each have their own pending
+                        # approval now; accept the id if it matches ANY of
+                        # them, not just a single assumed approval.
+                        approval_ids = {a["id"] for a in (selected.get("approvals") or {}).values()}
+                        if selected["status"] != "awaiting_approval" or ident not in approval_ids:
                             print("编号不匹配或任务不在待审批状态；请重新 /show。")
                             continue
                         path, body = "/approval", {"approval_id": ident, "approved": command == "/approve"}

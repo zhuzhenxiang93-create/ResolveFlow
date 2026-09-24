@@ -51,7 +51,7 @@ class SafetyTests(unittest.IsolatedAsyncioTestCase):
                 t = await self.run_task(message)
                 self.assertEqual(t["status"], "completed")
                 self.assertFalse(t["actions"])
-                self.assertIsNone(t["approval"])
+                self.assertFalse(t["approvals"])
                 self.assertEqual(self.state(), self.order)
 
     async def test_model_cannot_add_write_permission(self):
@@ -93,8 +93,8 @@ class SafetyTests(unittest.IsolatedAsyncioTestCase):
         t = await self.run_task("请申请退款")
         new = self.r.revise(t["id"], "alice", "只查询账单")
         self.assertEqual(self.r.get(t["id"], "alice")["status"], "superseded")
-        old = self.r.approve(t["id"], "alice", t["approval"]["id"], True, "reviewer")
-        self.assertEqual(old["approval"]["status"], "invalidated")
+        old = self.r.approve(t["id"], "alice", t["approvals"]["request_refund"]["id"], True, "reviewer")
+        self.assertEqual(old["approvals"]["request_refund"]["status"], "invalidated")
         self.assertNotEqual(new["id"], t["id"])
         self.assertEqual(new["conversation_id"], t["conversation_id"])
         self.assertEqual(self.state()["refunds"], 0)
@@ -105,16 +105,16 @@ class SafetyTests(unittest.IsolatedAsyncioTestCase):
                 t = await self.run_task("请申请退款")
                 if failure == "expiry":
                     with patch("agents.action_runtime.time.time", return_value=time.time() + 2000):
-                        result = self.r.approve(t["id"], "alice", t["approval"]["id"], True, "reviewer")
+                        result = self.r.approve(t["id"], "alice", t["approvals"]["request_refund"]["id"], True, "reviewer")
                 else:
                     with self.r.connect() as db:
                         if failure == "business":
                             self.r._write_order(db, t, self.state())
                         else:
-                            t["approval"]["count"] = 99
+                            t["approvals"]["request_refund"]["count"] = 99
                             self.r._save(db, t)
-                    result = self.r.approve(t["id"], "alice", t["approval"]["id"], True, "reviewer")
-                self.assertEqual(result["approval"]["status"], "invalidated")
+                    result = self.r.approve(t["id"], "alice", t["approvals"]["request_refund"]["id"], True, "reviewer")
+                self.assertEqual(result["approvals"]["request_refund"]["status"], "invalidated")
                 self.assertEqual(self.state()["refunds"], 0)
 
     async def test_plan_change_invalidates_approval_and_cyclic_plan_rejected(self):
@@ -125,10 +125,10 @@ class SafetyTests(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(ValueError):
             validate_plan(bad, t)
         changed = self.r.replace_plan(t["id"], "alice", steps)
-        self.assertIsNone(changed["approval"])
+        self.assertFalse(changed["approvals"])
         self.assertEqual(changed["approval_history"][0]["status"], "invalidated")
         with self.assertRaises(ValueError):
-            self.r.approve(t["id"], "alice", t["approval"]["id"], True, "reviewer")
+            self.r.approve(t["id"], "alice", t["approvals"]["request_refund"]["id"], True, "reviewer")
 
     async def test_native_replanning_affects_execution_order(self):
         def propose(kwargs):
@@ -164,7 +164,7 @@ class SafetyTests(unittest.IsolatedAsyncioTestCase):
         self.order = self.r.seed("alice", service="down")
         t = await self.run_task("请修复权益并申请退款")
         self.assertEqual(t["status"], "awaiting_approval")
-        t = self.r.approve(t["id"], "alice", t["approval"]["id"], True, "reviewer")
+        t = self.r.approve(t["id"], "alice", t["approvals"]["request_refund"]["id"], True, "reviewer")
         t = await self.r.advance(t["id"], "alice")
         self.assertEqual(t["status"], "needs_human")
         self.assertEqual(t["verification"], {"entitlement": False, "billing": True})
@@ -224,7 +224,7 @@ class SafetyTests(unittest.IsolatedAsyncioTestCase):
     async def test_cancel_and_self_approval(self):
         t = await self.run_task("请申请退款")
         with self.assertRaises(ValueError):
-            self.r.approve(t["id"], "alice", t["approval"]["id"], True, "alice")
+            self.r.approve(t["id"], "alice", t["approvals"]["request_refund"]["id"], True, "alice")
         cancelled = self.r.cancel(t["id"], "alice")
         self.assertEqual(await self.r.advance(t["id"], "alice"), cancelled)
         self.assertEqual(self.state()["refunds"], 0)

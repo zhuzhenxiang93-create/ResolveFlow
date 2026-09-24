@@ -1,0 +1,775 @@
+{
+  "scope": "synthetic browser user database evidence, not payment channel receipt",
+  "cases": [
+    {
+      "id": "C-4734ec21-427d-4235-b052-e968a6159268",
+      "owner": "acceptance-user",
+      "conversation_id": "70043cbc-420f-42d9-ab69-cf49454c5e74",
+      "operations": [
+        {
+          "id": "ab6f8612-97b9-41df-87d4-043a1ca2b4a0",
+          "quote": {
+            "operation": "refund",
+            "label": "申请退款",
+            "object_id": "S-9bcbaf9a-basic",
+            "title": "Basic 月度会员",
+            "version": 2,
+            "policy_version": "demo-commerce-v1",
+            "amount_minor": 3900,
+            "currency": "CNY",
+            "item_id": null,
+            "payment_id": "S-9bcbaf9a-basic-P1",
+            "eligible": true,
+            "effect": "退本笔订阅费用；终止当前订阅权益并关闭续费",
+            "requires_review": true,
+            "simulated": true,
+            "end_subscription": true
+          },
+          "expires_at": 1790286132.363654,
+          "status": "completed",
+          "decisions": [
+            "confirm",
+            "approve",
+            "settle"
+          ],
+          "refund_id": "R-e9f9ad2e-2493-486f-89b7-0a2958876919",
+          "reason": "模拟账务已核验；不是支付渠道到账回执。退本笔订阅费用；终止当前订阅权益并关闭续费"
+        }
+      ],
+      "simulated": true,
+      "status": "completed",
+      "response": "Basic 月度会员 · 申请退款 · 已完成（模拟业务） · CNY 39.00：模拟账务已核验；不是支付渠道到账回执。退本笔订阅费用；终止当前订阅权益并关闭续费",
+      "updated_at": 1790285246.220117
+    },
+    {
+      "id": "C-9acd8b2d-c199-4771-a761-7e90fad19511",
+      "owner": "acceptance-user",
+      "conversation_id": "70043cbc-420f-42d9-ab69-cf49454c5e74",
+      "operations": [
+        {
+          "id": "932fae4e-fcea-466b-b838-a29a93ef9097",
+          "quote": {
+            "operation": "cancel_renewal",
+            "label": "关闭自动续费（保留本期权益）",
+            "object_id": "S-9bcbaf9a-basic",
+            "title": "Basic 月度会员",
+            "version": 1,
+            "policy_version": "demo-commerce-v1",
+            "amount_minor": 0,
+            "currency": "CNY",
+            "item_id": null,
+            "payment_id": null,
+            "eligible": true,
+            "effect": "停止未来续费；保留本期权益；不退款",
+            "requires_review": false,
+            "simulated": true
+          },
+          "expires_at": 1790229021.071093,
+          "status": "completed",
+          "decisions": [
+            "confirm"
+          ]
+        }
+      ],
+      "simulated": true,
+      "status": "completed",
+      "response": "Basic 月度会员 · 关闭自动续费（保留本期权益） · 已完成（模拟业务）：停止未来续费；保留本期权益；不退款",
+      "updated_at": 1790228124.0796769
+    },
+    {
+      "id": "C-78e17c0d-ab58-4537-9517-dbb7d868e521",
+      "owner": "acceptance-user",
+      "conversation_id": "70043cbc-420f-42d9-ab69-cf49454c5e74",
+      "operations": [
+        {
+          "id": "db0544a5-2783-4149-8256-47ca98163505",
+          "quote": {
+            "operation": "refund",
+            "label": "申请退款",
+            "object_id": "G-9bcbaf9a-speaker",
+            "title": "蓝牙音箱",
+            "version": 1,
+            "policy_version": "demo-commerce-v1",
+            "amount_minor": 19900,
+            "currency": "CNY",
+            "item_id": null,
+            "payment_id": "G-9bcbaf9a-speaker-P1",
+            "eligible": true,
+            "effect": "按优惠分摊后的实付金额退款；单品退款不退运费，全单退剩余实付款；已开发票进入调整流程；先等待退货验收，再进入模拟退款处理",
+            "requires_review": true,
+            "simulated": true,
+            "return_required": true
+          },
+          "expires_at": 1790229018.161422,
+          "status": "awaiting_confirmation"
+        }
+      ],
+      "simulated": true,
+      "status": "awaiting_confirmation",
+      "response": "蓝牙音箱 · 申请退款 · 待用户确认 · CNY 199.00：按优惠分摊后的实付金额退款；单品退款不退运费，全单退剩余实付款；已开发票进入调整流程；先等待退货验收，再进入模拟退款处理",
+      "updated_at": 1790228118.1615732
+    },
+    {
+      "id": "C-77f0dd8f-3019-4d6b-9ab7-f8ecfc9259a3",
+      "owner": "acceptance-user",
+      "conversation_id": "70043cbc-420f-42d9-ab69-cf49454c5e74",
+      "operations": [
+        {
+          "id": "a414005b-7f37-4f01-9ecb-fde699a7d81a",
+          "quote": {
+            "operation": "refund",
+            "label": "申请退款",
+            "object_id": "S-9bcbaf9a-pro",
+            "title": "Pro 月度会员",
+            "version": 1,
+            "policy_version": "demo-commerce-v1",
+            "amount_minor": 9900,
+            "currency": "CNY",
+            "item_id": null,
+            "payment_id": "S-9bcbaf9a-pro-P2",
+            "eligible": true,
+            "effect": "仅退重复扣款；保留订阅权益和续费设置",
+            "requires_review": true,
+            "simulated": true,
+            "end_subscription": false
+          },
+          "expires_at": 1790228923.362798,
+          "status": "completed",
+          "decisions": [
+            "confirm",
+            "approve",
+            "settle"
+          ],
+          "refund_id": "R-245d1805-cb4a-47df-a179-500bcb681844",
+          "reason": "模拟账务已核验；不是支付渠道到账回执。仅退重复扣款；保留订阅权益和续费设置"
+        }
+      ],
+      "simulated": true,
+      "status": "completed",
+      "response": "Pro 月度会员 · 申请退款 · 已完成（模拟业务） · CNY 99.00：模拟账务已核验；不是支付渠道到账回执。仅退重复扣款；保留订阅权益和续费设置",
+      "updated_at": 1790228063.492513
+    },
+    {
+      "id": "C-911967b8-b516-4993-a658-14ae314976a8",
+      "owner": "acceptance-user",
+      "conversation_id": "70043cbc-420f-42d9-ab69-cf49454c5e74",
+      "operations": [
+        {
+          "id": "5411e95e-4946-49c6-8dca-b0f2bafa1359",
+          "quote": {
+            "operation": "refund",
+            "label": "申请退款",
+            "object_id": "G-9bcbaf9a-headphones",
+            "title": "无线耳机",
+            "version": 1,
+            "policy_version": "demo-commerce-v1",
+            "amount_minor": 25900,
+            "currency": "CNY",
+            "item_id": null,
+            "payment_id": "G-9bcbaf9a-headphones-P1",
+            "eligible": true,
+            "effect": "按优惠分摊后的实付金额退款；单品退款不退运费，全单退剩余实付款；已开发票进入调整流程；先等待退货验收，再进入模拟退款处理",
+            "requires_review": true,
+            "simulated": true,
+            "return_required": true
+          },
+          "expires_at": 1790228865.953968,
+          "status": "completed",
+          "decisions": [
+            "confirm",
+            "approve",
+            "receive_return",
+            "settle"
+          ],
+          "refund_id": "R-a3b7f15c-1f4a-4d8d-8824-9eeec9d84fcd",
+          "reason": "模拟账务已核验；不是支付渠道到账回执。按优惠分摊后的实付金额退款；单品退款不退运费，全单退剩余实付款；已开发票进入调整流程；先等待退货验收，再进入模拟退款处理"
+        }
+      ],
+      "simulated": true,
+      "status": "completed",
+      "response": "无线耳机 · 申请退款 · 已完成（模拟业务） · CNY 259.00：模拟账务已核验；不是支付渠道到账回执。按优惠分摊后的实付金额退款；单品退款不退运费，全单退剩余实付款；已开发票进入调整流程；先等待退货验收，再进入模拟退款处理",
+      "updated_at": 1790228016.032192
+    }
+  ],
+  "objects": [
+    {
+      "id": "G-9bcbaf9a-cable",
+      "owner": "acceptance-user",
+      "domain": "goods",
+      "title": "充电线",
+      "status": "unpaid",
+      "version": 1,
+      "currency": "CNY",
+      "purchased_at": 1790227732.926999,
+      "delivered_at": null,
+      "shipping_minor": 0,
+      "discount_minor": 0,
+      "auto_renew": false,
+      "entitlement": "充电线",
+      "plan": "充电线",
+      "service": "healthy",
+      "period_start": 1790227732.926999,
+      "period_end": 1792819732.926999,
+      "used": false,
+      "policy_version": "demo-commerce-v1",
+      "simulated": true,
+      "items": [
+        {
+          "id": "G-9bcbaf9a-cable-I1",
+          "object_id": "G-9bcbaf9a-cable",
+          "title": "充电线",
+          "quantity": 1,
+          "paid_minor": 3900
+        }
+      ],
+      "payments": [],
+      "refunds": [],
+      "shipment": null,
+      "invoice": {
+        "object_id": "G-9bcbaf9a-cable",
+        "number": "DEMO-INV-cable",
+        "status": "not_requested"
+      }
+    },
+    {
+      "id": "G-9bcbaf9a-headphones",
+      "owner": "acceptance-user",
+      "domain": "goods",
+      "title": "无线耳机",
+      "status": "delivered",
+      "version": 3,
+      "currency": "CNY",
+      "purchased_at": 1790141332.926999,
+      "delivered_at": 1790141332.926999,
+      "shipping_minor": 0,
+      "discount_minor": 0,
+      "auto_renew": false,
+      "entitlement": "无线耳机",
+      "plan": "无线耳机",
+      "service": "healthy",
+      "period_start": 1790141332.926999,
+      "period_end": 1792733332.926999,
+      "used": false,
+      "policy_version": "demo-commerce-v1",
+      "simulated": true,
+      "items": [
+        {
+          "id": "G-9bcbaf9a-headphones-I1",
+          "object_id": "G-9bcbaf9a-headphones",
+          "title": "无线耳机",
+          "quantity": 1,
+          "paid_minor": 25900
+        }
+      ],
+      "payments": [
+        {
+          "id": "G-9bcbaf9a-headphones-P1",
+          "object_id": "G-9bcbaf9a-headphones",
+          "amount_minor": 25900,
+          "currency": "CNY",
+          "kind": "normal",
+          "captured_at": 1790141332.926999,
+          "status": "captured"
+        }
+      ],
+      "refunds": [
+        {
+          "id": "R-a3b7f15c-1f4a-4d8d-8824-9eeec9d84fcd",
+          "object_id": "G-9bcbaf9a-headphones",
+          "payment_id": "G-9bcbaf9a-headphones-P1",
+          "item_id": null,
+          "amount_minor": 25900,
+          "status": "succeeded_simulated",
+          "idempotency_key": "5411e95e-4946-49c6-8dca-b0f2bafa1359",
+          "created": 1790228008.906809
+        }
+      ],
+      "shipment": {
+        "object_id": "G-9bcbaf9a-headphones",
+        "carrier": "模拟物流",
+        "tracking": "DEMO-headphones",
+        "events": [
+          {
+            "status": "shipped",
+            "at": 1790141332.926999
+          },
+          {
+            "status": "delivered",
+            "at": 1790141332.926999
+          }
+        ]
+      },
+      "invoice": {
+        "object_id": "G-9bcbaf9a-headphones",
+        "number": "DEMO-INV-headphones",
+        "status": "adjustment_required"
+      }
+    },
+    {
+      "id": "G-9bcbaf9a-keyboard",
+      "owner": "acceptance-user",
+      "domain": "goods",
+      "title": "机械键盘与鼠标套装",
+      "status": "paid",
+      "version": 1,
+      "currency": "CNY",
+      "purchased_at": 1790054932.926999,
+      "delivered_at": null,
+      "shipping_minor": 1000,
+      "discount_minor": 2000,
+      "auto_renew": false,
+      "entitlement": "机械键盘与鼠标套装",
+      "plan": "机械键盘与鼠标套装",
+      "service": "healthy",
+      "period_start": 1790054932.926999,
+      "period_end": 1792646932.926999,
+      "used": false,
+      "policy_version": "demo-commerce-v1",
+      "simulated": true,
+      "items": [
+        {
+          "id": "G-9bcbaf9a-keyboard-I1",
+          "object_id": "G-9bcbaf9a-keyboard",
+          "title": "键盘",
+          "quantity": 1,
+          "paid_minor": 29900
+        },
+        {
+          "id": "G-9bcbaf9a-keyboard-I2",
+          "object_id": "G-9bcbaf9a-keyboard",
+          "title": "鼠标",
+          "quantity": 1,
+          "paid_minor": 9000
+        }
+      ],
+      "payments": [
+        {
+          "id": "G-9bcbaf9a-keyboard-P1",
+          "object_id": "G-9bcbaf9a-keyboard",
+          "amount_minor": 39900,
+          "currency": "CNY",
+          "kind": "normal",
+          "captured_at": 1790054932.926999,
+          "status": "captured"
+        }
+      ],
+      "refunds": [],
+      "shipment": null,
+      "invoice": {
+        "object_id": "G-9bcbaf9a-keyboard",
+        "number": "DEMO-INV-keyboard",
+        "status": "not_requested"
+      }
+    },
+    {
+      "id": "G-9bcbaf9a-old",
+      "owner": "acceptance-user",
+      "domain": "goods",
+      "title": "过期相机",
+      "status": "delivered",
+      "version": 1,
+      "currency": "CNY",
+      "purchased_at": 1786339732.926999,
+      "delivered_at": 1786339732.926999,
+      "shipping_minor": 0,
+      "discount_minor": 0,
+      "auto_renew": false,
+      "entitlement": "过期相机",
+      "plan": "过期相机",
+      "service": "healthy",
+      "period_start": 1786339732.926999,
+      "period_end": 1788931732.926999,
+      "used": false,
+      "policy_version": "demo-commerce-v1",
+      "simulated": true,
+      "items": [
+        {
+          "id": "G-9bcbaf9a-old-I1",
+          "object_id": "G-9bcbaf9a-old",
+          "title": "过期相机",
+          "quantity": 1,
+          "paid_minor": 59900
+        }
+      ],
+      "payments": [
+        {
+          "id": "G-9bcbaf9a-old-P1",
+          "object_id": "G-9bcbaf9a-old",
+          "amount_minor": 59900,
+          "currency": "CNY",
+          "kind": "normal",
+          "captured_at": 1786339732.926999,
+          "status": "captured"
+        }
+      ],
+      "refunds": [],
+      "shipment": {
+        "object_id": "G-9bcbaf9a-old",
+        "carrier": "模拟物流",
+        "tracking": "DEMO-old",
+        "events": [
+          {
+            "status": "shipped",
+            "at": 1786339732.926999
+          },
+          {
+            "status": "delivered",
+            "at": 1786339732.926999
+          }
+        ]
+      },
+      "invoice": {
+        "object_id": "G-9bcbaf9a-old",
+        "number": "DEMO-INV-old",
+        "status": "not_requested"
+      }
+    },
+    {
+      "id": "G-9bcbaf9a-speaker",
+      "owner": "acceptance-user",
+      "domain": "goods",
+      "title": "蓝牙音箱",
+      "status": "shipped",
+      "version": 1,
+      "currency": "CNY",
+      "purchased_at": 1790054932.926999,
+      "delivered_at": null,
+      "shipping_minor": 0,
+      "discount_minor": 0,
+      "auto_renew": false,
+      "entitlement": "蓝牙音箱",
+      "plan": "蓝牙音箱",
+      "service": "healthy",
+      "period_start": 1790054932.926999,
+      "period_end": 1792646932.926999,
+      "used": false,
+      "policy_version": "demo-commerce-v1",
+      "simulated": true,
+      "items": [
+        {
+          "id": "G-9bcbaf9a-speaker-I1",
+          "object_id": "G-9bcbaf9a-speaker",
+          "title": "蓝牙音箱",
+          "quantity": 1,
+          "paid_minor": 19900
+        }
+      ],
+      "payments": [
+        {
+          "id": "G-9bcbaf9a-speaker-P1",
+          "object_id": "G-9bcbaf9a-speaker",
+          "amount_minor": 19900,
+          "currency": "CNY",
+          "kind": "normal",
+          "captured_at": 1790054932.926999,
+          "status": "captured"
+        }
+      ],
+      "refunds": [],
+      "shipment": {
+        "object_id": "G-9bcbaf9a-speaker",
+        "carrier": "模拟物流",
+        "tracking": "DEMO-speaker",
+        "events": [
+          {
+            "status": "shipped",
+            "at": 1790054932.926999
+          },
+          {
+            "status": "shipped",
+            "at": 1790054932.926999
+          }
+        ]
+      },
+      "invoice": {
+        "object_id": "G-9bcbaf9a-speaker",
+        "number": "DEMO-INV-speaker",
+        "status": "not_requested"
+      }
+    },
+    {
+      "id": "S-9bcbaf9a-basic",
+      "owner": "acceptance-user",
+      "domain": "subscription",
+      "title": "Basic 月度会员",
+      "status": "terminated",
+      "version": 4,
+      "currency": "CNY",
+      "purchased_at": 1790141332.926999,
+      "delivered_at": null,
+      "shipping_minor": 0,
+      "discount_minor": 0,
+      "auto_renew": false,
+      "entitlement": "none",
+      "plan": "Basic 月度会员",
+      "service": "healthy",
+      "period_start": 1790141332.926999,
+      "period_end": 1792733332.926999,
+      "used": false,
+      "policy_version": "demo-commerce-v1",
+      "simulated": true,
+      "items": [],
+      "payments": [
+        {
+          "id": "S-9bcbaf9a-basic-P1",
+          "object_id": "S-9bcbaf9a-basic",
+          "amount_minor": 3900,
+          "currency": "CNY",
+          "kind": "renewal",
+          "captured_at": 1790141332.926999,
+          "status": "captured"
+        }
+      ],
+      "refunds": [
+        {
+          "id": "R-e9f9ad2e-2493-486f-89b7-0a2958876919",
+          "object_id": "S-9bcbaf9a-basic",
+          "payment_id": "S-9bcbaf9a-basic-P1",
+          "item_id": null,
+          "amount_minor": 3900,
+          "status": "succeeded_simulated",
+          "idempotency_key": "ab6f8612-97b9-41df-87d4-043a1ca2b4a0",
+          "created": 1790285243.623171
+        }
+      ],
+      "shipment": null,
+      "invoice": {
+        "object_id": "S-9bcbaf9a-basic",
+        "number": "DEMO-INV-basic",
+        "status": "not_requested"
+      }
+    },
+    {
+      "id": "S-9bcbaf9a-pro",
+      "owner": "acceptance-user",
+      "domain": "subscription",
+      "title": "Pro 月度会员",
+      "status": "active",
+      "version": 3,
+      "currency": "CNY",
+      "purchased_at": 1790054932.926999,
+      "delivered_at": null,
+      "shipping_minor": 0,
+      "discount_minor": 0,
+      "auto_renew": true,
+      "entitlement": "basic",
+      "plan": "Pro 月度会员",
+      "service": "healthy",
+      "period_start": 1790054932.926999,
+      "period_end": 1792646932.926999,
+      "used": false,
+      "policy_version": "demo-commerce-v1",
+      "simulated": true,
+      "items": [],
+      "payments": [
+        {
+          "id": "S-9bcbaf9a-pro-P1",
+          "object_id": "S-9bcbaf9a-pro",
+          "amount_minor": 9900,
+          "currency": "CNY",
+          "kind": "initial",
+          "captured_at": 1790054932.926999,
+          "status": "captured"
+        },
+        {
+          "id": "S-9bcbaf9a-pro-P2",
+          "object_id": "S-9bcbaf9a-pro",
+          "amount_minor": 9900,
+          "currency": "CNY",
+          "kind": "duplicate",
+          "captured_at": 1790054932.926999,
+          "status": "captured"
+        }
+      ],
+      "refunds": [
+        {
+          "id": "R-245d1805-cb4a-47df-a179-500bcb681844",
+          "object_id": "S-9bcbaf9a-pro",
+          "payment_id": "S-9bcbaf9a-pro-P2",
+          "item_id": null,
+          "amount_minor": 9900,
+          "status": "succeeded_simulated",
+          "idempotency_key": "a414005b-7f37-4f01-9ecb-fde699a7d81a",
+          "created": 1790228057.160061
+        }
+      ],
+      "shipment": null,
+      "invoice": {
+        "object_id": "S-9bcbaf9a-pro",
+        "number": "DEMO-INV-pro",
+        "status": "adjustment_required"
+      }
+    },
+    {
+      "id": "S-9bcbaf9a-used",
+      "owner": "acceptance-user",
+      "domain": "subscription",
+      "title": "已使用的年度会员",
+      "status": "active",
+      "version": 1,
+      "currency": "CNY",
+      "purchased_at": 1786771732.926999,
+      "delivered_at": null,
+      "shipping_minor": 0,
+      "discount_minor": 0,
+      "auto_renew": true,
+      "entitlement": "已使用的年度会员",
+      "plan": "已使用的年度会员",
+      "service": "healthy",
+      "period_start": 1786771732.926999,
+      "period_end": 1789363732.926999,
+      "used": true,
+      "policy_version": "demo-commerce-v1",
+      "simulated": true,
+      "items": [],
+      "payments": [
+        {
+          "id": "S-9bcbaf9a-used-P1",
+          "object_id": "S-9bcbaf9a-used",
+          "amount_minor": 99900,
+          "currency": "CNY",
+          "kind": "initial",
+          "captured_at": 1786771732.926999,
+          "status": "captured"
+        }
+      ],
+      "refunds": [],
+      "shipment": null,
+      "invoice": {
+        "object_id": "S-9bcbaf9a-used",
+        "number": "DEMO-INV-used",
+        "status": "not_requested"
+      }
+    }
+  ],
+  "audit": [
+    {
+      "id": "261e300a-e348-4c1f-9f04-f8a493631e9f",
+      "case_id": "C-4734ec21-427d-4235-b052-e968a6159268",
+      "actor": "acceptance-user",
+      "event": "proposed",
+      "body": "[{\"object_id\": \"S-9bcbaf9a-basic\", \"operation\": \"refund\", \"item_id\": null, \"payment_id\": null}]",
+      "created": 1790285232.3636851
+    },
+    {
+      "id": "ef50b4b0-8c5b-4c0a-889a-2a34bcbe5ce6",
+      "case_id": "C-4734ec21-427d-4235-b052-e968a6159268",
+      "actor": "acceptance-user",
+      "event": "confirm",
+      "body": "{\"action_id\": \"ab6f8612-97b9-41df-87d4-043a1ca2b4a0\", \"quote\": {\"operation\": \"refund\", \"label\": \"申请退款\", \"object_id\": \"S-9bcbaf9a-basic\", \"title\": \"Basic 月度会员\", \"version\": 2, \"policy_version\": \"demo-commerce-v1\", \"amount_minor\": 3900, \"currency\": \"CNY\", \"item_id\": null, \"payment_id\": \"S-9bcbaf9a-basic-P1\", \"eligible\": true, \"effect\": \"退本笔订阅费用；终止当前订阅权益并关闭续费\", \"requires_review\": true, \"simulated\": true, \"end_subscription\": true}}",
+      "created": 1790285241.328893
+    },
+    {
+      "id": "3a9837f1-6b86-4ac8-a3c1-8c4bcfd39e11",
+      "case_id": "C-4734ec21-427d-4235-b052-e968a6159268",
+      "actor": "acceptance-reviewer",
+      "event": "approve",
+      "body": "{\"action_id\": \"ab6f8612-97b9-41df-87d4-043a1ca2b4a0\", \"quote\": {\"operation\": \"refund\", \"label\": \"申请退款\", \"object_id\": \"S-9bcbaf9a-basic\", \"title\": \"Basic 月度会员\", \"version\": 2, \"policy_version\": \"demo-commerce-v1\", \"amount_minor\": 3900, \"currency\": \"CNY\", \"item_id\": null, \"payment_id\": \"S-9bcbaf9a-basic-P1\", \"eligible\": true, \"effect\": \"退本笔订阅费用；终止当前订阅权益并关闭续费\", \"requires_review\": true, \"simulated\": true, \"end_subscription\": true}}",
+      "created": 1790285243.62347
+    },
+    {
+      "id": "3972270f-c0c0-4f6a-9db8-1dd29bbaf95a",
+      "case_id": "C-4734ec21-427d-4235-b052-e968a6159268",
+      "actor": "acceptance-reviewer",
+      "event": "settle",
+      "body": "{\"action_id\": \"ab6f8612-97b9-41df-87d4-043a1ca2b4a0\", \"quote\": {\"operation\": \"refund\", \"label\": \"申请退款\", \"object_id\": \"S-9bcbaf9a-basic\", \"title\": \"Basic 月度会员\", \"version\": 2, \"policy_version\": \"demo-commerce-v1\", \"amount_minor\": 3900, \"currency\": \"CNY\", \"item_id\": null, \"payment_id\": \"S-9bcbaf9a-basic-P1\", \"eligible\": true, \"effect\": \"退本笔订阅费用；终止当前订阅权益并关闭续费\", \"requires_review\": true, \"simulated\": true, \"end_subscription\": true}}",
+      "created": 1790285246.220033
+    },
+    {
+      "id": "03842ee8-c46f-4abe-9a29-af7ff4bb2e4f",
+      "case_id": "C-9acd8b2d-c199-4771-a761-7e90fad19511",
+      "actor": "acceptance-user",
+      "event": "proposed",
+      "body": "[{\"object_id\": \"S-9bcbaf9a-basic\", \"operation\": \"cancel_renewal\", \"item_id\": null, \"payment_id\": null}]",
+      "created": 1790228121.0711071
+    },
+    {
+      "id": "f3add62d-c23a-461e-ae5c-e8bf700da8cf",
+      "case_id": "C-9acd8b2d-c199-4771-a761-7e90fad19511",
+      "actor": "acceptance-user",
+      "event": "confirm",
+      "body": "{\"action_id\": \"932fae4e-fcea-466b-b838-a29a93ef9097\", \"quote\": {\"operation\": \"cancel_renewal\", \"label\": \"关闭自动续费（保留本期权益）\", \"object_id\": \"S-9bcbaf9a-basic\", \"title\": \"Basic 月度会员\", \"version\": 1, \"policy_version\": \"demo-commerce-v1\", \"amount_minor\": 0, \"currency\": \"CNY\", \"item_id\": null, \"payment_id\": null, \"eligible\": true, \"effect\": \"停止未来续费；保留本期权益；不退款\", \"requires_review\": false, \"simulated\": true}}",
+      "created": 1790228124.079644
+    },
+    {
+      "id": "f9dec801-0d3e-4ca3-b52d-e27f72330e7d",
+      "case_id": "C-78e17c0d-ab58-4537-9517-dbb7d868e521",
+      "actor": "acceptance-user",
+      "event": "proposed",
+      "body": "[{\"object_id\": \"G-9bcbaf9a-speaker\", \"operation\": \"refund\", \"item_id\": null, \"payment_id\": null}]",
+      "created": 1790228118.1614358
+    },
+    {
+      "id": "80deef0a-d0bf-423c-957c-fd7c14177ae3",
+      "case_id": "C-77f0dd8f-3019-4d6b-9ab7-f8ecfc9259a3",
+      "actor": "acceptance-user",
+      "event": "proposed",
+      "body": "[{\"object_id\": \"S-9bcbaf9a-pro\", \"operation\": \"refund\", \"item_id\": null, \"payment_id\": null}]",
+      "created": 1790228023.3628318
+    },
+    {
+      "id": "fbcbe940-2086-4c31-bc00-08c4913598aa",
+      "case_id": "C-77f0dd8f-3019-4d6b-9ab7-f8ecfc9259a3",
+      "actor": "acceptance-user",
+      "event": "confirm",
+      "body": "{\"action_id\": \"a414005b-7f37-4f01-9ecb-fde699a7d81a\", \"quote\": {\"operation\": \"refund\", \"label\": \"申请退款\", \"object_id\": \"S-9bcbaf9a-pro\", \"title\": \"Pro 月度会员\", \"version\": 1, \"policy_version\": \"demo-commerce-v1\", \"amount_minor\": 9900, \"currency\": \"CNY\", \"item_id\": null, \"payment_id\": \"S-9bcbaf9a-pro-P2\", \"eligible\": true, \"effect\": \"仅退重复扣款；保留订阅权益和续费设置\", \"requires_review\": true, \"simulated\": true, \"end_subscription\": false}}",
+      "created": 1790228053.352261
+    },
+    {
+      "id": "2c98f266-4ad0-4a3f-9728-bbf992e25420",
+      "case_id": "C-77f0dd8f-3019-4d6b-9ab7-f8ecfc9259a3",
+      "actor": "acceptance-reviewer",
+      "event": "approve",
+      "body": "{\"action_id\": \"a414005b-7f37-4f01-9ecb-fde699a7d81a\", \"quote\": {\"operation\": \"refund\", \"label\": \"申请退款\", \"object_id\": \"S-9bcbaf9a-pro\", \"title\": \"Pro 月度会员\", \"version\": 1, \"policy_version\": \"demo-commerce-v1\", \"amount_minor\": 9900, \"currency\": \"CNY\", \"item_id\": null, \"payment_id\": \"S-9bcbaf9a-pro-P2\", \"eligible\": true, \"effect\": \"仅退重复扣款；保留订阅权益和续费设置\", \"requires_review\": true, \"simulated\": true, \"end_subscription\": false}}",
+      "created": 1790228057.160416
+    },
+    {
+      "id": "4603003e-734d-49cd-897e-7803bc3b2edf",
+      "case_id": "C-77f0dd8f-3019-4d6b-9ab7-f8ecfc9259a3",
+      "actor": "acceptance-reviewer",
+      "event": "settle",
+      "body": "{\"action_id\": \"a414005b-7f37-4f01-9ecb-fde699a7d81a\", \"quote\": {\"operation\": \"refund\", \"label\": \"申请退款\", \"object_id\": \"S-9bcbaf9a-pro\", \"title\": \"Pro 月度会员\", \"version\": 1, \"policy_version\": \"demo-commerce-v1\", \"amount_minor\": 9900, \"currency\": \"CNY\", \"item_id\": null, \"payment_id\": \"S-9bcbaf9a-pro-P2\", \"eligible\": true, \"effect\": \"仅退重复扣款；保留订阅权益和续费设置\", \"requires_review\": true, \"simulated\": true, \"end_subscription\": false}}",
+      "created": 1790228063.492353
+    },
+    {
+      "id": "cf2ab233-8305-49d1-9a9b-437b5c1cc8f9",
+      "case_id": "C-911967b8-b516-4993-a658-14ae314976a8",
+      "actor": "acceptance-user",
+      "event": "proposed",
+      "body": "[{\"object_id\": \"G-9bcbaf9a-headphones\", \"operation\": \"refund\", \"item_id\": null, \"payment_id\": null}]",
+      "created": 1790227965.954006
+    },
+    {
+      "id": "fafa9a56-392d-4ef5-a45d-e37e92f15da5",
+      "case_id": "C-911967b8-b516-4993-a658-14ae314976a8",
+      "actor": "acceptance-user",
+      "event": "confirm",
+      "body": "{\"action_id\": \"5411e95e-4946-49c6-8dca-b0f2bafa1359\", \"quote\": {\"operation\": \"refund\", \"label\": \"申请退款\", \"object_id\": \"G-9bcbaf9a-headphones\", \"title\": \"无线耳机\", \"version\": 1, \"policy_version\": \"demo-commerce-v1\", \"amount_minor\": 25900, \"currency\": \"CNY\", \"item_id\": null, \"payment_id\": \"G-9bcbaf9a-headphones-P1\", \"eligible\": true, \"effect\": \"按优惠分摊后的实付金额退款；单品退款不退运费，全单退剩余实付款；已开发票进入调整流程；先等待退货验收，再进入模拟退款处理\", \"requires_review\": true, \"simulated\": true, \"return_required\": true}}",
+      "created": 1790228004.7615008
+    },
+    {
+      "id": "e641c8aa-0bbf-4a77-a674-7c6fec9af20e",
+      "case_id": "C-911967b8-b516-4993-a658-14ae314976a8",
+      "actor": "acceptance-reviewer",
+      "event": "approve",
+      "body": "{\"action_id\": \"5411e95e-4946-49c6-8dca-b0f2bafa1359\", \"quote\": {\"operation\": \"refund\", \"label\": \"申请退款\", \"object_id\": \"G-9bcbaf9a-headphones\", \"title\": \"无线耳机\", \"version\": 1, \"policy_version\": \"demo-commerce-v1\", \"amount_minor\": 25900, \"currency\": \"CNY\", \"item_id\": null, \"payment_id\": \"G-9bcbaf9a-headphones-P1\", \"eligible\": true, \"effect\": \"按优惠分摊后的实付金额退款；单品退款不退运费，全单退剩余实付款；已开发票进入调整流程；先等待退货验收，再进入模拟退款处理\", \"requires_review\": true, \"simulated\": true, \"return_required\": true}}",
+      "created": 1790228008.9070542
+    },
+    {
+      "id": "e2e0423c-035d-44fa-b9f9-387a90213ef8",
+      "case_id": "C-911967b8-b516-4993-a658-14ae314976a8",
+      "actor": "acceptance-reviewer",
+      "event": "receive_return",
+      "body": "{\"action_id\": \"5411e95e-4946-49c6-8dca-b0f2bafa1359\", \"quote\": {\"operation\": \"refund\", \"label\": \"申请退款\", \"object_id\": \"G-9bcbaf9a-headphones\", \"title\": \"无线耳机\", \"version\": 1, \"policy_version\": \"demo-commerce-v1\", \"amount_minor\": 25900, \"currency\": \"CNY\", \"item_id\": null, \"payment_id\": \"G-9bcbaf9a-headphones-P1\", \"eligible\": true, \"effect\": \"按优惠分摊后的实付金额退款；单品退款不退运费，全单退剩余实付款；已开发票进入调整流程；先等待退货验收，再进入模拟退款处理\", \"requires_review\": true, \"simulated\": true, \"return_required\": true}}",
+      "created": 1790228013.254624
+    },
+    {
+      "id": "4aa8df22-bafa-4f07-8b92-688f104ac3ba",
+      "case_id": "C-911967b8-b516-4993-a658-14ae314976a8",
+      "actor": "acceptance-reviewer",
+      "event": "settle",
+      "body": "{\"action_id\": \"5411e95e-4946-49c6-8dca-b0f2bafa1359\", \"quote\": {\"operation\": \"refund\", \"label\": \"申请退款\", \"object_id\": \"G-9bcbaf9a-headphones\", \"title\": \"无线耳机\", \"version\": 1, \"policy_version\": \"demo-commerce-v1\", \"amount_minor\": 25900, \"currency\": \"CNY\", \"item_id\": null, \"payment_id\": \"G-9bcbaf9a-headphones-P1\", \"eligible\": true, \"effect\": \"按优惠分摊后的实付金额退款；单品退款不退运费，全单退剩余实付款；已开发票进入调整流程；先等待退货验收，再进入模拟退款处理\", \"requires_review\": true, \"simulated\": true, \"return_required\": true}}",
+      "created": 1790228016.032154
+    }
+  ]
+}

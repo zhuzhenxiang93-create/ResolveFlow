@@ -36,7 +36,7 @@ class AcceptanceTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(len(task["recommendations"]), 2)
             self.assertEqual(task["actions"], [])
             self.assertIn("异常本身尚未解决", task["response"])
-            self.assertIsNone(task["confirmation"])
+            self.assertFalse(task["confirmations"])
 
     def test_frozen_data_and_unique_ids(self):
         self.assertEqual(hashlib.sha256(DATA.read_bytes()).hexdigest(), FROZEN_SHA)

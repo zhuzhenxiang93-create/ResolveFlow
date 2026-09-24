@@ -15,6 +15,7 @@
 升级机制：
   - Agent 置信度低于阈值 → 自动升级到更高级 Agent 或转人工
 """
+import asyncio
 import inspect
 import json
 import logging
@@ -84,6 +85,7 @@ class AgentResponse:
     escalate:    bool  = False   # 是否需要升级
     tools_used:  List[str] = field(default_factory=list)
     tool_traces: List[Dict[str, Any]] = field(default_factory=list)
+    error_diagnostic: Optional[Dict[str, Any]] = None  # 仅 success=False 时填充，见 handle() 的 except 分支
 
 
 @dataclass
@@ -123,6 +125,7 @@ class OrchestratorResult:
     degradations: List[str] = field(default_factory=list)
     tools_used: List[str] = field(default_factory=list)
     tool_traces: List[Dict[str, Any]] = field(default_factory=list)
+    error_diagnostics: List[Dict[str, Any]] = field(default_factory=list)  # 见 AgentResponse.error_diagnostic
 
 
 @dataclass
@@ -185,11 +188,23 @@ class BaseAgent:
             ms = (time.monotonic() - t0) * 1000
             self.stats.total_ms += ms
             logger.error(f"{self.agent_type.value} 处理失败: {ex}")
+            # Sanitized failure diagnostic, same discipline as GoalInterpreter.interpret's
+            # own diagnostics (agents/goal_interpreter.py): a coarse category bucket + the
+            # exception's class name + an HTTP status if the client attached one. Never the
+            # raw exception message/args — those can carry provider error bodies, request
+            # URLs, or other details we don't want round-tripping into a user-facing API
+            # response. The real `ex` detail stays server-side in the logger.error above.
+            category = "timeout" if isinstance(ex, asyncio.TimeoutError) or "Timeout" in type(ex).__name__ else "agent_call_failed"
+            diagnostic = {"category": category, "error_type": type(ex).__name__}
+            status = getattr(ex, "status_code", None)
+            if isinstance(status, int):
+                diagnostic["http_status"] = status
             return AgentResponse(
                 agent_type=self.agent_type,
                 content="抱歉，处理您的请求时出现问题，请稍后重试。",
                 success=False,
                 latency_ms=ms,
+                error_diagnostic=diagnostic,
             )
 
     async def _call_llm(self, req: Request):
@@ -288,6 +303,8 @@ class BaseAgent:
                     "input": dict(args),
                     "success": success,
                     "latency_ms": round(tool_latency_ms, 1),
+                    "sources": result.get("sources", []),
+                    "degradations": result.get("degradations", []),
                     "cached": bool(result.get("cached")),
                     "reranked": bool(result.get("reranked")),
                     "error": error_text or str(result.get("error") or ""),
@@ -546,6 +563,7 @@ class AgentOrchestrator:
             routing_confidence=decision.confidence,
             tools_used=list(response.tools_used),
             tool_traces=list(response.tool_traces),
+            error_diagnostics=[response.error_diagnostic] if response.error_diagnostic else [],
         )
         self._record_tool_trace(result)
         return result

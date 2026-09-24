@@ -29,7 +29,7 @@ class ReviewTests(unittest.TestCase):
         base = "/agent/tasks/" + task["id"]
         task = self.client.post(base + "/continue", headers=self.user, json={"order_id": order["id"]}).json()
         task = self.client.post(base + "/confirmation", headers=self.user,
-                                json={"confirmation_id": task["confirmation"]["id"], "accepted": True}).json()
+                                json={"confirmation_id": task["confirmations"]["request_refund"]["id"], "accepted": True}).json()
         self.assertEqual(task["status"], "awaiting_approval")
         return task, base
 
@@ -41,7 +41,7 @@ class ReviewTests(unittest.TestCase):
         self.assertIn(task["id"], [t["id"] for t in queue["tasks"]])
         detail = self.client.get("/agent/review/tasks/" + task["id"], headers=self.review).json()
         self.assertEqual(detail["current_order"]["refunds"], 0)
-        body = {"approval_id": task["approval"]["id"], "approved": True}
+        body = {"approval_id": task["approvals"]["request_refund"]["id"], "approved": True}
         self.assertEqual(self.client.post(base + "/approval", headers=self.user, json=body).status_code, 403)
         result = self.client.post(base + "/approval", headers=self.review, json=body).json()
         self.assertEqual(result["status"], "completed")
@@ -53,35 +53,35 @@ class ReviewTests(unittest.TestCase):
     def test_rejection_does_not_refund(self):
         task, base = self.pending()
         result = self.client.post(base + "/approval", headers=self.review,
-                                 json={"approval_id": task["approval"]["id"], "approved": False}).json()
+                                 json={"approval_id": task["approvals"]["request_refund"]["id"], "approved": False}).json()
         self.assertEqual(result["status"], "rejected")
         self.assertEqual(self.client.get("/agent/review/tasks/" + task["id"], headers=self.review).json()["current_order"]["refunds"], 0)
 
     def test_invalidated_release_requires_new_consent(self):
         task, base = self.pending()
-        old = task["approval"]["id"]
+        old = task["approvals"]["request_refund"]["id"]
         self.client.post(base + "/continue", headers=self.user, json={"message": "修改本次需求"})
         self.assertEqual(self.client.post(base + "/release", headers=self.user).status_code, 403)
         self.assertEqual(self.client.post(base + "/approval", headers=self.review,
                          json={"approval_id": old, "approved": True}).json()["status"], "needs_human")
         released = self.client.post(base + "/release", headers=self.review).json()
         self.assertEqual(released["status"], "awaiting_confirmation")
-        self.assertNotEqual(released["confirmation"]["id"], task["confirmation"]["id"])
+        self.assertNotEqual(released["confirmations"]["request_refund"]["id"], task["confirmations"]["request_refund"]["id"])
         self.assertEqual(released["approval_history"][-1]["status"], "invalidated")
         new = self.client.post(base + "/confirmation", headers=self.user,
-                              json={"confirmation_id": released["confirmation"]["id"], "accepted": True}).json()
-        self.assertNotEqual(new["approval"]["id"], old)
+                              json={"confirmation_id": released["confirmations"]["request_refund"]["id"], "accepted": True}).json()
+        self.assertNotEqual(new["approvals"]["request_refund"]["id"], old)
         self.assertEqual(self.client.post(base + "/approval", headers=self.review,
                          json={"approval_id": old, "approved": True}).status_code, 400)
         done = self.client.post(base + "/approval", headers=self.review,
-                               json={"approval_id": new["approval"]["id"], "approved": True}).json()
+                               json={"approval_id": new["approvals"]["request_refund"]["id"], "approved": True}).json()
         self.assertEqual(done["status"], "completed")
 
     def test_expired_approval_cannot_execute(self):
         task, base = self.pending()
-        with patch("agents.action_runtime.time.time", return_value=task["approval"]["expires_at"] + 1):
+        with patch("agents.action_runtime.time.time", return_value=task["approvals"]["request_refund"]["expires_at"] + 1):
             self.assertTrue(self.client.get("/agent/review/tasks/" + task["id"], headers=self.review).json()["approval_expired"])
             result = self.client.post(base + "/approval", headers=self.review,
-                                     json={"approval_id": task["approval"]["id"], "approved": True}).json()
+                                     json={"approval_id": task["approvals"]["request_refund"]["id"], "approved": True}).json()
         self.assertEqual(result["status"], "needs_human")
         self.assertEqual(result["actions"], [])

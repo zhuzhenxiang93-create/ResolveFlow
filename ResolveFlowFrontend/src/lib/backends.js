@@ -39,7 +39,7 @@ export async function requestKnowledgeStats(settings) {
 }
 
 export async function requestSearch(settings, query, topK = 5) {
-  const params = new URLSearchParams({ query, topK: String(topK) })
+  const params = new URLSearchParams({ query, top_k: String(topK) })
   return requestJson(backendMeta(settings).baseUrl, `/search?${params}`, {
     method: 'POST',
     headers: authHeaders(settings, 'user')
@@ -201,4 +201,12 @@ function readSettings() {
   } catch {
     return {}
   }
+}
+
+export async function commerceRequest(settings, path, { method = 'GET', body, reviewer = false } = {}) {
+  return requestJson(backendMeta(settings).baseUrl, `/commerce${path}`, {
+    method,
+    headers: { ...authHeaders(settings, reviewer ? 'reviewer' : 'user'), 'Content-Type': 'application/json' },
+    ...(body ? { body: JSON.stringify(body) } : {})
+  })
 }

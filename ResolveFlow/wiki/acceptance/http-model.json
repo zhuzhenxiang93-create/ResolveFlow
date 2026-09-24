@@ -1,0 +1,485 @@
+{
+  "scope": "real HTTP, real model, real Redis/Chroma, simulated business; no browser claim",
+  "checks": {
+    "ambiguous_refund_clarifies": true,
+    "selection_binds_order": true,
+    "partial_amount": true,
+    "read_only_no_case": true,
+    "nonduplicate_refund_effect": true,
+    "used_plan_not_eligible": true,
+    "foreign_not_disclosed": true,
+    "memory_changes_length_preserves_amount": true,
+    "memory_deleted": true,
+    "no_unconfirmed_refunds": true
+  },
+  "turns": [
+    {
+      "input": "我要退款",
+      "response": {
+        "conv_id": "40f0097a-3f7e-42b4-b73f-a1e1d2d2c7c4",
+        "commerce_case": null,
+        "candidates": [
+          {
+            "id": "G-b0068166-cable",
+            "title": "充电线",
+            "domain": "goods"
+          },
+          {
+            "id": "G-b0068166-headphones",
+            "title": "无线耳机",
+            "domain": "goods"
+          },
+          {
+            "id": "G-b0068166-keyboard",
+            "title": "机械键盘与鼠标套装",
+            "domain": "goods"
+          },
+          {
+            "id": "G-b0068166-old",
+            "title": "过期相机",
+            "domain": "goods"
+          },
+          {
+            "id": "G-b0068166-speaker",
+            "title": "蓝牙音箱",
+            "domain": "goods"
+          },
+          {
+            "id": "S-b0068166-basic",
+            "title": "Basic 月度会员",
+            "domain": "subscription"
+          },
+          {
+            "id": "S-b0068166-pro",
+            "title": "Pro 月度会员",
+            "domain": "subscription"
+          },
+          {
+            "id": "S-b0068166-used",
+            "title": "已使用的年度会员",
+            "domain": "subscription"
+          }
+        ],
+        "action_task": null,
+        "response": "请确认要处理的商品订单或订阅账单：充电线、无线耳机、机械键盘与鼠标套装、过期相机、蓝牙音箱、Basic 月度会员、Pro 月度会员、已使用的年度会员",
+        "intent": "billing",
+        "intent_group": "other",
+        "agent_type": "general",
+        "agent_types": [],
+        "primary_agent": "",
+        "supporting_agents": [],
+        "routing_reason": "commerce",
+        "routing_confidence": 0.0,
+        "escalated": false,
+        "latency_ms": 3598.842833999999,
+        "knowledge_used": false,
+        "entities": {},
+        "intent_confidence": 0.0,
+        "intent_source_scores": {
+          "native_llm": 1.0
+        },
+        "task_plan": null,
+        "execution_trace": [],
+        "synthesis_method": "unified_conversation",
+        "degradations": [],
+        "memory_mode": "redis_chroma",
+        "sources": []
+      },
+      "latency_ms": 3604
+    },
+    {
+      "input": "G-b0068166-keyboard",
+      "response": {
+        "conv_id": "40f0097a-3f7e-42b4-b73f-a1e1d2d2c7c4",
+        "commerce_case": {
+          "id": "C-f950ef4c-6ad6-4602-a71b-284a39b04bd7",
+          "owner": "http-acceptance-1790285320",
+          "conversation_id": "40f0097a-3f7e-42b4-b73f-a1e1d2d2c7c4",
+          "operations": [
+            {
+              "id": "f7e13513-fd66-400e-8330-63128cfe247a",
+              "quote": {
+                "operation": "refund",
+                "label": "申请退款",
+                "object_id": "G-b0068166-keyboard",
+                "title": "机械键盘与鼠标套装",
+                "version": 1,
+                "policy_version": "demo-commerce-v1",
+                "amount_minor": 39900,
+                "currency": "CNY",
+                "item_id": null,
+                "payment_id": "G-b0068166-keyboard-P1",
+                "eligible": true,
+                "effect": "按优惠分摊后的实付金额退款；单品退款不退运费，全单退剩余实付款；已开发票进入调整流程",
+                "requires_review": true,
+                "simulated": true,
+                "return_required": false
+              },
+              "expires_at": 1790286224.207507,
+              "status": "awaiting_confirmation"
+            }
+          ],
+          "simulated": true,
+          "status": "awaiting_confirmation",
+          "response": "机械键盘与鼠标套装 · 申请退款 · 待用户确认 · CNY 399.00：按优惠分摊后的实付金额退款；单品退款不退运费，全单退剩余实付款；已开发票进入调整流程",
+          "updated_at": 1790285324.207875
+        },
+        "candidates": [],
+        "action_task": null,
+        "response": "机械键盘与鼠标套装 · 申请退款 · 待用户确认 · CNY 399.00：按优惠分摊后的实付金额退款；单品退款不退运费，全单退剩余实付款；已开发票进入调整流程",
+        "intent": "billing",
+        "intent_group": "other",
+        "agent_type": "general",
+        "agent_types": [],
+        "primary_agent": "",
+        "supporting_agents": [],
+        "routing_reason": "commerce",
+        "routing_confidence": 0.0,
+        "escalated": false,
+        "latency_ms": 220.38404100000088,
+        "knowledge_used": false,
+        "entities": {},
+        "intent_confidence": 0.0,
+        "intent_source_scores": {
+          "explicit_selection": 1.0
+        },
+        "task_plan": null,
+        "execution_trace": [],
+        "synthesis_method": "unified_conversation",
+        "degradations": [],
+        "memory_mode": "redis_chroma",
+        "sources": []
+      },
+      "latency_ms": 224
+    },
+    {
+      "input": "请只退鼠标，订单是 G-b0068166-keyboard",
+      "response": {
+        "conv_id": "7d5836f6-d093-4a0a-b808-ff892fd8b9ea",
+        "commerce_case": {
+          "id": "C-a9431533-f785-45bd-9773-4d116779ff78",
+          "owner": "http-acceptance-1790285320",
+          "conversation_id": "7d5836f6-d093-4a0a-b808-ff892fd8b9ea",
+          "operations": [
+            {
+              "id": "733d3be4-5a76-40ee-b60c-536cfe1f591d",
+              "quote": {
+                "operation": "refund",
+                "label": "申请退款",
+                "object_id": "G-b0068166-keyboard",
+                "title": "机械键盘与鼠标套装",
+                "version": 1,
+                "policy_version": "demo-commerce-v1",
+                "amount_minor": 9000,
+                "currency": "CNY",
+                "item_id": "G-b0068166-keyboard-I2",
+                "payment_id": "G-b0068166-keyboard-P1",
+                "eligible": true,
+                "effect": "按优惠分摊后的实付金额退款；单品退款不退运费，全单退剩余实付款；已开发票进入调整流程",
+                "requires_review": true,
+                "simulated": true,
+                "return_required": false
+              },
+              "expires_at": 1790286226.38018,
+              "status": "awaiting_confirmation"
+            }
+          ],
+          "simulated": true,
+          "status": "awaiting_confirmation",
+          "response": "机械键盘与鼠标套装 · 申请退款 · 待用户确认 · CNY 90.00：按优惠分摊后的实付金额退款；单品退款不退运费，全单退剩余实付款；已开发票进入调整流程",
+          "updated_at": 1790285326.380904
+        },
+        "candidates": [],
+        "action_task": null,
+        "response": "机械键盘与鼠标套装 · 申请退款 · 待用户确认 · CNY 90.00：按优惠分摊后的实付金额退款；单品退款不退运费，全单退剩余实付款；已开发票进入调整流程",
+        "intent": "billing",
+        "intent_group": "other",
+        "agent_type": "general",
+        "agent_types": [],
+        "primary_agent": "",
+        "supporting_agents": [],
+        "routing_reason": "commerce",
+        "routing_confidence": 0.0,
+        "escalated": false,
+        "latency_ms": 2173.1780839999983,
+        "knowledge_used": false,
+        "entities": {},
+        "intent_confidence": 0.0,
+        "intent_source_scores": {
+          "native_llm": 1.0
+        },
+        "task_plan": null,
+        "execution_trace": [],
+        "synthesis_method": "unified_conversation",
+        "degradations": [],
+        "memory_mode": "redis_chroma",
+        "sources": []
+      },
+      "latency_ms": 2176
+    },
+    {
+      "input": "只查无线耳机的物流和发票，不退款",
+      "response": {
+        "conv_id": "daa1e05f-5bf4-4580-a9ff-3a70f869cae5",
+        "commerce_case": null,
+        "candidates": [],
+        "action_task": null,
+        "response": "无线耳机：{\"object_id\": \"G-b0068166-headphones\", \"carrier\": \"模拟物流\", \"tracking\": \"DEMO-headphones\", \"events\": [{\"status\": \"shipped\", \"at\": 1790198920.382404}, {\"status\": \"delivered\", \"at\": 1790198920.382404}]}\n无线耳机：{\"object_id\": \"G-b0068166-headphones\", \"number\": \"DEMO-INV-headphones\", \"status\": \"issued\"}",
+        "intent": "billing",
+        "intent_group": "other",
+        "agent_type": "general",
+        "agent_types": [],
+        "primary_agent": "",
+        "supporting_agents": [],
+        "routing_reason": "commerce",
+        "routing_confidence": 0.0,
+        "escalated": false,
+        "latency_ms": 3029.754041,
+        "knowledge_used": false,
+        "entities": {},
+        "intent_confidence": 0.0,
+        "intent_source_scores": {
+          "native_llm": 1.0
+        },
+        "task_plan": null,
+        "execution_trace": [],
+        "synthesis_method": "unified_conversation",
+        "degradations": [],
+        "memory_mode": "redis_chroma",
+        "sources": []
+      },
+      "latency_ms": 3032
+    },
+    {
+      "input": "帮我申请未使用的Basic 月度会员续费退款",
+      "response": {
+        "conv_id": "a28d59e7-be8e-451f-8962-08bcea731d65",
+        "commerce_case": {
+          "id": "C-a8a60770-c0c1-4f3b-b0d1-949dcfbfe636",
+          "owner": "http-acceptance-1790285320",
+          "conversation_id": "a28d59e7-be8e-451f-8962-08bcea731d65",
+          "operations": [
+            {
+              "id": "fcdb5c7b-9bae-430c-9f86-a86fc809f0f5",
+              "quote": {
+                "operation": "refund",
+                "label": "申请退款",
+                "object_id": "S-b0068166-basic",
+                "title": "Basic 月度会员",
+                "version": 1,
+                "policy_version": "demo-commerce-v1",
+                "amount_minor": 3900,
+                "currency": "CNY",
+                "item_id": null,
+                "payment_id": "S-b0068166-basic-P1",
+                "eligible": true,
+                "effect": "退本笔订阅费用；终止当前订阅权益并关闭续费",
+                "requires_review": true,
+                "simulated": true,
+                "end_subscription": true
+              },
+              "expires_at": 1790286231.314788,
+              "status": "awaiting_confirmation"
+            }
+          ],
+          "simulated": true,
+          "status": "awaiting_confirmation",
+          "response": "Basic 月度会员 · 申请退款 · 待用户确认 · CNY 39.00：退本笔订阅费用；终止当前订阅权益并关闭续费",
+          "updated_at": 1790285331.315047
+        },
+        "candidates": [],
+        "action_task": null,
+        "response": "Basic 月度会员 · 申请退款 · 待用户确认 · CNY 39.00：退本笔订阅费用；终止当前订阅权益并关闭续费",
+        "intent": "billing",
+        "intent_group": "other",
+        "agent_type": "general",
+        "agent_types": [],
+        "primary_agent": "",
+        "supporting_agents": [],
+        "routing_reason": "commerce",
+        "routing_confidence": 0.0,
+        "escalated": false,
+        "latency_ms": 1896.4621669999992,
+        "knowledge_used": false,
+        "entities": {},
+        "intent_confidence": 0.0,
+        "intent_source_scores": {
+          "native_llm": 1.0
+        },
+        "task_plan": null,
+        "execution_trace": [],
+        "synthesis_method": "unified_conversation",
+        "degradations": [],
+        "memory_mode": "redis_chroma",
+        "sources": []
+      },
+      "latency_ms": 1899
+    },
+    {
+      "input": "已使用的年度会员帮我退款",
+      "response": {
+        "conv_id": "f42f1e73-f500-4d84-a514-9a2d4c349a48",
+        "commerce_case": {
+          "id": "C-bf69e313-15ea-4117-8c54-7412bedbc0b0",
+          "owner": "http-acceptance-1790285320",
+          "conversation_id": "f42f1e73-f500-4d84-a514-9a2d4c349a48",
+          "operations": [
+            {
+              "id": "5cd43b7d-3100-448c-b232-41b71c162d37",
+              "quote": {
+                "operation": "refund",
+                "label": "申请退款",
+                "object_id": "S-b0068166-used",
+                "title": "已使用的年度会员",
+                "version": 1,
+                "policy_version": "demo-commerce-v1",
+                "amount_minor": 99900,
+                "currency": "CNY",
+                "item_id": null,
+                "payment_id": "S-b0068166-used-P1",
+                "eligible": false,
+                "effect": "退本笔订阅费用；终止当前订阅权益并关闭续费",
+                "requires_review": true,
+                "simulated": true,
+                "reason": "非重复扣款仅支持扣款7天内且未使用的测试订阅退款；其他情况需人工评估",
+                "end_subscription": true
+              },
+              "expires_at": 1790286233.147151,
+              "status": "ineligible"
+            }
+          ],
+          "simulated": true,
+          "status": "completed",
+          "response": "已使用的年度会员 · 申请退款 · 不符合演示规则 · CNY 999.00：非重复扣款仅支持扣款7天内且未使用的测试订阅退款；其他情况需人工评估",
+          "updated_at": 1790285333.147434
+        },
+        "candidates": [],
+        "action_task": null,
+        "response": "已使用的年度会员 · 申请退款 · 不符合演示规则 · CNY 999.00：非重复扣款仅支持扣款7天内且未使用的测试订阅退款；其他情况需人工评估",
+        "intent": "billing",
+        "intent_group": "other",
+        "agent_type": "general",
+        "agent_types": [],
+        "primary_agent": "",
+        "supporting_agents": [],
+        "routing_reason": "commerce",
+        "routing_confidence": 0.0,
+        "escalated": false,
+        "latency_ms": 1833.2397500000006,
+        "knowledge_used": false,
+        "entities": {},
+        "intent_confidence": 0.0,
+        "intent_source_scores": {
+          "native_llm": 1.0
+        },
+        "task_plan": null,
+        "execution_trace": [],
+        "synthesis_method": "unified_conversation",
+        "degradations": [],
+        "memory_mode": "redis_chroma",
+        "sources": []
+      },
+      "latency_ms": 1836
+    },
+    {
+      "input": "帮我查别人订单 G-foreign-headphones",
+      "response": {
+        "conv_id": "90deb1b2-df21-4992-92b7-dd486fa60f51",
+        "commerce_case": null,
+        "candidates": [],
+        "action_task": null,
+        "response": "请确认要处理的商品订单或订阅账单：未找到匹配记录，请选择自己的购买记录",
+        "intent": "billing",
+        "intent_group": "other",
+        "agent_type": "general",
+        "agent_types": [],
+        "primary_agent": "",
+        "supporting_agents": [],
+        "routing_reason": "commerce",
+        "routing_confidence": 0.0,
+        "escalated": false,
+        "latency_ms": 1705.9611249999982,
+        "knowledge_used": false,
+        "entities": {},
+        "intent_confidence": 0.0,
+        "intent_source_scores": {
+          "native_llm": 1.0
+        },
+        "task_plan": null,
+        "execution_trace": [],
+        "synthesis_method": "unified_conversation",
+        "degradations": [],
+        "memory_mode": "redis_chroma",
+        "sources": []
+      },
+      "latency_ms": 1709
+    },
+    {
+      "input": "查询 S-b0068166-pro",
+      "response": {
+        "conv_id": "5fae342c-4f81-4aa7-b68c-8231ea7fff8a",
+        "commerce_case": null,
+        "candidates": [],
+        "action_task": null,
+        "response": "Pro 月度会员 · active · 实付 CNY 198.00 · 自动续费开启 · 权益 basic\n订单 S-b0068166-pro；账单 S-b0068166-pro-P1、S-b0068166-pro-P2；发票状态 issued",
+        "intent": "billing",
+        "intent_group": "other",
+        "agent_type": "general",
+        "agent_types": [],
+        "primary_agent": "",
+        "supporting_agents": [],
+        "routing_reason": "commerce",
+        "routing_confidence": 0.0,
+        "escalated": false,
+        "latency_ms": 2178.102124999999,
+        "knowledge_used": false,
+        "entities": {},
+        "intent_confidence": 0.0,
+        "intent_source_scores": {
+          "native_llm": 1.0
+        },
+        "task_plan": null,
+        "execution_trace": [],
+        "synthesis_method": "unified_conversation",
+        "degradations": [],
+        "memory_mode": "redis_chroma",
+        "sources": []
+      },
+      "latency_ms": 2184
+    },
+    {
+      "input": "查询 S-b0068166-pro",
+      "response": {
+        "conv_id": "360b8dec-951b-41c9-8301-a3ed3c2697b2",
+        "commerce_case": null,
+        "candidates": [],
+        "action_task": null,
+        "response": "Pro 月度会员 · active · 实付 CNY 198.00 · 自动续费开启 · 权益 basic",
+        "intent": "billing",
+        "intent_group": "other",
+        "agent_type": "general",
+        "agent_types": [],
+        "primary_agent": "",
+        "supporting_agents": [],
+        "routing_reason": "commerce",
+        "routing_confidence": 0.0,
+        "escalated": false,
+        "latency_ms": 1781.7987080000003,
+        "knowledge_used": false,
+        "entities": {},
+        "intent_confidence": 0.0,
+        "intent_source_scores": {
+          "native_llm": 1.0
+        },
+        "task_plan": null,
+        "execution_trace": [],
+        "synthesis_method": "unified_conversation",
+        "degradations": [],
+        "memory_mode": "redis_chroma",
+        "sources": []
+      },
+      "latency_ms": 1783
+    }
+  ],
+  "passed": true
+}

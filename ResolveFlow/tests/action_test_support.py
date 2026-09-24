@@ -20,6 +20,11 @@ class ActionRuntime(ProductionRuntime):
         for _ in range(4):
             if task["status"] != "awaiting_confirmation":
                 break
-            self.confirm(task["id"], task["owner"], task["confirmation"]["id"], True)
+            # Independent goals can each have their own pending confirmation
+            # at once now; accept all of them before re-entering the
+            # scheduler, not just one.
+            for c in list(task["confirmations"].values()):
+                if c["status"] == "pending":
+                    self.confirm(task["id"], task["owner"], c["id"], True)
             task = await super().advance(task["id"], task["owner"])
         return task

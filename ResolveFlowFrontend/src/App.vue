@@ -120,6 +120,7 @@
               <small v-if="item.meta">{{ item.meta }}</small>
             </div>
             <p>{{ item.content }}</p>
+            <ul v-if="item.sources?.length"><li v-for="source in item.sources" :key="source.document_id">依据：{{ source.title }} · {{ source.version }} · {{ source.source }}</li></ul>
           </article>
           <div v-if="messages.length === 0" class="empty-state">
             <h3>开始一次客服对话</h3>
@@ -132,6 +133,8 @@
           <button :disabled="busy || !draft.trim()">{{ busy ? '发送中' : '发送' }}</button>
         </form>
       </section>
+
+      <CommercePanel :settings="settings" :latest="latestCommerce" :candidates="commerceCandidates" @ask="askCommerce" @select="selectCommerce" @updated="commerceUpdated" />
 
       <section class="task-panel" v-if="currentTask">
         <div class="panel-heading">
@@ -154,10 +157,15 @@
         <p v-if="currentTask.unresolved?.length" class="hint">未完成：{{ currentTask.unresolved.join('、') }}</p>
 
         <div v-if="currentTask.status === 'awaiting_confirmation'" class="task-action-block">
-          <p>请确认：{{ currentTask.confirmation?.tool }}（订单 {{ currentTask.confirmation?.order_id }}）</p>
-          <div class="actions">
-            <button @click="respondConfirmation(true)" :disabled="busy">确认</button>
-            <button @click="respondConfirmation(false)" :disabled="busy">拒绝</button>
+          <!-- Independent goals can each have their own pending confirmation
+               at once now, so list every one instead of assuming there is
+               only ever a single `currentTask.confirmation`. -->
+          <div v-for="c in pendingConfirmations" :key="c.id" class="confirmation-item">
+            <p>请确认：{{ c.tool }}（订单 {{ c.order_id }}）</p>
+            <div class="actions">
+              <button @click="respondConfirmation(c.id, true)" :disabled="busy">确认</button>
+              <button @click="respondConfirmation(c.id, false)" :disabled="busy">拒绝</button>
+            </div>
           </div>
         </div>
 
@@ -169,9 +177,14 @@
               <span class="pill soft">独立身份</span>
             </div>
             <p class="hint">使用审核员 Token；服务端会拒绝审核员与任务所有者相同的自批请求。</p>
-            <div class="actions">
-              <button @click="respondApproval(true)" :disabled="busy">批准</button>
-              <button @click="respondApproval(false)" :disabled="busy">拒绝</button>
+            <!-- Same as above: independent goals can each have their own
+                 pending approval at once. -->
+            <div v-for="a in pendingApprovals" :key="a.id" class="approval-item">
+              <p class="hint">{{ a.tool }}（订单 {{ a.order_id }}）</p>
+              <div class="actions">
+                <button @click="respondApproval(a.id, true)" :disabled="busy">批准</button>
+                <button @click="respondApproval(a.id, false)" :disabled="busy">拒绝</button>
+              </div>
             </div>
           </div>
           <p v-else class="hint">填入审核员 Token 后可在此演示批准/拒绝。</p>
@@ -212,6 +225,7 @@
               <strong>{{ item.title || '未命名结果' }}</strong>
               <span>score {{ item.score ?? '-' }}</span>
               <p>{{ item.content }}</p>
+            <ul v-if="item.sources?.length"><li v-for="source in item.sources" :key="source.document_id">依据：{{ source.title }} · {{ source.version }} · {{ source.source }}</li></ul>
             </article>
           </div>
         </article>
@@ -221,6 +235,10 @@
             <h2>导入知识</h2>
             <span class="pill soft">Docs</span>
           </div>
+          <label><span>文档 ID（更新时保持一致）</span><input v-model="docId" placeholder="goods-new-policy" /></label>
+          <label><span>业务域</span><select v-model="docDomain"><option value="goods">商品</option><option value="subscription">订阅</option><option value="general">通用</option></select></label>
+          <label><span>文档版本</span><input v-model="docVersion" /></label>
+          <label><span>生效日期</span><input v-model="docEffective" type="date" /></label>
           <label>
             <span>标题</span>
             <input v-model="docTitle" placeholder="退款补充政策" />
@@ -243,6 +261,7 @@
 </template>
 
 <script setup>
+import CommercePanel from './components/CommercePanel.vue'
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import {
   addKnowledge,
@@ -263,6 +282,9 @@ import {
   uploadKnowledge
 } from './lib/backends'
 
+const latestCommerce = ref(null)
+const commerceCandidates = ref([])
+const selectedObject = ref('')
 const settings = reactive(createInitialSettings())
 const messages = ref([])
 const draft = ref('')
@@ -273,8 +295,12 @@ const statusText = ref('')
 const knowledgeCount = ref('-')
 const searchQuery = ref('退款多久能到账')
 const searchResults = ref([])
-const docTitle = ref('退款补充政策')
-const docContent = ref('大促期间退款审核时间可能延长到 3-5 个工作日。')
+const docId=ref('')
+const docDomain=ref('goods')
+const docVersion=ref('v1')
+const docEffective=ref(new Date().toISOString().slice(0,10))
+const docTitle = ref('商品说明')
+const docContent = ref('')
 const messageList = ref(null)
 const seededOrderId = ref('')
 const currentTask = ref(null)
@@ -295,6 +321,16 @@ const STATUS_LABELS = {
 
 const currentBackend = computed(() => backendMeta(settings))
 const docsUrl = computed(() => `${currentBackend.value.baseUrl}/docs`)
+// Independent goals can each have their own pending confirmation/approval at
+// once now (the backend keeps them as `confirmations`/`approvals` dicts
+// keyed by tool, not a single `confirmation`/`approval` field), so surface
+// every one that's still pending rather than assuming there is only one.
+const pendingConfirmations = computed(() =>
+  Object.values(currentTask.value?.confirmations || {}).filter((c) => c.status === 'pending')
+)
+const pendingApprovals = computed(() =>
+  Object.values(currentTask.value?.approvals || {}).filter((a) => a.status === 'pending')
+)
 
 watch(
   () => settings.conversationId,
@@ -335,7 +371,10 @@ async function sendMessage() {
   draft.value = ''
   busy.value = true
   try {
-    const response = await requestChat(settings, content)
+    const response = await requestChat(settings, content, { orderId: selectedObject.value || undefined })
+    selectedObject.value = ''
+    latestCommerce.value = response.raw.commerce_case || { refreshed: Date.now() }
+    commerceCandidates.value = response.raw.candidates || []
     if (response.conversationId && !settings.conversationId) {
       settings.conversationId = response.conversationId
       persist()
@@ -354,6 +393,7 @@ async function sendMessage() {
       id: crypto.randomUUID(),
       role: 'assistant',
       content: response.response,
+      sources: response.sources,
       meta
     })
   } catch (error) {
@@ -369,6 +409,17 @@ async function sendMessage() {
     messageList.value?.scrollTo({ top: messageList.value.scrollHeight, behavior: 'smooth' })
   }
 }
+
+watch(() => settings.userToken, () => {
+  messages.value=[];currentTask.value=null;latestCommerce.value=null;commerceCandidates.value=[]
+  settings.conversationId='';seededOrderId.value='';persist()
+})
+watch(() => settings.conversationId, (value, old) => {
+  if(old && value !== old){messages.value=[];currentTask.value=null;latestCommerce.value=null;commerceCandidates.value=[]}
+})
+function askCommerce(message){draft.value=message;sendMessage()}
+function selectCommerce(id){selectedObject.value=id;draft.value=id;sendMessage()}
+function commerceUpdated(result){latestCommerce.value=result;messages.value.push({id:crypto.randomUUID(),role:'assistant',content:result.response,meta:'业务状态已核验'})}
 
 async function createSeedOrder() {
   busy.value = true
@@ -386,11 +437,11 @@ function insertOrderId() {
   draft.value = draft.value ? `${draft.value} ${seededOrderId.value}` : seededOrderId.value
 }
 
-async function respondConfirmation(accepted) {
-  if (!currentTask.value?.confirmation) return
+async function respondConfirmation(confirmationId, accepted) {
+  if (!currentTask.value || !confirmationId) return
   busy.value = true
   try {
-    const task = await confirmTask(settings, currentTask.value.id, currentTask.value.confirmation.id, accepted)
+    const task = await confirmTask(settings, currentTask.value.id, confirmationId, accepted)
     applyTask(task, accepted ? '已确认' : '已拒绝确认')
   } catch (error) {
     statusText.value = error.message
@@ -399,11 +450,11 @@ async function respondConfirmation(accepted) {
   }
 }
 
-async function respondApproval(approved) {
-  if (!currentTask.value?.approval) return
+async function respondApproval(approvalId, approved) {
+  if (!currentTask.value || !approvalId) return
   busy.value = true
   try {
-    const task = await approveTask(settings, currentTask.value.id, currentTask.value.approval.id, approved)
+    const task = await approveTask(settings, currentTask.value.id, approvalId, approved)
     applyTask(task, approved ? '审核员已批准' : '审核员已拒绝')
   } catch (error) {
     statusText.value = error.message
@@ -498,7 +549,7 @@ async function submitKnowledge() {
   busy.value = true
   try {
     const data = await addKnowledge(settings, [
-      { title: docTitle.value.trim(), content: docContent.value.trim() }
+      { id:docId.value.trim() || undefined, domain:docDomain.value, version:docVersion.value, effective_at:docEffective.value, source:"管理员上传的演示资料", title: docTitle.value.trim(), content: docContent.value.trim() }
     ])
     statusText.value = JSON.stringify(data, null, 2)
     await loadStats()

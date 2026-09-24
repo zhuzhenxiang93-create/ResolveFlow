@@ -48,7 +48,7 @@ class NativeProtocolTests(unittest.IsolatedAsyncioTestCase):
             order = runtime.seed("user")
             task = runtime.create("user", "重复扣款")
             result = await runtime.advance(task["id"], "user", order["id"])
-            self.assertIsNone(result["approval"])
+            self.assertFalse(result["approvals"])
             self.assertFalse(json.loads(result["tool_messages"][-1]["content"])["success"])
             self.assertEqual(result["tool_messages"][-1]["tool_call_id"], "bad")
 
@@ -92,11 +92,14 @@ class UnifiedAPITests(unittest.TestCase):
             for _ in range(2):
                 t = result["action_task"]
                 if t["status"] == "awaiting_confirmation":
+                    # Both goals' confirmations can be pending at once now;
+                    # accept whichever one is still pending each round.
+                    pending_id = next(c["id"] for c in t["confirmations"].values() if c["status"] == "pending")
                     confirmed = client.post("/agent/tasks/" + t["id"] + "/confirmation", headers=headers,
-                                            json={"confirmation_id": t["confirmation"]["id"], "accepted": True}).json()
+                                            json={"confirmation_id": pending_id, "accepted": True}).json()
                     result = {"action_task": confirmed}
             self.assertEqual(result["action_task"]["status"], "awaiting_approval")
-            approval_id = result["action_task"]["approval"]["id"]
+            approval_id = result["action_task"]["approvals"]["request_refund"]["id"]
             response = client.post("/agent/tasks/" + task["id"] + "/approval",
                                    headers={"Authorization": "Bearer " + mint_token("reviewer", "bob")},
                                    json={"approval_id": approval_id, "approved": True})

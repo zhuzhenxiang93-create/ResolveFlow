@@ -52,12 +52,30 @@ class LocalConversationMemory:
             if message.role != MsgRole.USER:
                 continue
             text = message.content
+            if re.search(r"这次|本次|这一条|暂时", text):
+                continue
             if re.search(r"请.*(简短|简洁)|我喜欢.*简洁", text):
                 profile["response_style"] = "concise"
             if re.search(r"请.*(详细|具体).*解释|我喜欢.*详细", text):
                 profile["response_style"] = "detailed"
         with self.connect() as db:
             db.execute("INSERT OR REPLACE INTO conversation_profiles VALUES(?,?)", (user_id, json.dumps(profile)))
+
+    async def get_profile(self, user_id):
+        with self.connect() as db:
+            row = db.execute("SELECT body FROM conversation_profiles WHERE owner=?", (user_id,)).fetchone()
+        return json.loads(row[0]) if row else {}
+
+    async def set_profile(self, user_id, profile):
+        with self.connect() as db:
+            db.execute("INSERT OR REPLACE INTO conversation_profiles VALUES(?,?)", (user_id, json.dumps(profile)))
+            # Previous messages cannot resurrect an explicitly corrected preference.
+            db.execute("DELETE FROM conversation_messages WHERE owner=?", (user_id,))
+
+    async def forget(self, user_id):
+        with self.connect() as db:
+            db.execute("DELETE FROM conversation_profiles WHERE owner=?", (user_id,))
+            db.execute("DELETE FROM conversation_messages WHERE owner=?", (user_id,))
 
     async def close(self):
         pass

@@ -115,13 +115,22 @@ def build_shared_rag_tool(tool_manager: Any, tool_name: str = "knowledge_search"
             result = await tool_manager.search_with_rewrite(tool_name, query, top_k=int(args.get("top_k") or top_k))
         except Exception as ex:  # 工具管理器自身已有 fallback，这里兜底避免异常直接抛给 Agent 循环
             return {"success": False, "error": str(ex)}
-        items = result.get("results") if isinstance(result, dict) else result
-        return {
-            "success": True,
-            "results": items,
-            "cached": bool(isinstance(result, dict) and result.get("cached")),
-            "reranked": bool(isinstance(result, dict) and result.get("reranked")),
-        }
+        # MCPToolManager returns a ToolResult, not a JSON dictionary.
+        if isinstance(result, dict):
+            data = result.get("results", result.get("data", []))
+            success = result.get("success", True)
+            cached, reranked = result.get("cached", False), result.get("reranked", False)
+            degradations, error = result.get("degradations", []), result.get("error", "")
+        else:
+            data, success = result.data, result.success
+            cached, reranked = result.cached, result.reranked
+            degradations, error = result.degradations, result.error
+        items = data if isinstance(data, list) else []
+        return {"success": bool(success), "results": items, "cached": bool(cached),
+                "reranked": bool(reranked), "degradations": degradations, "error": error,
+                "sources": [{k: item.get(k) for k in ("document_id", "title", "source", "version", "domain")}
+                            for item in items if isinstance(item, dict) and item.get("document_id")]}
+
 
     return AgentToolSpec(
         name=tool_name,

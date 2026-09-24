@@ -1,0 +1,187 @@
+PYTHONPATH=. /Users/zhenxiangzhu/Documents/Echomind/.venv/bin/python -m unittest discover -s tests
+..2026-09-25 09:39:13,382 [INFO] httpx: HTTP Request: POST http://testserver/agent/demo/orders "HTTP/1.1 401 Unauthorized"
+2026-09-25 09:39:13,387 [INFO] httpx: HTTP Request: POST http://testserver/agent/demo/orders "HTTP/1.1 200 OK"
+2026-09-25 09:39:13,434 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks "HTTP/1.1 200 OK"
+2026-09-25 09:39:13,444 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/d2ebd841-a308-486a-96bc-ec1c5ce3bf26/continue "HTTP/1.1 200 OK"
+2026-09-25 09:39:13,461 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/d2ebd841-a308-486a-96bc-ec1c5ce3bf26/confirmation "HTTP/1.1 200 OK"
+2026-09-25 09:39:13,463 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/d2ebd841-a308-486a-96bc-ec1c5ce3bf26/approval "HTTP/1.1 403 Forbidden"
+2026-09-25 09:39:13,468 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/d2ebd841-a308-486a-96bc-ec1c5ce3bf26/approval "HTTP/1.1 200 OK"
+..........sssss...........................2026-09-25 09:39:17,008 [WARNING] asyncio: Executing <Task pending name='Task-158' coro=<IsolatedAsyncioTestCase._asyncioLoopRunner() running at /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/async_case.py:96> wait_for=<Future pending cb=[<TaskWakeupMethWrapper object at 0x10e78a130>()] created at /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/asyncio/base_events.py:424> created at /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/async_case.py:118> took 0.134 seconds
+.2026-09-25 09:39:17,010 [ERROR] agents.agent_orchestrator: general 处理失败: secret upstream body, do not leak
+.2026-09-25 09:39:17,012 [ERROR] agents.agent_orchestrator: general 处理失败: rate limited
+..2026-09-25 09:39:17,015 [ERROR] agents.agent_orchestrator: general 处理失败:
+.2026-09-25 09:39:17,021 [INFO] httpx: HTTP Request: POST http://testserver/agent/demo/orders "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,031 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,039 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/d110bed4-b6ff-4c08-9023-c4fbb2581187/continue "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,048 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/d110bed4-b6ff-4c08-9023-c4fbb2581187/confirmation "HTTP/1.1 200 OK"
+2026-09-25 09:54:18,043 [INFO] httpx: HTTP Request: GET http://testserver/agent/review/tasks/d110bed4-b6ff-4c08-9023-c4fbb2581187 "HTTP/1.1 200 OK"
+2026-09-25 09:54:18,043 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/d110bed4-b6ff-4c08-9023-c4fbb2581187/approval "HTTP/1.1 200 OK"
+.2026-09-25 09:39:17,062 [INFO] httpx: HTTP Request: POST http://testserver/agent/demo/orders "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,071 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,080 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/7d05971d-a3bd-4fd3-9865-e6b76ba45b5c/continue "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,088 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/7d05971d-a3bd-4fd3-9865-e6b76ba45b5c/confirmation "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,090 [INFO] httpx: HTTP Request: GET http://testserver/agent/review/tasks "HTTP/1.1 403 Forbidden"
+2026-09-25 09:39:17,091 [INFO] httpx: HTTP Request: GET http://testserver/agent/review/tasks "HTTP/1.1 403 Forbidden"
+2026-09-25 09:39:17,094 [INFO] httpx: HTTP Request: GET http://testserver/agent/review/tasks "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,097 [INFO] httpx: HTTP Request: GET http://testserver/agent/review/tasks/7d05971d-a3bd-4fd3-9865-e6b76ba45b5c "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,098 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/7d05971d-a3bd-4fd3-9865-e6b76ba45b5c/approval "HTTP/1.1 403 Forbidden"
+2026-09-25 09:39:17,103 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/7d05971d-a3bd-4fd3-9865-e6b76ba45b5c/approval "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,108 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/7d05971d-a3bd-4fd3-9865-e6b76ba45b5c/approval "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,111 [INFO] httpx: HTTP Request: GET http://testserver/agent/tasks/7d05971d-a3bd-4fd3-9865-e6b76ba45b5c "HTTP/1.1 200 OK"
+.2026-09-25 09:39:17,117 [INFO] httpx: HTTP Request: POST http://testserver/agent/demo/orders "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,127 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,135 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/ce2b5057-4550-40b1-9802-dfbeeb07f76f/continue "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,144 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/ce2b5057-4550-40b1-9802-dfbeeb07f76f/confirmation "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,149 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/ce2b5057-4550-40b1-9802-dfbeeb07f76f/continue "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,151 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/ce2b5057-4550-40b1-9802-dfbeeb07f76f/release "HTTP/1.1 403 Forbidden"
+2026-09-25 09:39:17,155 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/ce2b5057-4550-40b1-9802-dfbeeb07f76f/approval "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,162 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/ce2b5057-4550-40b1-9802-dfbeeb07f76f/release "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,172 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/ce2b5057-4550-40b1-9802-dfbeeb07f76f/confirmation "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,175 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/ce2b5057-4550-40b1-9802-dfbeeb07f76f/approval "HTTP/1.1 400 Bad Request"
+2026-09-25 09:39:17,180 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/ce2b5057-4550-40b1-9802-dfbeeb07f76f/approval "HTTP/1.1 200 OK"
+.2026-09-25 09:39:17,186 [INFO] httpx: HTTP Request: POST http://testserver/agent/demo/orders "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,196 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,204 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/e04ff593-729b-4de7-bfb9-c481f01bacdd/continue "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,214 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/e04ff593-729b-4de7-bfb9-c481f01bacdd/confirmation "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,219 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/e04ff593-729b-4de7-bfb9-c481f01bacdd/approval "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,221 [INFO] httpx: HTTP Request: GET http://testserver/agent/review/tasks/e04ff593-729b-4de7-bfb9-c481f01bacdd "HTTP/1.1 200 OK"
+.........................................................2026-09-25 09:39:17,882 [INFO] httpx: HTTP Request: POST http://testserver/commerce/demo "HTTP/1.1 200 OK"
+.2026-09-25 09:39:17,904 [INFO] httpx: HTTP Request: POST http://testserver/commerce/demo "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,916 [INFO] httpx: HTTP Request: POST http://testserver/chat "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,920 [INFO] httpx: HTTP Request: POST http://testserver/commerce/cases/C-f1e5dbee-5fcc-42b8-90c6-1a19826a2168/decision "HTTP/1.1 400 Bad Request"
+2026-09-25 09:39:17,924 [INFO] httpx: HTTP Request: POST http://testserver/commerce/cases/C-f1e5dbee-5fcc-42b8-90c6-1a19826a2168/decision "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,926 [INFO] httpx: HTTP Request: POST http://testserver/commerce/review/C-f1e5dbee-5fcc-42b8-90c6-1a19826a2168 "HTTP/1.1 403 Forbidden"
+2026-09-25 09:39:17,930 [INFO] httpx: HTTP Request: POST http://testserver/commerce/review/C-f1e5dbee-5fcc-42b8-90c6-1a19826a2168 "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,933 [INFO] httpx: HTTP Request: GET http://testserver/commerce/objects/S-2bd806c9-pro "HTTP/1.1 404 Not Found"
+.2026-09-25 09:39:17,949 [INFO] httpx: HTTP Request: POST http://testserver/commerce/demo "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,954 [ERROR] api.commerce_routes: Memory unavailable after committed commerce decision
+Traceback (most recent call last):
+  File "/Users/zhenxiangzhu/Documents/Echomind/ResolveFlow/api/commerce_routes.py", line 58, in decide
+    await conversation_service().memory.add_message(user, case["conversation_id"], MsgRole.ASSISTANT, case["response"])
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/unittest/mock.py", line 2154, in _execute_mock_call
+    raise effect
+RuntimeError: memory unavailable
+2026-09-25 09:39:17,959 [INFO] httpx: HTTP Request: POST http://testserver/commerce/cases/C-854fde91-94bd-4f1d-b312-cd4bf9f7a0ee/decision "HTTP/1.1 200 OK"
+.2026-09-25 09:39:17,978 [INFO] httpx: HTTP Request: POST http://testserver/commerce/demo "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,980 [INFO] httpx: HTTP Request: PUT http://testserver/commerce/memory "HTTP/1.1 401 Unauthorized"
+2026-09-25 09:39:17,983 [INFO] httpx: HTTP Request: PUT http://testserver/commerce/memory "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,985 [INFO] httpx: HTTP Request: GET http://testserver/commerce/memory "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,988 [INFO] httpx: HTTP Request: DELETE http://testserver/commerce/memory "HTTP/1.1 200 OK"
+2026-09-25 09:39:17,990 [INFO] httpx: HTTP Request: GET http://testserver/commerce/memory "HTTP/1.1 200 OK"
+./Users/zhenxiangzhu/Documents/Echomind/.venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+2026-09-25 09:39:18,125 [INFO] mcp.knowledge_base: 知识库 ChromaDB 服务不可用，使用本地模式 /var/folders/k6/nnlstjbn4wg61ls7s4pwgbjc0000gn/T/tmpvpml5_ni（ValueError）
+2026-09-25 09:39:18,286 [ERROR] chromadb.telemetry.product.posthog: Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+2026-09-25 09:39:18,295 [ERROR] chromadb.telemetry.product.posthog: Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-09-25 09:39:18,298 [ERROR] chromadb.telemetry.product.posthog: Failed to send telemetry event CollectionGetEvent: capture() takes 1 positional argument but 3 were given
+2026-09-25 09:39:18,474 [INFO] mcp.knowledge_base: 知识库导入 1 个文档片段
+2026-09-25 09:39:18,515 [ERROR] chromadb.telemetry.product.posthog: Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+2026-09-25 09:39:18,590 [INFO] mcp.knowledge_base: 知识库导入 1 个文档片段
+.....................................2026-09-25 09:39:19,094 [INFO] httpx: HTTP Request: POST http://testserver/agent/demo/orders "HTTP/1.1 200 OK"
+2026-09-25 09:39:19,103 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks "HTTP/1.1 200 OK"
+2026-09-25 09:39:19,111 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/eed3f08c-2d76-450d-b6ea-38ae52b3b6ec/continue "HTTP/1.1 200 OK"
+2026-09-25 09:39:19,113 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/eed3f08c-2d76-450d-b6ea-38ae52b3b6ec/confirmation "HTTP/1.1 401 Unauthorized"
+2026-09-25 09:39:19,114 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/eed3f08c-2d76-450d-b6ea-38ae52b3b6ec/confirmation "HTTP/1.1 401 Unauthorized"
+2026-09-25 09:39:19,115 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/eed3f08c-2d76-450d-b6ea-38ae52b3b6ec/confirmation "HTTP/1.1 422 Unprocessable Entity"
+2026-09-25 09:39:19,123 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/eed3f08c-2d76-450d-b6ea-38ae52b3b6ec/confirmation "HTTP/1.1 200 OK"
+.........................2026-09-25 09:39:19,468 [WARNING] mcp.knowledge_base: 向量召回失败，降级为关键词召回: RuntimeError
+2026-09-25 09:39:19,469 [WARNING] mcp.knowledge_base: 关键词召回失败，降级为向量召回: RuntimeError
+.2026-09-25 09:39:19,476 [INFO] mcp.knowledge_base: 知识库 ChromaDB 服务不可用，使用本地模式 /var/folders/k6/nnlstjbn4wg61ls7s4pwgbjc0000gn/T/resolveflow_hybrid_test_d80mpj5i（ValueError）
+2026-09-25 09:39:19,506 [ERROR] chromadb.telemetry.product.posthog: Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+2026-09-25 09:39:19,509 [ERROR] chromadb.telemetry.product.posthog: Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-09-25 09:39:19,512 [ERROR] chromadb.telemetry.product.posthog: Failed to send telemetry event CollectionGetEvent: capture() takes 1 positional argument but 3 were given
+2026-09-25 09:39:19,782 [INFO] mcp.knowledge_base: 知识库导入 7 个文档片段
+2026-09-25 09:39:19,819 [ERROR] chromadb.telemetry.product.posthog: Failed to send telemetry event CollectionDeleteEvent: capture() takes 1 positional argument but 3 were given
+2026-09-25 09:39:19,820 [INFO] mcp.knowledge_base: 知识库导入 1 个文档片段
+2026-09-25 09:39:19,848 [ERROR] chromadb.telemetry.product.posthog: Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+2026-09-25 09:39:19,855 [ERROR] chromadb.telemetry.product.posthog: Failed to send telemetry event CollectionDeleteEvent: capture() takes 1 positional argument but 3 were given
+..2026-09-25 09:39:19,859 [WARNING] mcp.knowledge_base: 关键词召回失败，降级为向量召回: RuntimeError
+.2026-09-25 09:39:19,860 [INFO] httpx: HTTP Request: POST https://workspace.example/compatible-api/v1/reranks "HTTP/1.1 200 OK"
+.2026-09-25 09:39:19,861 [INFO] httpx: HTTP Request: POST https://workspace.example/compatible-api/v1/reranks "HTTP/1.1 500 Internal Server Error"
+2026-09-25 09:39:20,063 [INFO] httpx: HTTP Request: POST https://workspace.example/compatible-api/v1/reranks "HTTP/1.1 500 Internal Server Error"
+2026-09-25 09:39:20,064 [WARNING] mcp.tool_manager: qwen3-rerank 失败，降级为 RRF/原始顺序: Server error '500 Internal Server Error' for url 'https://workspace.example/compatible-api/v1/reranks'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/500
+.2026-09-25 09:39:20,065 [INFO] httpx: HTTP Request: POST https://workspace.example/compatible-api/v1/reranks "HTTP/1.1 200 OK"
+.....2026-09-25 09:39:20,066 [WARNING] mcp.knowledge_base: 向量召回失败，降级为关键词召回: RuntimeError
+.2026-09-25 09:39:20,069 [INFO] httpx: HTTP Request: POST http://testserver/chat "HTTP/1.1 401 Unauthorized"
+2026-09-25 09:39:20,071 [INFO] httpx: HTTP Request: POST http://testserver/chat "HTTP/1.1 401 Unauthorized"
+2026-09-25 09:39:20,073 [INFO] httpx: HTTP Request: POST http://testserver/chat "HTTP/1.1 401 Unauthorized"
+.2026-09-25 09:39:20,076 [INFO] httpx: HTTP Request: POST http://testserver/eval/run "HTTP/1.1 403 Forbidden"
+2026-09-25 09:39:20,078 [INFO] httpx: HTTP Request: POST http://testserver/eval/run "HTTP/1.1 403 Forbidden"
+.2026-09-25 09:39:20,079 [INFO] httpx: HTTP Request: GET http://testserver/health "HTTP/1.1 503 Service Unavailable"
+2026-09-25 09:39:20,081 [INFO] httpx: HTTP Request: GET http://testserver/metrics "HTTP/1.1 200 OK"
+.2026-09-25 09:39:20,083 [INFO] httpx: HTTP Request: POST http://testserver/knowledge/add "HTTP/1.1 403 Forbidden"
+2026-09-25 09:39:20,084 [INFO] httpx: HTTP Request: POST http://testserver/knowledge/add "HTTP/1.1 403 Forbidden"
+2026-09-25 09:39:20,087 [INFO] httpx: HTTP Request: POST http://testserver/knowledge/add "HTTP/1.1 503 Service Unavailable"
+.2026-09-25 09:39:20,089 [INFO] httpx: HTTP Request: GET http://testserver/knowledge/stats "HTTP/1.1 401 Unauthorized"
+2026-09-25 09:39:20,091 [INFO] httpx: HTTP Request: GET http://testserver/knowledge/stats "HTTP/1.1 503 Service Unavailable"
+.2026-09-25 09:39:20,093 [INFO] httpx: HTTP Request: POST http://testserver/knowledge/upload "HTTP/1.1 403 Forbidden"
+2026-09-25 09:39:20,095 [INFO] httpx: HTTP Request: POST http://testserver/knowledge/upload "HTTP/1.1 403 Forbidden"
+.2026-09-25 09:39:20,097 [INFO] httpx: HTTP Request: GET http://testserver/monitor "HTTP/1.1 403 Forbidden"
+2026-09-25 09:39:20,099 [INFO] httpx: HTTP Request: GET http://testserver/monitor "HTTP/1.1 403 Forbidden"
+2026-09-25 09:39:20,101 [INFO] httpx: HTTP Request: GET http://testserver/monitor "HTTP/1.1 503 Service Unavailable"
+.2026-09-25 09:39:20,103 [INFO] httpx: HTTP Request: POST http://testserver/search?query=x "HTTP/1.1 401 Unauthorized"
+2026-09-25 09:39:20,104 [INFO] httpx: HTTP Request: POST http://testserver/search?query=x "HTTP/1.1 503 Service Unavailable"
+.2026-09-25 09:39:20,106 [INFO] httpx: HTTP Request: GET http://testserver/skills "HTTP/1.1 401 Unauthorized"
+2026-09-25 09:39:20,108 [INFO] httpx: HTTP Request: GET http://testserver/skills "HTTP/1.1 503 Service Unavailable"
+2026-09-25 09:39:20,110 [INFO] httpx: HTTP Request: POST http://testserver/skills/reload "HTTP/1.1 403 Forbidden"
+2026-09-25 09:39:20,111 [INFO] httpx: HTTP Request: POST http://testserver/skills/reload "HTTP/1.1 403 Forbidden"
+.ssss...2026-09-25 09:39:20,159 [INFO] httpx: HTTP Request: POST http://testserver/chat "HTTP/1.1 401 Unauthorized"
+2026-09-25 09:39:20,165 [INFO] httpx: HTTP Request: POST http://testserver/agent/demo/orders "HTTP/1.1 200 OK"
+2026-09-25 09:39:20,186 [INFO] httpx: HTTP Request: POST http://testserver/chat "HTTP/1.1 200 OK"
+2026-09-25 09:39:20,204 [INFO] httpx: HTTP Request: POST http://testserver/chat "HTTP/1.1 200 OK"
+2026-09-25 09:39:20,216 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/46c2914d-deb9-4d19-8b8c-8edbb5a1429d/confirmation "HTTP/1.1 200 OK"
+2026-09-25 09:39:20,227 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/46c2914d-deb9-4d19-8b8c-8edbb5a1429d/confirmation "HTTP/1.1 200 OK"
+2026-09-25 09:39:20,233 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/46c2914d-deb9-4d19-8b8c-8edbb5a1429d/approval "HTTP/1.1 200 OK"
+2026-09-25 09:39:20,246 [INFO] httpx: HTTP Request: POST http://testserver/chat "HTTP/1.1 200 OK"
+.......2026-09-25 09:39:20,313 [INFO] httpx: HTTP Request: POST http://testserver/agent/auth/token "HTTP/1.1 400 Bad Request"
+.2026-09-25 09:39:20,322 [INFO] httpx: HTTP Request: POST http://testserver/agent/auth/token "HTTP/1.1 403 Forbidden"
+2026-09-25 09:39:20,324 [INFO] httpx: HTTP Request: POST http://testserver/agent/auth/token "HTTP/1.1 403 Forbidden"
+2026-09-25 09:39:20,326 [INFO] httpx: HTTP Request: POST http://testserver/agent/auth/token "HTTP/1.1 200 OK"
+.2026-09-25 09:39:20,335 [INFO] httpx: HTTP Request: POST http://testserver/agent/demo/orders "HTTP/1.1 401 Unauthorized"
+.2026-09-25 09:39:20,349 [INFO] httpx: HTTP Request: POST http://testserver/agent/demo/orders "HTTP/1.1 200 OK"
+2026-09-25 09:39:20,359 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks "HTTP/1.1 200 OK"
+2026-09-25 09:39:20,368 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/77291c16-f7d6-4bf8-9b7d-93897bff55bd/continue "HTTP/1.1 200 OK"
+2026-09-25 09:39:20,377 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/77291c16-f7d6-4bf8-9b7d-93897bff55bd/confirmation "HTTP/1.1 200 OK"
+2026-09-25 09:39:20,380 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks/77291c16-f7d6-4bf8-9b7d-93897bff55bd/approval "HTTP/1.1 400 Bad Request"
+2026-09-25 09:39:20,383 [INFO] httpx: HTTP Request: GET http://testserver/agent/tasks/77291c16-f7d6-4bf8-9b7d-93897bff55bd "HTTP/1.1 200 OK"
+.2026-09-25 09:39:20,396 [INFO] httpx: HTTP Request: POST http://testserver/agent/demo/orders "HTTP/1.1 200 OK"
+2026-09-25 09:39:20,405 [INFO] httpx: HTTP Request: POST http://testserver/agent/tasks "HTTP/1.1 200 OK"
+2026-09-25 09:39:20,408 [INFO] httpx: HTTP Request: GET http://testserver/agent/tasks/7da2ee9e-771b-42b6-8028-14da85443b20 "HTTP/1.1 200 OK"
+2026-09-25 09:39:20,410 [INFO] httpx: HTTP Request: GET http://testserver/agent/tasks/7da2ee9e-771b-42b6-8028-14da85443b20 "HTTP/1.1 404 Not Found"
+2026-09-25 09:39:20,412 [INFO] httpx: HTTP Request: POST http://testserver/agent/demo/orders "HTTP/1.1 200 OK"
+.2026-09-25 09:39:20,422 [INFO] httpx: HTTP Request: GET http://testserver/agent/review/tasks "HTTP/1.1 403 Forbidden"
+2026-09-25 09:39:20,424 [INFO] httpx: HTTP Request: POST http://testserver/agent/demo/orders "HTTP/1.1 401 Unauthorized"
+..................2026-09-25 09:39:20,583 [INFO] mcp.knowledge_base: 知识库 ChromaDB 服务不可用，使用本地模式 /var/folders/k6/nnlstjbn4wg61ls7s4pwgbjc0000gn/T/resolveflow_scope_test_8mmjr3uy（ValueError）
+2026-09-25 09:39:20,612 [ERROR] chromadb.telemetry.product.posthog: Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+2026-09-25 09:39:20,615 [ERROR] chromadb.telemetry.product.posthog: Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-09-25 09:39:20,617 [ERROR] chromadb.telemetry.product.posthog: Failed to send telemetry event CollectionGetEvent: capture() takes 1 positional argument but 3 were given
+2026-09-25 09:39:20,747 [INFO] mcp.knowledge_base: 知识库导入 2 个文档片段
+..2026-09-25 09:39:20,756 [INFO] mcp.knowledge_base: 知识库 ChromaDB 服务不可用，使用本地模式 /var/folders/k6/nnlstjbn4wg61ls7s4pwgbjc0000gn/T/resolveflow_scope_test_h049vuwh（ValueError）
+2026-09-25 09:39:20,786 [ERROR] chromadb.telemetry.product.posthog: Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+2026-09-25 09:39:20,788 [ERROR] chromadb.telemetry.product.posthog: Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-09-25 09:39:20,791 [ERROR] chromadb.telemetry.product.posthog: Failed to send telemetry event CollectionGetEvent: capture() takes 1 positional argument but 3 were given
+2026-09-25 09:39:20,915 [INFO] mcp.knowledge_base: 知识库导入 2 个文档片段
+2026-09-25 09:39:20,945 [ERROR] chromadb.telemetry.product.posthog: Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+.2026-09-25 09:39:20,958 [INFO] mcp.knowledge_base: 知识库 ChromaDB 服务不可用，使用本地模式 /var/folders/k6/nnlstjbn4wg61ls7s4pwgbjc0000gn/T/resolveflow_scope_test_tusxll9q（ValueError）
+2026-09-25 09:39:20,987 [ERROR] chromadb.telemetry.product.posthog: Failed to send telemetry event ClientStartEvent: capture() takes 1 positional argument but 3 were given
+2026-09-25 09:39:20,990 [ERROR] chromadb.telemetry.product.posthog: Failed to send telemetry event ClientCreateCollectionEvent: capture() takes 1 positional argument but 3 were given
+2026-09-25 09:39:20,993 [ERROR] chromadb.telemetry.product.posthog: Failed to send telemetry event CollectionGetEvent: capture() takes 1 positional argument but 3 were given
+2026-09-25 09:39:21,203 [INFO] mcp.knowledge_base: 知识库导入 2 个文档片段
+2026-09-25 09:39:21,255 [ERROR] chromadb.telemetry.product.posthog: Failed to send telemetry event CollectionQueryEvent: capture() takes 1 positional argument but 3 were given
+.2026-09-25 09:39:21,267 [INFO] mcp.tool_manager: 注册工具: knowledge_search
+2026-09-25 09:39:21,267 [INFO] mcp.tool_manager: 查询改写: '退款' → ['退款', '退款政策']
+2026-09-25 09:39:21,275 [WARNING] mcp.tool_manager: qwen3-rerank 未配置，降级为 RRF/原始顺序
+.2026-09-25 09:39:21,281 [INFO] mcp.tool_manager: 注册工具: knowledge_search
+2026-09-25 09:39:21,281 [INFO] mcp.tool_manager: 查询改写: '退款' → ['退款']
+.............2026-09-25 09:39:21,465 [WARNING] agents.agent_orchestrator: TaskPlanner 失败，使用单任务确定性计划: RuntimeError
+.....2026-09-25 09:39:21,468 [ERROR] agents.agent_orchestrator: ResponseSynthesizer 失败，使用确定性安全合并: RuntimeError
+...........................2026-09-25 09:39:21,554 [INFO] httpx: HTTP Request: POST http://test/chat "HTTP/1.1 200 OK"
+2026-09-25 09:39:21,580 [INFO] httpx: HTTP Request: POST http://test/agent/conversation "HTTP/1.1 200 OK"
+2026-09-25 09:39:21,584 [INFO] httpx: HTTP Request: POST http://test/agent/tasks/99a414d8-1cbe-471b-8afb-2a7c04e03430/cancel "HTTP/1.1 200 OK"
+2026-09-25 09:39:21,586 [INFO] httpx: HTTP Request: POST http://test/agent/conversation "HTTP/1.1 401 Unauthorized"
+.............
+----------------------------------------------------------------------
+Ran 296 tests in 8.659s
+
+OK (skipped=9)

@@ -47,7 +47,7 @@ class SubscriptionTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(task["status"], "awaiting_confirmation")
         self.assertTrue(self.stored()["auto_renew"])
         self.assertIn("保留当前权益", task["response"])
-        cid = task["confirmation"]["id"]
+        cid = task["confirmations"]["cancel_renewal"]["id"]
         restarted = ActionRuntime(self.runtime.path, allow_fallback=False)
         restarted.confirm(task["id"], "alice", cid, True)
         result = await restarted.advance(task["id"], "alice")
@@ -67,13 +67,13 @@ class SubscriptionTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_decline_does_not_cancel_renewal(self):
         task = await self.run_task("关闭自动续费")
-        result = self.runtime.confirm(task["id"], "alice", task["confirmation"]["id"], False)
+        result = self.runtime.confirm(task["id"], "alice", task["confirmations"]["cancel_renewal"]["id"], False)
         self.assertEqual(result["status"], "cancelled")
         self.assertTrue(self.stored()["auto_renew"])
 
     async def test_noop_write_is_not_success(self):
         task = await self.run_task("关闭自动续费")
-        self.runtime.confirm(task["id"], "alice", task["confirmation"]["id"], True)
+        self.runtime.confirm(task["id"], "alice", task["confirmations"]["cancel_renewal"]["id"], True)
         with patch.object(self.runtime, "_write_order", return_value=None):
             result = await self.runtime.advance(task["id"], "alice")
         self.assertEqual(result["status"], "needs_human")
@@ -81,7 +81,7 @@ class SubscriptionTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_lost_response_reconciles(self):
         task = await self.run_task("关闭自动续费")
-        self.runtime.confirm(task["id"], "alice", task["confirmation"]["id"], True)
+        self.runtime.confirm(task["id"], "alice", task["confirmations"]["cancel_renewal"]["id"], True)
         write = self.runtime._write_order
         def lost(db, task, order):
             write(db, task, order)

@@ -1,0 +1,13 @@
+
+> resolveflow-frontend@0.1.0 build
+> vite build
+
+vite v7.3.5 building client environment for production...
+transforming...
+✓ 14 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                  0.41 kB │ gzip:  0.28 kB
+dist/assets/index-DKezyczR.css   8.11 kB │ gzip:  2.49 kB
+dist/assets/index-KxbyMA74.js   91.65 kB │ gzip: 34.62 kB
+✓ built in 820ms

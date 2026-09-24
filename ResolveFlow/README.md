@@ -79,15 +79,15 @@ cp .env.example .env
 最少需要配置：
 
 ```env
-ANTHROPIC_API_KEY=your_api_key
+LLM_API_KEY=your_api_key
 ```
 
 如果使用 DeepSeek 这类 Anthropic 兼容接口，可以配置：
 
 ```env
-ANTHROPIC_BASE_URL=https://api.deepseek.com/anthropic
-ANTHROPIC_MODEL=deepseek-v4-pro
-ANTHROPIC_API_KEY=your_deepseek_key
+LLM_BASE_URL=https://api.deepseek.com/anthropic
+LLM_MODEL=deepseek-v4-pro
+LLM_API_KEY=your_deepseek_key
 ```
 
 Docker Compose 场景下，Redis 和 ChromaDB 的连接由 `docker-compose.yml` 覆盖为容器内地址。通常不需要手动改：
@@ -220,9 +220,9 @@ docker compose build --no-cache resolveflow
 docker run -it --rm \
   --network resolveflow_resolveflow-network \
   -p 8000:8000 \
-  -e ANTHROPIC_BASE_URL="https://api.deepseek.com/anthropic" \
-  -e ANTHROPIC_API_KEY="your_key" \
-  -e ANTHROPIC_MODEL="deepseek-v4-pro" \
+  -e LLM_BASE_URL="https://api.deepseek.com/anthropic" \
+  -e LLM_API_KEY="your_key" \
+  -e LLM_MODEL="deepseek-v4-pro" \
   -e REDIS_URL="redis://:resolveflow123@redis:6379/0" \
   -e CHROMA_HOST="chromadb" \
   -e CHROMA_PORT="8000" \
@@ -237,9 +237,9 @@ CLI 交互模式：
 ```bash
 docker run -it --rm \
   --network resolveflow_resolveflow-network \
-  -e ANTHROPIC_BASE_URL="https://api.deepseek.com/anthropic" \
-  -e ANTHROPIC_API_KEY="your_key" \
-  -e ANTHROPIC_MODEL="deepseek-v4-pro" \
+  -e LLM_BASE_URL="https://api.deepseek.com/anthropic" \
+  -e LLM_API_KEY="your_key" \
+  -e LLM_MODEL="deepseek-v4-pro" \
   -e REDIS_URL="redis://:resolveflow123@redis:6379/0" \
   -e CHROMA_HOST="chromadb" \
   -e CHROMA_PORT="8000" \
@@ -819,7 +819,7 @@ RRF，精确错误码、订单号和型号会提高词法路线权重。权重�
 `qwen3-rerank` 需要百炼业务空间地址。可设置 `DASHSCOPE_WORKSPACE_ID`
 （默认地域 `cn-beijing`），或直接设置完整的 `QWEN_RERANK_BASE_URL`。API Key
 依次读取 `QWEN_RERANK_API_KEY`、`DASHSCOPE_API_KEY`，最后可复用当前 Qwen
-聊天模型使用的 `ANTHROPIC_API_KEY`。重排请求超时、鉴权失败或响应非法时，
+聊天模型使用的 `LLM_API_KEY`。重排请求超时、鉴权失败或响应非法时，
 `degradations` 会包含 `qwen3_rerank_unavailable`，结果保持原 RRF 顺序。
 
 降级路径为：向量不可用时保留 BM25，BM25 不可用时保留向量，Query Rewrite
@@ -1467,7 +1467,7 @@ docker compose logs -f resolveflow
 
 重点检查：
 
-- `.env` 是否配置 `ANTHROPIC_API_KEY`
+- `.env` 是否配置 `LLM_API_KEY`
 - Redis 是否健康
 - ChromaDB 是否健康
 - 应用容器是否正在反复重启

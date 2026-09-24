@@ -57,7 +57,7 @@ class UnifiedTests(unittest.IsolatedAsyncioTestCase):
         yes = await self.s.send("user", "好的", conversation_id=conv)
         self.assertEqual(yes["status"], "awaiting_confirmation")
         self.assertEqual(yes["task"]["actions"], [])
-        self.r.confirm(task["id"], "user", task["confirmation"]["id"], True)
+        self.r.confirm(task["id"], "user", task["confirmations"]["cancel_renewal"]["id"], True)
         done = await self.r.advance(task["id"], "user")
         await self.s.observe(done)
         self.assertEqual(done["status"], "completed")
@@ -129,6 +129,29 @@ class UnifiedTests(unittest.IsolatedAsyncioTestCase):
             proceed.set()
             await first
 
+    async def test_agent_orchestrator_failure_diagnostic_is_queryable_without_changing_the_answer(self):
+        # BaseAgent.handle() (agents/agent_orchestrator.py) catches ANY exception from
+        # a live model call and always replies with the same generic apology — by
+        # design, since the raw exception could carry provider error bodies or other
+        # details that shouldn't round-trip into a user-facing response. Before this,
+        # the real exception only ever reached a server-side logger.error() line, so a
+        # user hitting this had no way to tell "transient network blip" from "real code
+        # bug" without someone going to find that log. Confirm the sanitized
+        # category/error_type now surfaces through the SAME interpretation.diagnostics
+        # channel GoalInterpreter failures already use, while the chat-visible answer
+        # text is untouched.
+        from unittest.mock import AsyncMock, MagicMock
+        self.s.answer_orchestrator = MagicMock()
+        self.s.answer_orchestrator.run = AsyncMock(return_value=MagicMock(
+            response="抱歉，处理您的请求时出现问题，请稍后重试。",
+            error_diagnostics=[{"category": "agent_call_failed", "error_type": "APIConnectionError"}]))
+        result = await self.s.send("user", "你好，随便问问")
+        self.assertEqual(result["response"], "抱歉，处理您的请求时出现问题，请稍后重试。")
+        self.assertIn("agent_call_failed", result["degradations"])
+        diagnostics = result["interpretation"]["diagnostics"]
+        self.assertTrue(any(d.get("source") == "agent_orchestrator" and d.get("error_type") == "APIConnectionError"
+                             for d in diagnostics))
+
     async def test_intent_timeout_preserves_task_and_releases_lease(self):
         # recognizer.recognize() only runs on the "chat" fallback (no goals at
         # all), so the timeout has to be provoked on a fresh conversation with
@@ -188,6 +211,42 @@ class UnifiedTests(unittest.IsolatedAsyncioTestCase):
             self.assertIn("server_guard", result["interpretation"])
             self.assertEqual(self.r.get(before["id"], "user"), before)
         self.assertFalse(is_consultation_only("解释退款政策，并帮我退款"))
+
+    async def test_technical_remainder_backstop_when_model_drops_it(self):
+        # GoalInterpreter's system prompt asks the model to ALWAYS restate an
+        # independent off-topic technical complaint into general_remainder, but a
+        # single LLM call won't always comply — a salient primary goal (a clear
+        # duplicate-charge refund ask) can pull attention away from a shorter
+        # secondary complaint ("登录报错401") entirely. Simulate exactly that model
+        # failure (goals populated, general_remainder left empty despite an obvious
+        # technical-fault mention) and confirm the deterministic keyword backstop in
+        # ConversationService catches it and still routes it to the old orchestrator.
+        from agents.goal_interpreter import GoalProposal
+        proposal = GoalProposal(goals={"billing": "refund"}, policy_topics=[])
+        self.r.goal_interpreter.interpret = AsyncMock(return_value=(proposal, {"mode": "mock", "calls": 0, "usage": []}))
+        self.s.answer_orchestrator = AsyncMock()
+        self.s.answer_orchestrator.run_compound = AsyncMock(
+            return_value=AsyncMock(response="登录 401 报错建议清除缓存后重试，如果仍无法登录请联系账号安全团队。"))
+        message = "登录报错401，而且还重复扣款了"
+        result = await self.s.send("user", message, order_id=self.order["id"])
+        self.assertEqual(result["interpretation"]["server_guard"], "technical_remainder_backstop")
+        self.s.answer_orchestrator.run_compound.assert_awaited_once()
+        remainder_request = self.s.answer_orchestrator.run_compound.await_args.args[0]
+        self.assertEqual(remainder_request.message, message)
+        self.assertIn("登录 401 报错建议清除缓存", result["response"])
+
+    async def test_technical_remainder_backstop_skips_when_service_goal_present(self):
+        # If the model already folded the technical complaint into the "service"
+        # goal (digital service uptime), the backstop must not ALSO force a
+        # redundant remainder — that would be double-answering the same complaint.
+        from agents.goal_interpreter import GoalProposal
+        proposal = GoalProposal(goals={"service": "read"}, policy_topics=[])
+        self.r.goal_interpreter.interpret = AsyncMock(return_value=(proposal, {"mode": "mock", "calls": 0, "usage": []}))
+        self.s.answer_orchestrator = AsyncMock()
+        self.s.answer_orchestrator.run_compound = AsyncMock()
+        result = await self.s.send("user", "登录报错401", order_id=self.order["id"])
+        self.assertNotEqual(result["interpretation"].get("server_guard"), "technical_remainder_backstop")
+        self.s.answer_orchestrator.run_compound.assert_not_awaited()
 
     async def test_chat_and_conversation_api_share_confirmation_and_memory(self):
         import os

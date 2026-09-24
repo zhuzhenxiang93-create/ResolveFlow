@@ -27,8 +27,8 @@ class CLITests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(task["actions"], [])
         restarted = Session(ActionRuntime(self.runtime.path, allow_fallback=False))
         loaded = await restarted.handle("/resume " + task["id"])
-        self.assertEqual(loaded["confirmation"]["id"], task["confirmation"]["id"])
-        result = await restarted.handle("/confirm " + task["confirmation"]["id"])
+        self.assertEqual(loaded["confirmations"]["sync_entitlements"]["id"], task["confirmations"]["sync_entitlements"]["id"])
+        result = await restarted.handle("/confirm " + task["confirmations"]["sync_entitlements"]["id"])
         self.assertEqual(result["status"], "completed")
         self.assertEqual(len(result["actions"]), 1)
         with self.assertRaises(ValueError):
@@ -38,7 +38,7 @@ class CLITests(unittest.IsolatedAsyncioTestCase):
         task = await self.pending()
         with self.assertRaises(ValueError):
             await self.session.handle("/confirm wrong-id")
-        task = await self.session.handle("/reject " + task["confirmation"]["id"])
+        task = await self.session.handle("/reject " + task["confirmations"]["sync_entitlements"]["id"])
         self.assertEqual(task["status"], "cancelled")
         self.assertEqual(task["actions"], [])
 

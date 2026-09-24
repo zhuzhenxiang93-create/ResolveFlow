@@ -1,0 +1,9 @@
+[
+ {"id":"goods-refund","domain":"goods","version":"v1","effective_at":"2026-01-01","source":"ResolveFlow演示政策","title":"商品退款、优惠和运费","content":"仅用于测试：已支付未发货可申请退款；已发货或签收后7天内需退货验收，再进入模拟退款。超过7天需人工评估。单品退优惠分摊后的实付金额，不退运费；全单退剩余实付总额，包含运费。已退款或售后占用金额不能再次退。退款需用户确认及独立审核。没有支付渠道到账回执。示例问题：只退鼠标怎么算？耳机签收后能退吗？"},
+ {"id":"goods-spec","domain":"goods","version":"v1","effective_at":"2026-01-01","source":"ResolveFlow演示产品","title":"无线耳机规格与兼容性","content":"演示无线耳机支持蓝牙5.3和USB-C充电，可连接支持蓝牙音频的手机或电脑；没有主动降噪功能。首次配对失败可移除旧配对记录后重新配对。示例：耳机支持降噪吗？电脑找不到耳机怎么排查？"},
+ {"id":"goods-shipping","domain":"goods","version":"v1","effective_at":"2026-01-01","source":"ResolveFlow演示政策","title":"配送、签收异常与退货材料","content":"物流状态以当前用户订单的物流事件为准，知识库不能确定个人包裹位置。显示签收但未收到时先核对签收信息，并提交异常待人工核实，不能直接声称包裹丢失或退款完成。退货需订单和商品明细，包装、问题照片可作为人工审核材料；不要索要密码或验证码。"},
+ {"id":"goods-invoice","domain":"goods","version":"v1","effective_at":"2026-01-01","source":"ResolveFlow演示政策","title":"发票及退款调整","content":"查询发票需读取本人订单的发票记录。未申请发票显示not_requested，已开票显示issued；模拟退款成功后已开发票进入adjustment_required，表示待调整，不代表已经完成税务红冲。"},
+ {"id":"subscription-commerce-refund","domain":"subscription","topic":"refund","version":"v1","effective_at":"2026-01-01","source":"ResolveFlow演示政策","title":"完整账单演示退款规则","content":"完整商品与订阅演示数据中：重复订阅扣款可退具体重复账单，保留权益和自动续费；非重复扣款仅在扣款7天内且未使用时全额退款，退款成功后终止该订阅权益并关闭续费。其他情况需人工评估。两类退款都需用户确认和独立审核，模拟处理不代表真实到账。旧版计数式订阅订单仍仅支持重复扣款退款。"},
+ {"id":"subscription-commerce-plan","domain":"subscription","topic":"plans","version":"v1","effective_at":"2026-01-01","source":"ResolveFlow演示产品","title":"演示套餐与计费周期","content":"完整账务演示套餐：Basic月度39元，Pro月度99元。具体用户订阅的计费周期、权益和续费状态必须查询数据库。关闭自动续费保留当前权益且不自动退款；立即终止移除权益并关闭续费，但也不自动退款。旧版计数式模拟订单没有价格和日期，不能套用这些数据。"},
+ {"id":"commerce-payment","domain":"general","version":"v1","effective_at":"2026-01-01","source":"ResolveFlow演示政策","title":"支付失败、退款状态与人工处理","content":"申请、待审核、待退货、模拟退款处理中、模拟退款成功是不同状态。超时后先查任务和退款记录，不能盲目重复退款。支付失败释放可退额度后可重新申请。独立审核员不能是任务用户；人工处理标记不代表已经接通真人。"}
+]

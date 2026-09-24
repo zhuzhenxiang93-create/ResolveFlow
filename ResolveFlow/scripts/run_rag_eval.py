@@ -82,7 +82,7 @@ async def main() -> None:
         from mcp.qwen_reranker import Qwen3Reranker
 
         reranker = Qwen3Reranker.from_env(
-            fallback_api_key=os.getenv("ANTHROPIC_API_KEY", "")
+            fallback_api_key=os.getenv("LLM_API_KEY", "")
         )
         if reranker is None:
             raise SystemExit(

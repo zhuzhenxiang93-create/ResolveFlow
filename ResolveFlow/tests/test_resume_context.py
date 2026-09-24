@@ -76,7 +76,7 @@ class ResumeTests(unittest.IsolatedAsyncioTestCase):
     async def test_release_keeps_audit_but_excludes_old_tool_transcript(self):
         task = self.r.create("alice", "请申请重复扣款退款")
         task = await self.r.advance(task["id"], "alice", self.order["id"])
-        self.r.confirm(task["id"], "alice", task["confirmation"]["id"], True)
+        self.r.confirm(task["id"], "alice", task["confirmations"]["request_refund"]["id"], True)
         task = await self.r.advance(task["id"], "alice")
         old_messages = task["tool_messages"]
         await self.r.advance(task["id"], "alice", message="改变需求")
@@ -85,8 +85,8 @@ class ResumeTests(unittest.IsolatedAsyncioTestCase):
         messages = self.r._execution_messages(task, ["query_billing"])
         self.assertFalse(any(m["role"] == "tool" for m in messages))
         current = json.loads(messages[0]["content"])
-        self.assertIsNone(current["approval"])
-        self.assertEqual(current["confirmation"]["status"], "invalidated")
+        self.assertFalse(current["approvals"])
+        self.assertEqual(current["confirmations"]["request_refund"]["status"], "invalidated")
         self.assertIsNotNone(current["resume_context"])
 
     def test_summary_hides_audit_noise(self):

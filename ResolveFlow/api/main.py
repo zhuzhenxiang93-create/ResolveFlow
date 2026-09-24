@@ -52,18 +52,20 @@ _monitor      = None
 _evaluator    = None
 _skill_manager = None
 
-def _anthropic_cfg() -> Dict[str, Any]:
-    key = os.getenv("ANTHROPIC_API_KEY", "")
+def _llm_cfg() -> Dict[str, Any]:
+    """统一 LLM 配置：主 Agent/Orchestrator/RAG 链路和 Action GoalInterpreter
+    现在读同一组 LLM_* 变量，只需要配置一次（见 .env.example）。"""
+    key = os.getenv("LLM_API_KEY", "")
     if not key:
-        raise RuntimeError("未设置 ANTHROPIC_API_KEY")
+        raise RuntimeError("未设置 LLM_API_KEY")
     cfg: Dict[str, Any] = {
         "api_key":  key,
-        "model":    os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022").strip(),
+        "model":    os.getenv("LLM_MODEL", "claude-3-5-sonnet-20241022").strip(),
         # anthropic（默认）= Claude 官方 / DeepSeek 等 Anthropic 协议兼容 API
         # openai         = Qwen(DashScope) 等 OpenAI Chat Completions 兼容 API
         "provider": os.getenv("LLM_PROVIDER", "anthropic").strip().lower(),
     }
-    base_url = os.getenv("ANTHROPIC_BASE_URL", "").strip()
+    base_url = os.getenv("LLM_BASE_URL", "").strip()
     if base_url:
         cfg["base_url"] = base_url
     return cfg
@@ -85,7 +87,7 @@ async def lifespan(app: FastAPI):
     from monitor.performance_monitor import PerformanceMonitor
     from core.skill_loader import SkillManager
 
-    cfg = _anthropic_cfg()
+    cfg = _llm_cfg()
     logger.info(f"模型: {cfg['model']}  provider: {cfg['provider']}  base_url: {cfg.get('base_url', '(官方)')}")
 
     # 意图识别器（Orchestrator 内部也会创建，这里单独暴露给 Evaluator）
@@ -239,6 +241,8 @@ app = FastAPI(
 
 from api.action_routes import router as action_router
 app.include_router(action_router)
+from api.commerce_routes import router as commerce_router
+app.include_router(commerce_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -259,6 +263,8 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     conv_id:     str
+    commerce_case: Optional[Dict[str, Any]] = None
+    candidates: List[Dict[str, Any]] = Field(default_factory=list)
     action_task: Optional[Dict[str, Any]] = None
     response:    str
     intent:      str
@@ -297,6 +303,9 @@ def _configure_conversation_service():
             result = await _tool_manager.search_with_rewrite("knowledge_search", query, top_k=10, extra_params=extra)
             return result.data if result.success and isinstance(result.data, list) else []
         service.knowledge_search = search
+        tool = _tool_manager._tools.get("knowledge_search")
+        if tool and hasattr(tool.handler, "__self__"):
+            service.knowledge_document_ids = tool.handler.__self__.document_ids
     return service
 
 
@@ -370,7 +379,7 @@ async def chat(req: ChatRequest, authorization: str = Header(default="")):
     return ChatResponse(conv_id=result["conversation_id"], response=result["response"], intent=result["intent"],
                         agent_type=task["primary_agent"] if task else "general",
                         escalated=result["status"] in {"needs_human", "awaiting_approval"},
-                        latency_ms=(time.monotonic() - started) * 1000, action_task=task,
+                        latency_ms=(time.monotonic() - started) * 1000, action_task=task, commerce_case=result.get("commerce_case"), candidates=result.get("candidates", []),
                         knowledge_used=result["knowledge_used"], intent_source_scores=result["intent_source_scores"],
                         memory_mode=result["memory_mode"], sources=result["sources"],
                         degradations=result["degradations"], routing_reason=result["route"], synthesis_method="unified_conversation")
@@ -533,6 +542,12 @@ class DocInput(BaseModel):
     """单篇文档输入。"""
     title:   str
     content: str
+    id: Optional[str] = None
+    domain: str = "general"
+    version: str = "v1"
+    effective_at: str = "2000-01-01"
+    source: str = "admin-upload"
+    topic: str = ""
 
 
 class BatchDocInput(BaseModel):
@@ -598,7 +613,11 @@ async def add_knowledge(body: BatchDocInput, user=Depends(_require_admin)):
     if tool is None:
         raise HTTPException(503, "知识库未初始化")
     kb = tool.handler.__self__
-    count = await kb.add_documents_async([{"title": d.title, "content": d.content} for d in body.documents])
+    try:
+        count = await kb.add_documents_async([d.model_dump(exclude_none=True) for d in body.documents])
+    except ValueError as ex:
+        raise HTTPException(422, str(ex))
+    _tool_manager._cache.clear()
     total = await kb.doc_count_async()
     return {"message": f"成功导入 {count} 个文档片段", "added_chunks": count, "total_chunks": total}
 
@@ -639,7 +658,12 @@ async def upload_knowledge(file: UploadFile = File(...), user=Depends(_require_a
         title = filename.rsplit(".", 1)[0] if "." in filename else filename
         docs = [{"title": title, "content": text}]
 
-    count = await kb.add_documents_async(docs)
+    try:
+        docs = [DocInput.model_validate(d).model_dump(exclude_none=True) for d in docs]
+        count = await kb.add_documents_async(docs)
+    except ValueError as ex:
+        raise HTTPException(422, str(ex))
+    _tool_manager._cache.clear()
     total = await kb.doc_count_async()
     return {
         "message": f"文件 {filename} 导入成功",
@@ -765,7 +789,7 @@ async def _cli():
     from memory.conversation_memory import MemoryManager, MsgRole
     from core.skill_loader import SkillManager
 
-    cfg = _anthropic_cfg()
+    cfg = _llm_cfg()
     skill_manager = SkillManager(
         root_dir=os.getenv("RESOLVEFLOW_SKILLS_DIR", str(pathlib.Path(_ROOT) / "skills")),
         max_prompt_chars=int(os.getenv("RESOLVEFLOW_SKILLS_MAX_PROMPT_CHARS", "5000")),

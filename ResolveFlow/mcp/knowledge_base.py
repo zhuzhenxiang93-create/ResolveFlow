@@ -145,6 +145,21 @@ class KnowledgeBase:
             source_doc_id = doc.get("id") or hashlib.md5(
                 f"{doc.get('title', '')}_{doc.get('content', '')[:80]}".encode()
             ).hexdigest()
+            from datetime import date
+            import re
+            effective = doc.get("effective_at", "2000-01-01")
+            if date.fromisoformat(effective) > date.today():
+                raise ValueError("Future policy activation is not supported; keep the current version until its effective date")
+            existing_doc = self._collection.get(where={"document_id": source_doc_id}, include=["metadatas", "documents"])
+            if existing_doc.get("metadatas"):
+                old = existing_doc["metadatas"][0]
+                old_date, new_date = old.get("effective_at", "2000-01-01"), doc.get("effective_at", "2000-01-01")
+                old_version = tuple(map(int, re.findall(r"\d+", str(old.get("version", "v1")))))
+                new_version = tuple(map(int, re.findall(r"\d+", str(doc.get("version", "v1")))))
+                if new_date < old_date or new_version < old_version:
+                    raise ValueError("Refusing older policy effective date: " + source_doc_id)
+                if "version" in doc and new_version == old_version and sorted(existing_doc.get("documents", [])) != sorted(self._chunk_text(doc.get("content", ""), chunk_size=self.CHUNK_SIZE, overlap=self.CHUNK_OVERLAP)):
+                    raise ValueError("Conflicting content requires a new document version: " + source_doc_id)
             title   = doc.get("title", "")
             content = doc.get("content", "")
             chunks  = self._chunk_text(content, chunk_size=self.CHUNK_SIZE, overlap=self.CHUNK_OVERLAP)
@@ -161,6 +176,10 @@ class KnowledgeBase:
                     "category": doc.get("category", ""),
                     "risk_level": doc.get("risk_level", ""),
                     "source": doc.get("source", ""),
+                    "domain": doc.get("domain", "subscription" if str(source_doc_id).startswith("subscription-") else "general"),
+                    "version": str(doc.get("version", "v1")),
+                    "effective_at": doc.get("effective_at", "2000-01-01"),
+                    "topic": doc.get("topic", ""),
                     "search_terms": json.dumps(doc.get("search_terms", []), ensure_ascii=False),
                     "chunk_index": i,
                     "total_chunks": len(chunks),
@@ -355,6 +374,9 @@ class KnowledgeBase:
             "document_id": clean_metadata.get("document_id", ""),
             "title": clean_metadata.get("title", ""),
             "source": clean_metadata.get("source", ""),
+            "domain": clean_metadata.get("domain", "general"),
+            "version": clean_metadata.get("version", "v1"),
+            "effective_at": clean_metadata.get("effective_at", "2000-01-01"),
             "content": content,
             "metadata": clean_metadata,
             "vector_rank": None,
@@ -365,6 +387,13 @@ class KnowledgeBase:
             "chunk": clean_metadata.get("chunk_index", 0),
             "total_chunks": clean_metadata.get("total_chunks", 1),
         }
+
+    def document_ids(self, domain=None):
+        from datetime import date
+        payload = self._collection.get(include=["metadatas"])
+        today = date.today().isoformat()
+        return {m["document_id"] for m in payload.get("metadatas", []) if m and
+                (domain is None or m.get("domain") == domain) and m.get("effective_at", "2000-01-01") <= today}
 
     def _refresh_lexical_index(self) -> None:
         """Refresh BM25 after startup/migration or a batch mutation, never per query."""

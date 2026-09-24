@@ -1,0 +1,639 @@
+{
+  "timestamp": "2026-09-24T21:36:57.777724+00:00",
+  "scope": "Deterministic simulated commerce and local SQLite memory; not real-model or browser results",
+  "total": 42,
+  "passed": true,
+  "scenarios": [
+    {
+      "scenario": "test_commerce.CommerceTests.test_goods_01_paid_not_shipped_full",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_goods_01_paid_not_shipped_full(self):\n        c=self.complete(self.case('keyboard'));self.assertEqual(c['status'],'completed');self.assertEqual(self.obj('keyboard')['refunds'][0]['amount_minor'],39900)\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 37
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_goods_02_partial_discount_no_shipping",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_goods_02_partial_discount_no_shipping(self):\n        o=self.obj('keyboard');c=self.complete(self.case('keyboard',item_id=o['items'][1]['id']));self.assertEqual(c['operations'][0]['quote']['amount_minor'],9000)\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 39
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_goods_03_remaining_after_partial",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_goods_03_remaining_after_partial(self):\n        self.complete(self.case('keyboard',item_id=self.obj('keyboard')['items'][1]['id']));self.assertEqual(self.case('keyboard')['operations'][0]['quote']['amount_minor'],30900)\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 41
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_goods_04_unpaid_cancel",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_goods_04_unpaid_cancel(self):\n        c=self.step(self.case('cable','cancel_order'),'confirm');self.assertEqual(self.obj('cable')['status'],'cancelled');self.assertFalse(self.obj('cable')['refunds'])\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 43
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_goods_05_unpaid_refund_rejected",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_goods_05_unpaid_refund_rejected(self):\n        self.assertEqual(self.case('cable')['operations'][0]['status'],'ineligible')\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 45
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_goods_06_shipped_wait_return",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_goods_06_shipped_wait_return(self):\n        c=self.step(self.step(self.case('speaker'),'confirm'),'approve');self.assertEqual(c['status'],'awaiting_return')\n        with self.assertRaises(ValueError):self.step(c,'settle')\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 47
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_goods_07_delivered_return_and_invoice",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_goods_07_delivered_return_and_invoice(self):\n        self.complete(self.case('headphones'));self.assertEqual(self.obj('headphones')['invoice']['status'],'adjustment_required')\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 50
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_goods_08_expired",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_goods_08_expired(self):\n        self.assertEqual(self.case('old')['operations'][0]['status'],'ineligible')\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 52
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_goods_09_repeat_refund",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_goods_09_repeat_refund(self):\n        self.complete(self.case('keyboard'));self.assertEqual(self.case('keyboard')['operations'][0]['status'],'ineligible')\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 54
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_goods_10_foreign_item",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_goods_10_foreign_item(self):\n        with self.assertRaises(ValueError):self.case('keyboard',item_id=self.obj('headphones')['items'][0]['id'])\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 56
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_goods_11_foreign_owner",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_goods_11_foreign_owner(self):\n        with self.assertRaises(ValueError):self.s.detail('bob',self.obj('keyboard')['id'])\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 58
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_goods_12_cancel_paid_not_allowed",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_goods_12_cancel_paid_not_allowed(self):\n        self.assertEqual(self.case('keyboard','cancel_order')['operations'][0]['status'],'ineligible')\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 60
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_goods_13_approval_reserves_amount",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_goods_13_approval_reserves_amount(self):\n        c=self.step(self.step(self.case('keyboard'),'confirm'),'approve');self.assertEqual(self.case('keyboard')['operations'][0]['status'],'ineligible')\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 62
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_goods_14_failed_payment_releases",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_goods_14_failed_payment_releases(self):\n        c=self.step(self.step(self.case('keyboard'),'confirm'),'approve');self.step(c,'fail');self.assertEqual(self.case('keyboard')['operations'][0]['quote']['amount_minor'],39900)\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 64
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_goods_15_duplicate_settlement_idempotent",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_goods_15_duplicate_settlement_idempotent(self):\n        c=self.complete(self.case('keyboard'));again=self.step(c,'settle');self.assertEqual(again,c);self.assertEqual(len(self.obj('keyboard')['refunds']),1)\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 66
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_goods_16_logistics_actual_events",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_goods_16_logistics_actual_events(self):\n        self.assertEqual(self.obj('speaker')['shipment']['events'][-1]['status'],'shipped')\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 68
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_mixed_independent_objects",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_mixed_independent_objects(self):\n        c=self.s.create_case('alice','c',[{'object_id':self.obj('headphones')['id'],'operation':'refund'},{'object_id':self.obj('basic')['id'],'operation':'cancel_renewal'}]);self.s.transition('alice',c['id'],c['operations'][1]['id'],'confirm','alice');c=self.s.get_case('alice',c['id']);self.assertEqual(c['operations'][0]['status'],'awaiting_confirmation');self.assertFalse(self.obj('basic')['auto_renew'])\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 105
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_seed_never_resets_user_changes",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_seed_never_resets_user_changes(self):\n        self.step(self.case('basic','cancel_renewal'),'confirm');self.s.seed('alice');self.assertFalse(self.obj('basic')['auto_renew']);self.assertEqual(len(self.s.catalog('alice')),8)\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 107
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_subscription_01_duplicate_amount",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_subscription_01_duplicate_amount(self):\n        c=self.complete(self.case('pro'));self.assertEqual(c['operations'][0]['quote']['amount_minor'],9900);self.assertTrue(self.obj('pro')['auto_renew'])\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 70
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_subscription_02_unused_renewal_refund",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_subscription_02_unused_renewal_refund(self):\n        self.complete(self.case('basic'));self.assertEqual(self.obj('basic')['status'],'terminated');self.assertFalse(self.obj('basic')['auto_renew'])\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 72
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_subscription_03_used_rejected",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_subscription_03_used_rejected(self):\n        self.assertEqual(self.case('used')['operations'][0]['status'],'ineligible')\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 74
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_subscription_04_cancel_renewal_preserves",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_subscription_04_cancel_renewal_preserves(self):\n        before=self.obj('pro');self.step(self.case('pro','cancel_renewal'),'confirm');after=self.obj('pro');self.assertFalse(after['auto_renew']);self.assertEqual(after['entitlement'],before['entitlement']);self.assertFalse(after['refunds'])\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 76
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_subscription_05_terminate_no_refund",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_subscription_05_terminate_no_refund(self):\n        self.step(self.case('pro','terminate'),'confirm');self.assertEqual(self.obj('pro')['entitlement'],'none');self.assertFalse(self.obj('pro')['refunds'])\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 78
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_subscription_06_repair",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_subscription_06_repair(self):\n        self.step(self.case('pro','repair'),'confirm');self.assertEqual(self.obj('pro')['entitlement'],self.obj('pro')['plan'])\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 80
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_subscription_07_no_self_review",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_subscription_07_no_self_review(self):\n        c=self.step(self.case('pro'),'confirm')\n        with self.assertRaises(ValueError):self.step(c,'approve','alice')\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 82
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_subscription_08_no_confirm_no_review",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_subscription_08_no_confirm_no_review(self):\n        with self.assertRaises(ValueError):self.step(self.case('pro'),'approve')\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 85
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_subscription_09_reject_no_money",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_subscription_09_reject_no_money(self):\n        c=self.step(self.case('pro'),'confirm');self.step(c,'reject');self.assertFalse(self.obj('pro')['refunds'])\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 87
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_subscription_10_user_cancel_no_money",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_subscription_10_user_cancel_no_money(self):\n        self.step(self.case('pro'),'cancel');self.assertFalse(self.obj('pro')['refunds'])\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 89
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_subscription_11_specific_initial_bill",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_subscription_11_specific_initial_bill(self):\n        o=self.obj('pro');c=self.complete(self.case('pro',payment_id=o['id']+'-P1'));self.assertEqual(self.obj('pro')['status'],'terminated')\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 91
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_subscription_12_foreign_payment",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_subscription_12_foreign_payment(self):\n        self.assertEqual(self.case('pro',payment_id=self.obj('basic')['id']+'-P1')['operations'][0]['status'],'ineligible')\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 93
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_subscription_13_approval_expiry",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_subscription_13_approval_expiry(self):\n        c=self.step(self.case('pro'),'confirm');c['operations'][0]['expires_at']=0\n        with self.s.connect() as db:self.s._save(db,c)\n        self.assertEqual(self.step(c,'approve')['operations'][0]['status'],'stale');self.assertFalse(self.obj('pro')['refunds'])\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 95
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_subscription_14_state_changed",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_subscription_14_state_changed(self):\n        c=self.step(self.case('pro'),'confirm');self.step(self.case('pro','cancel_renewal'),'confirm');self.assertEqual(self.step(c,'approve')['operations'][0]['status'],'stale')\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 99
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_subscription_15_restart_and_idempotency",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_subscription_15_restart_and_idempotency(self):\n        c=self.step(self.case('pro'),'confirm');self.s=CommerceStore(self.tmp.name+'/state.db');c=self.step(c,'approve');again=self.step(c,'approve');self.assertEqual(c,again)\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 101
+      }
+    },
+    {
+      "scenario": "test_commerce.CommerceTests.test_subscription_16_wrong_operation_on_goods",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    def test_subscription_16_wrong_operation_on_goods(self):\n        with self.assertRaises(ValueError):self.case('keyboard','terminate')\n",
+      "execution_layer": "CommerceStore deterministic service calls",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 103
+      }
+    },
+    {
+      "scenario": "test_commerce.ConversationAcceptance.test_ambiguous_then_select",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    async def test_ambiguous_then_select(self):\n        r=await self.s.send('alice','我要退款');self.assertTrue(r['candidates']);o=next(o for o in self.rows if o['id'].endswith('headphones'));r=await self.s.send('alice',o['id'],conversation_id=r['conversation_id']);self.assertEqual(r['commerce_case']['status'],'awaiting_confirmation')\n",
+      "execution_layer": "ConversationService.send / CommerceConversation",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 115
+      }
+    },
+    {
+      "scenario": "test_commerce.ConversationAcceptance.test_cross_session_reference",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    async def test_cross_session_reference(self):\n        o=next(o for o in self.rows if o['id'].endswith('headphones'));await self.s.send('alice','查询 '+o['id']);r=await self.s.send('alice','上次那个耳机订单查一下');self.assertIn(o['title'],r['response'])\n",
+      "execution_layer": "ConversationService.send / CommerceConversation",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 125
+      }
+    },
+    {
+      "scenario": "test_commerce.ConversationAcceptance.test_memory_style_changes_answer",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    async def test_memory_style_changes_answer(self):\n        o=next(o for o in self.rows if o['id'].endswith('pro'));a=await self.s.send('alice','查询 '+o['id']);await self.s.memory.set_profile('alice',{'response_style':'concise'});b=await self.s.send('alice','查询 '+o['id']);self.assertLess(len(b['response']),len(a['response']));self.assertIn('990',str(o['payments'][0]['amount_minor']))\n",
+      "execution_layer": "ConversationService.send / CommerceConversation",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 123
+      }
+    },
+    {
+      "scenario": "test_commerce.ConversationAcceptance.test_mixed_no_dropped_goal",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    async def test_mixed_no_dropped_goal(self):\n        r=await self.s.send('alice','无线耳机退掉，Basic 月度会员也别续了');self.assertEqual(len(r['commerce_case']['operations']),2)\n",
+      "execution_layer": "ConversationService.send / CommerceConversation",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 117
+      }
+    },
+    {
+      "scenario": "test_commerce.ConversationAcceptance.test_negation_read_only",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    async def test_negation_read_only(self):\n        r=await self.s.send('alice','无线耳机只查物流，不退款');self.assertIsNone(r['commerce_case']);self.assertIn('DEMO-headphones',r['response'])\n",
+      "execution_layer": "ConversationService.send / CommerceConversation",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 119
+      }
+    },
+    {
+      "scenario": "test_commerce.ConversationAcceptance.test_profile_update_delete_isolation",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    async def test_profile_update_delete_isolation(self):\n        await self.s.memory.set_profile('alice',{'response_style':'concise'});self.assertEqual(await self.s.memory.get_profile('bob'),{});await self.s.memory.forget('alice');self.assertEqual(await self.s.memory.get_profile('alice'),{})\n",
+      "execution_layer": "ConversationService.send / CommerceConversation",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 121
+      }
+    },
+    {
+      "scenario": "test_commerce.ConversationAcceptance.test_revision_cancels_goods_only",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    async def test_revision_cancels_goods_only(self):\n        r=await self.s.send('alice','无线耳机退掉');c=r['commerce_case'];await self.s.send('alice','我改主意了，商品不退了，只取消续费',conversation_id=r['conversation_id']);self.assertEqual(self.db.get_case('alice',c['id'])['operations'][0]['status'],'cancelled')\n",
+      "execution_layer": "ConversationService.send / CommerceConversation",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 127
+      }
+    },
+    {
+      "scenario": "test_commerce.ConversationAcceptance.test_toolresult_serializable_and_failure",
+      "status": "passed",
+      "identity": "alice; reviewer for approvals; bob for isolation assertions",
+      "preconditions": "fresh temporary SQLite; CommerceStore.seed(alice); 5 goods and 3 subscriptions",
+      "steps_and_expected_assertions": "    async def test_toolresult_serializable_and_failure(self):\n        manager=SimpleNamespace(search_with_rewrite=AsyncMock(return_value=ToolResult(True,[{'document_id':'x','title':'rule'}],'knowledge_search')))\n        tool=build_shared_rag_tool(manager);out=await tool.handler(SimpleNamespace(message='退款'),{});json.dumps(out);self.assertEqual(out['sources'][0]['document_id'],'x');manager.search_with_rewrite.return_value=ToolResult(False,[],'knowledge_search',error='down');self.assertFalse((await tool.handler(SimpleNamespace(message='退款'),{}))['success'])\n",
+      "execution_layer": "ConversationService.send / CommerceConversation",
+      "expected_model_calls": 0,
+      "actual_result": "All listed assertions passed in this run",
+      "forbidden_side_effects": "No real payment or external fulfilment; individual safety assertions are in the recorded source",
+      "evidence": {
+        "file": "tests/test_commerce.py",
+        "line": 129
+      }
+    }
+  ],
+  "test_source": "tests/test_commerce.py"
+}
