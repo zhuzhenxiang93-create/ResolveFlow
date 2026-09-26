@@ -39,7 +39,8 @@ ResolveFlow 将售后交互拆为 Answer、Query、Action，并让可核查业�
 
 ## 简历描述：AI 产品经理方向
 
-**ResolveFlow｜AI 客服与受控售后 Agent 应用**  
+**ResolveFlow｜AI 客服与受控售后 Agent 应用**
+
 项目链接：https://github.com/zhuzhenxiang93-create/ResolveFlow
 
 - 将客服需求拆解为 Answer / Query / Action，设计政策问答、对象澄清、退款与停续费五类演示场景，形成用户确认—独立审核—结果核验的售后闭环。
