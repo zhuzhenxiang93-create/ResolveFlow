@@ -17,7 +17,7 @@
         ><button
           v-if="demoMode"
           class="secondary"
-          :disabled="busy"
+          :disabled="busy || actionBusy"
           @click="reset"
         >
           Reset Demo
@@ -43,7 +43,7 @@
       <div class="demo-note" v-if="demoMode">
         {{
           mode === "live-model"
-            ? "Live model connected"
+            ? "Live model · Read-only Agent tools · Lexical policy retrieval"
             : "Offline rules demo · Technical Agent requires a model connection"
         }}<span>All payments and fulfilment are simulated.</span>
       </div>
@@ -57,7 +57,7 @@
           v-for="(s, i) in scenarios"
           :key="s.title"
           class="scenario"
-          :disabled="busy || !connected"
+          :disabled="busy || actionBusy || !connected"
           @click="ask(s.prompt)"
         >
           <small>0{{ i + 1 }} / {{ s.type }}</small
@@ -65,9 +65,9 @@
         </button>
       </section>
       <div class="view-tabs">
-        <button :class="{ selected: !reviewer }" @click="reviewer = false">
+        <button :disabled="busy || actionBusy" :class="{ selected: !reviewer }" @click="reviewer = false">
           User view</button
-        ><button :class="{ selected: reviewer }" @click="reviewer = true">
+        ><button :disabled="busy || actionBusy" :class="{ selected: reviewer }" @click="reviewer = true">
           Reviewer view</button
         ><span>Separate identities · Shared, verifiable case state</span>
       </div>
@@ -80,7 +80,7 @@
             </div>
             <button
               class="text-button"
-              :disabled="busy"
+              :disabled="busy || actionBusy"
               @click="newConversation"
             >
               New chat
@@ -127,7 +127,7 @@
               maxlength="4000"
               placeholder="Ask a question or tell us what you need…"
               @keydown.enter.exact.prevent="send"
-            /><button :disabled="busy || !draft.trim() || !connected">
+            /><button :disabled="busy || actionBusy || !draft.trim() || !connected">
               Send ↗
             </button>
           </form>
@@ -140,6 +140,8 @@
           :latest="latest"
           :candidates="candidates"
           :reviewer="reviewer"
+          :external-busy="busy"
+          @busy="actionBusy = $event"
           @ask="ask"
           @select="select"
           @updated="updated"
@@ -177,6 +179,7 @@ const settings = reactive(createInitialSettings()),
   messages = ref([]),
   draft = ref(""),
   busy = ref(false),
+  actionBusy = ref(false),
   connected = ref(false),
   reviewer = ref(false),
   latest = ref(null),
@@ -216,7 +219,7 @@ function newConversation() {
   saveSettings(settings);
 }
 async function reset() {
-  if (busy.value) return;
+  if (busy.value || actionBusy.value) return;
   busy.value = true;
   try {
     await startDemo(settings);
@@ -233,18 +236,18 @@ async function reset() {
   }
 }
 async function ask(text) {
-  if (busy.value) return;
+  if (busy.value || actionBusy.value) return;
   reviewer.value = false;
   draft.value = text;
   await send();
 }
 async function select(id) {
-  if (busy.value) return;
+  if (busy.value || actionBusy.value) return;
   draft.value = id;
   await send(id);
 }
 async function send(selection) {
-  if (busy.value || !draft.value.trim()) return;
+  if (busy.value || actionBusy.value || !draft.value.trim()) return;
   const content = draft.value.trim();
   draft.value = "";
   append("user", content);
@@ -260,11 +263,17 @@ async function send(selection) {
     latest.value = r.raw.commerce_case || { at: Date.now() };
     candidates.value = r.raw.candidates || [];
     trace.value = r.raw;
-    append("assistant", readable(r.response), {
+    const support = r.raw.support_result;
+    const businessResponse = support?.response && r.response.endsWith(support.response)
+      ? r.response.slice(0, -support.response.length).trim() : r.response;
+    append("assistant", readable(businessResponse), {
       sources: r.sources,
       meta: r.knowledgeUsed
         ? "Knowledge sources"
         : r.agentType || "Business support",
+    });
+    if (support?.response) append('assistant', support.response, {
+      meta: `${support.agent_type} support · ${support.diagnostics?.length ? 'Unavailable' : 'Live model'}`,
     });
   } catch (e) {
     if (identity === settings.userToken)
@@ -315,12 +324,14 @@ watch(
 onMounted(async () => {
   try {
     const h = await requestHealth(settings);
+    if (demoMode && h.demo !== true)
+      throw new Error("Wrong API: start the isolated Demo server on 127.0.0.1:8000.");
     connected.value = h.status === "ok";
     mode.value = h.mode || "";
     if (demoMode && !settings.userToken) await reset();
   } catch (e) {
-    error.value =
-      "Could not connect to the API. Check the server in Advanced settings.";
+    connected.value = false;
+    error.value = e.message || "Could not connect to the API. Check the server in Advanced settings.";
   }
 });
 </script>

@@ -208,6 +208,13 @@ class CommerceConversation:
                     ref = ""
             if not ref:
                 grounded = [o for o in pool if o["id"] in message or o["title"] in message or any(i["title"] in message for i in o["items"])]
+                if not grounded:
+                    # Ground aliases in the user's words, never in a model-only reference.
+                    aliases = [name for name in ('Pro', 'Basic')
+                               if re.search(r'\b' + name + r'\b', message, re.I)]
+                    if len(aliases) == 1:
+                        grounded = [o for o in pool if o['domain'] == 'subscription'
+                                    and re.search(r'\b' + aliases[0] + r'\b', o['title'], re.I)]
                 if len(grounded) == 1:
                     ref = grounded[0]["id"]
             if ref == "previous" or re.search(r"刚才|这笔|那个|上次", ref):

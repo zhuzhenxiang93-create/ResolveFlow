@@ -1,31 +1,43 @@
-# 60–90 second interview walkthrough
+# Recruiting demo walkthrough
 
-Preparation: start both services; connect a real model for the final mixed request.
-Reset Demo. All purchases and payment outcomes are simulated. In offline mode,
-state that policy answers use lexical retrieval and technical support is unavailable.
+Start the isolated backend and Vite as described in the root README. Reset Demo.
+No manual token entry is needed. All refunds and fulfilment are simulated.
+The local acceptance used Qwen Plus; the banner states the active mode.
 
-**0–10 seconds** — “ResolveFlow handles three customer needs: answer policies,
-query personal purchase records, and execute confirmed after-sales requests.”
-Show the scenario buttons and business cards.
+## 30 seconds: what it does
 
-**10–22 seconds** — Click Refund policy. Open a source chip. “Policy answers have
-traceable sources. Asking a question does not create a refund.”
+“ResolveFlow answers policies, queries your purchases, and executes controlled
+after-sales requests. The model interprets language; CommerceStore determines
+amounts and eligibility. Users confirm, and a separate identity reviews refunds.”
+Show the three value statements, scenario buttons, conversation and purchases.
 
-**22–32 seconds** — Click Choose a purchase. “An ambiguous refund requires the
-customer to select a purchase.” Select 无线耳机.
+## 2–3 minutes: why the controls matter
 
-**32–45 seconds** — Show the ¥259 quote and return requirement. “The store computes
-eligibility and money; the language model cannot authorize it.” Click Confirm refund.
+1. Click **Refund policy**. Open a source chip: policy origin and document ID are
+   visible. No refund Case is created. Retrieval in this isolated Demo is lexical.
+2. Click **Choose a purchase**. Eight candidates appear. “Ambiguity cannot authorize
+   an arbitrary refund.” Select **无线耳机**.
+3. Show **¥259**, the return requirement and invoice impact. Click **Confirm refund**.
+4. Switch to **Reviewer view**. “This uses another authenticated identity.” Click
+   **Approve**, then **Simulate return received**, then **Simulate payment receipt**.
+5. Switch to **User view** and show **Completed**. Refresh: the Case returns. Expand
+   purchase details to show a single simulated refund entry. Chat itself is not
+   restored on reload.
 
-**45–65 seconds** — Switch to Reviewer view. “This is a different authenticated
-identity.” Approve, simulate return received, and simulate payment receipt.
-Switch to User view and show Completed. “Each step persists and repeated decisions
-cannot create another refund.”
+## Up to 5 minutes: complete the product story
 
-**65–80 seconds** — Click Billing + technical. “A duplicate subscription charge
-and a login issue are handled through separate business and support capabilities.”
-Show both actual results when a live model is configured. If offline, show the
-explicit limitation and do not claim successful Technical Agent execution.
+6. Click **Cancel renewal**. Confirm: Basic auto-renew becomes OFF, current benefits
+   remain and no refund is created.
+7. Click **Billing + technical**. The Pro duplicate payment has a **¥99** quote,
+   while the separate Technical Agent explains 401. The refund still awaits consent.
+   Open Developer details only if asked: actual `lookup_error_code` execution and
+   `native_llm` interpretation are recorded. Never describe technical guidance as
+   fixing a real account, or claim the Demo uses hybrid RAG.
+8. **Reset Demo** shows a new identity with eight fresh purchases and no prior
+   Cases. Prior audit databases are preserved.
 
-**80–90 seconds** — “The detailed trace is available for inspection, while the main
-experience stays focused on the customer's outcome.” Open Developer details.
+If the banner says **Offline rules**, scenes 1–4 still work; scene 5 explicitly
+states that Technical Agent is unavailable. Do not use that as a live-model demo.
+
+Evidence: [acceptance report](validation.md), [screenshots](screenshots/README.md),
+[real-provider checks](live-validation.json).

@@ -1,73 +1,117 @@
 # Recruiting demo validation — 2026-09-27
 
-**Status: implementation draft; full acceptance is not complete.**
-Baseline main: `42ccdc1`. Branch: `feat/recruitment-demo`.
+**Status: local recruiting-demo acceptance passed.** This is a simulated local
+portfolio application, not production payment processing or a hybrid-RAG benchmark.
+Branch: `feat/recruitment-demo`; baseline: `811bce7`.
+
+## Local environment and repairs
+
+macOS; Python 3.11 from Miniforge environment `resolveflow-demo`; Vue/Vite served
+at `http://localhost:5173`. Browser acceptance used the local Codex in-app browser.
+Existing `Claude outputs/` was left untouched. The remote branch was fetched and
+had no additional commits before work began.
+
+The first browser visit exposed a real 404: Vite resolved `localhost:8000` to a
+Docker service on IPv6 while the isolated Demo listened on `127.0.0.1:8000`.
+The proxy now targets IPv4 explicitly, and the UI rejects a non-Demo health response.
+No duplicate frontend or conflicting backend was started; the known offline
+backend was replaced on the same IPv4 port for live-model acceptance.
+
+Other repairs:
+- Wire Demo support agents to read-only error-code/context tools and a scoped local
+  BM25 knowledge adapter. Tool descriptions and the UI explicitly label lexical
+  retrieval; no claim of vector retrieval, reranking, or full hybrid RAG.
+- Preserve support agent identity, tool traces, diagnostics and degradations in
+  mixed results; present business and technical answers as separate chat messages.
+- Resolve unique Pro/Basic aliases grounded in user text even when the model emits
+  `Pro 会员`, without accepting an ungrounded model-only object guess.
+- Disable role/reset/chat actions while decisions are running; clear stale errors
+  and data on identity changes; deduplicate source chips.
+- Compact the desktop introduction/chat layout, retain a readable composer, support
+  320px widths, and hide unavailable production administration in Demo settings.
 
 ## Commands and outcomes
 
-| Command | Result |
+All Python commands below used
+`/Users/zhenxiangzhu/miniforge3/envs/resolveflow-demo/bin/python`, **not** `.venv`.
+
+| Command | Final result |
 |---|---|
-| `make -C ResolveFlow test` | 311 run: 302 passed, 9 skipped, 0 failures/errors on final run |
+| `make -C ResolveFlow test PYTHON=<conda-python>` | 313 run: **304 passed, 9 skipped, 0 failures/errors** |
+| `PYTHONPATH=. <conda-python> scripts/run_commerce_acceptance.py` | **42 passed**, no skips/failures |
+| `PYTHONPATH=. <conda-python> -m unittest tests.test_portfolio_demo -v` | **8 passed**, no skips/failures; included in full suite |
 | `npm run build --prefix ResolveFlowFrontend` | Passed |
-| `PYTHONPATH=. ../.venv/bin/python -m unittest tests.test_portfolio_demo -v` (backend directory) | 6 passed |
-| `PYTHONPATH=. ../.venv/bin/python scripts/run_commerce_acceptance.py` (backend directory) | 42 passed |
 | `git diff --check` | Passed |
+| `scripts/check_portfolio_live.py --live --env-file .env.agent.local --output ../docs/live-validation.json` | **3/3 passed** against real Qwen Plus; evidence below |
 
-The nine existing opt-in skips are five Postgres POC tests (no AGENT_PG_TEST_DSN)
-and four Redis/Chroma dependency tests (RF_DEPENDENCY_TEST not enabled; no isolated
-services). They were not deleted or bypassed.
+The nine opt-in skips remain five Postgres POC tests (`AGENT_PG_TEST_DSN` absent)
+and four Redis/Chroma dependency tests (`RF_DEPENDENCY_TEST` not enabled).
+They were not removed or bypassed. ONNX telemetry / Chroma telemetry warnings were
+nonfatal. No dependency installation was needed for the final local test run.
 
-Initial suite run had seven environment errors caused by missing socksio for the
-workspace's SOCKS proxy. Installed socksio into the local venv. The next run had
-one ONNX embedding model download timeout. After that download completed, the full
-suite passed with the nine documented skips. Chroma telemetry emitted nonfatal
-PostHog signature errors; they were not suppressed.
+## Five scenarios — actual browser evidence
 
-## Five scenarios
+| Scenario | Observed result |
+|---|---|
+| 商品退款政策是什么？ | Policy text and three sources; opening a source reveals policy origin/document ID. No Case. Browser offline + real-model API interpretation verified. |
+| 我要退款。 | Eight candidates, no selected object and no Case; verified in both offline and live browser modes. Explicit selection proceeds to quotation. |
+| 帮我把无线耳机退掉。 | ¥259 quote and return/invoice impact → Confirm refund → Reviewer Approve → Simulate return received → Simulate payment receipt → User Completed. Refresh restores the Case. Double-clicked confirm/receipt; purchase details contain exactly one ¥259 simulated refund. |
+| Basic 会员下个月别续了。 | User confirmation changes auto-renew to OFF; Basic benefits remain; no refund record. |
+| 把 Pro 会员重复扣的钱退掉，而且登录一直报 401。 | Real Qwen interpretation returns the **duplicate P2 charge, ¥99**, awaiting confirmation. Separate **Technical Agent** answer; successful actual `lookup_error_code(code=401)` trace, no agent diagnostics. Both results shown in the UI. |
 
-| Scenario | Actual evidence | Acceptance |
-|---|---|---|
-| Goods refund policy | API returns sources; no Commerce case | Passed API; lexical policy retrieval, not live hybrid RAG |
-| Bare refund request | Eight candidates; no auto-selected case | Passed API |
-| Headphones refund | ¥259 quote → confirm → independent approve → receive return → settle → completed; one refund after repeated settle | Passed API; browser pending |
-| Basic renewal cancellation | Auto-renew off; same benefits; no refund | Passed API |
-| Pro duplicate charge + 401 | ¥99 Commerce quote; explicit technical_agent_offline degradation | Partial: true Technical Agent response not validated |
+Reviewer identity and user confirmation remain distinct. API regressions verify
+user approval rejection, pre-confirmation approval rejection, stale quotes,
+owned records, idempotency and memory/authorization boundaries. No retired task
+write route was re-enabled.
 
-New tests also cover demo opt-in, distinct JWT subjects, unauthorized user approval,
-review before confirmation, per-session object isolation, fresh reset fixtures and
-case retrieval. Existing Commerce tests cover stale quotes, partial refunds, own-
-identity review rejection and memory/business boundaries.
+## Browser, isolation and responsive checks
 
-## Browser and visual acceptance
+- 1440×900, 1024×900, 390×844 and 320×800: document scroll width equals viewport
+  width; desktop two-column / mobile stacked layouts visually inspected.
+- Mobile refund confirmation and cancellation worked. Amounts, states and buttons
+  remained readable. Chat remains the primary interaction; long answers scroll.
+- Developer JSON and advanced controls are collapsed by default; new sessions
+  provision without manual JWT entry. User/Reviewer labels and independent-review
+  instructions were checked.
+- Real-model loading indicator appears; scenario/role/reset/send controls disable
+  during a request. Double-click transitions did not create duplicate refunds.
+- A deliberately malformed test token clears old purchases/Cases/chat and shows a
+  readable error. Reset recovers with eight fresh purchases and no old Case.
+- Explicit identity A → B → A through Advanced settings: A's one Case disappears
+  for B (eight fresh purchases, zero Cases), then returns for A. Cross-session
+  direct object fetch returns 404. Old audits survive Reset.
+- Browser console: **0 errors and 0 warnings in the final inspected session**.
+  Initial wrong-service HTTP 404 was diagnosed and repaired; it is not hidden as
+  a successful baseline. No cloud-browser limitation remained locally.
 
-The supported cloud browser could not open `http://localhost:5173`:
-`net::ERR_BLOCKED_BY_CLIENT`. The documented troubleshooting path exposed no local
-preview bridge. Browser clicks, console errors, refresh recovery, 1440×900 layout,
-1024px layout and screenshot capture therefore remain **unverified**.
-API persisted-case retrieval is not claimed as browser refresh proof.
-There are no fabricated UI screenshots. See `screenshots/README.md` for the six
-required captures. CSS breakpoints are implemented but not visually accepted.
+## Real model and retrieval evidence
 
-## Remaining work before marking complete
+Existing project `.env.agent.local` provided Qwen Plus / the DashScope OpenAI-
+compatible endpoint. Only required configuration fields were inspected. No keys
+were printed, replaced or committed. The real-model smoke test creates temporary
+isolated sessions and writes only allowlisted evidence:
+[three actual checks](live-validation.json).
 
-1. Open the running API-backed app in an accessible browser; complete the headphones
-   flow, reset, change user, refresh and inspect sources/console.
-2. Inspect 1440×900 and 1024px; adjust any overflow or readability problems.
-3. Capture all six actual UI screenshots.
-4. Configure a real model via server environment and validate the mixed request
-   produces both Commerce and Technical Agent results. The offline mode must stay labelled.
-5. Review screenshot evidence and remove the draft status only after these pass.
+The third check explicitly requested policy retrieval and error-code lookup;
+Technical Agent actually invoked **both `knowledge_search` and
+`lookup_error_code`** successfully. Source IDs came from the local policy corpus.
+The `lexical_retrieval` marker is expected: this Demo has no dense-vector index or
+reranker. This proves real tool execution, not merely `AGENT_USE_LLM=1`.
 
-## Delivery scope
+## Screenshots and scope
 
-UI: scenario strip, conversation, purchase cards, quote/timeline, reviewer view,
-preferences and collapsed developer/admin tools. Removed social advertising and
-retired task controls from the main experience. Separated ActionCard and advanced
-tools from App.vue. Backend: separate opt-in demo host with session-isolated SQLite,
-random signing key, expiring user/reviewer JWTs, no admin provisioning; production
-application unchanged. Added explicit Pro/Basic aliases to offline intent parsing.
+[Eight actual browser captures](screenshots/README.md), including the six requested
+story images plus tablet/mobile evidence. Screenshots are unedited browser JPEGs;
+mode labels remain visible where applicable. The mixed image is a **real model**
+result, not an offline placeholder.
 
-Root/backend/frontend READMEs, architecture SVG, demo script and design audit are
-included. Screenshots and live-model/browser acceptance are outstanding.
-**Resume readiness: suitable as a work-in-progress repository; not yet verified as
-the complete interview-ready demo requested.**
+**Resume readiness:** accepted for a local AI product / Agent application portfolio
+walkthrough. Claims should say controlled **simulated** after-sales execution,
+real-model intent/support with read-only tools, and lexical policy retrieval.
+
+Remaining limits: no actual payment/fulfilment/identity-provider integrations; no
+production load or public-host security acceptance; no full hybrid-RAG acceptance;
+model language output is nondeterministic and a successful smoke test is not a
+reliability benchmark. Refresh restores Cases, not the rendered chat transcript.
+Tokens expire after 24 hours. Old session databases need operator retention
+management. These are declared product boundaries, not claimed successful tests.

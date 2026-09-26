@@ -8,7 +8,7 @@ VITE_DEMO_MODE=true npm run dev
 npm run build
 ```
 
-Vite proxies `/api/python` to `http://localhost:8000`. The isolated demo backend
+Vite proxies `/api/python` to `http://127.0.0.1:8000`. The isolated demo backend
 must be started separately; see the [root Quick Start](../README.md).
 Set `VITE_DEMO_MODE=true` at build time for automatic session provisioning and
 Reset Demo. Production mode uses existing JWTs through collapsed Advanced settings.
@@ -30,4 +30,4 @@ rules and lexical policy retrieval must not be presented as a live LLM run.
 For Nginx/Docker, preserve the `/api/python` proxy to the separately configured API.
 No tokens or signing keys should be put into Vite environment variables.
 
-[Validation and browser gaps](../docs/validation.md).
+[Browser, model and regression validation](../docs/validation.md).

@@ -35,7 +35,7 @@
           :key="a.id"
           :action="a"
           :reviewer="reviewer"
-          :busy="busy"
+          :busy="busy || externalBusy"
           @decision="act(c, a, $event)"
       /></template>
     </div>
@@ -144,9 +144,10 @@ const props = defineProps({
   settings: Object,
   latest: Object,
   reviewer: Boolean,
+  externalBusy: Boolean,
   candidates: { type: Array, default: () => [] },
 });
-const emit = defineEmits(["ask", "select", "updated"]);
+const emit = defineEmits(["ask", "select", "updated", "busy"]);
 const objects = ref([]),
   cases = ref([]),
   profile = ref({}),
@@ -199,8 +200,9 @@ async function refresh() {
   }
 }
 async function act(c, a, decision) {
-  if (busy.value) return;
+  if (busy.value || props.externalBusy) return;
   busy.value = true;
+  emit('busy', true);
   const identity = props.settings.userToken;
   try {
     const r = await commerceRequest(
@@ -216,9 +218,10 @@ async function act(c, a, decision) {
     emit("updated", r);
     await refresh();
   } catch (e) {
-    error.value = e.message;
+    if (identity === props.settings.userToken) error.value = e.message;
   } finally {
     busy.value = false;
+    emit('busy', false);
   }
 }
 async function setStyle(response_style) {
@@ -246,6 +249,7 @@ watch(
     objects.value = [];
     cases.value = [];
     profile.value = {};
+    error.value = '';
     refresh();
   },
 );

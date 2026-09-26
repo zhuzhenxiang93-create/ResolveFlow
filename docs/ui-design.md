@@ -26,3 +26,14 @@ Demo provisioning must run in a separate demo-only application and isolated
 session ledger. Production token issuance remains unchanged. Reset starts a new
 isolated session rather than deleting transactional audit. No admin token is
 issued by the demo bootstrap.
+
+## Local visual acceptance — 2026-09-27
+
+Inspected the actual interface at 1440×900, 1024×900, 390×844 and 320×800.
+Compacted the introductory spacing and chat height to bring the composer closer
+to the first desktop screen. Narrow widths stack the conversation and action
+context; no horizontal document overflow was observed. Amounts and timelines
+remain visible in mobile cards. Business and Technical Agent answers now have
+separate message labels. Unsupported admin controls are omitted in isolated Demo
+settings, while production retains them. Sources and developer JSON remain
+collapsed by default. See screenshots/README.md for real captures.

@@ -14,6 +14,22 @@ from business.execution import ExecutionContext
 from core.auth import AuthError, decode_token, mint_token
 
 
+class PortfolioKnowledgeTools:
+    """Read-only local retrieval; explicitly lexical, never advertised as hybrid RAG."""
+    knowledge_description = '检索演示客服政策（本地 BM25 词法检索，无向量召回或模型重排），返回可核查来源。'
+
+    def __init__(self, kb):
+        self.kb = kb
+
+    async def search_with_rewrite(self, name, query, top_k=5, extra_params=None):
+        from mcp.tool_manager import ToolResult
+        if name != 'knowledge_search':
+            return ToolResult(False, [], name, error='Unknown read-only tool')
+        items = await self.kb.search_async(query, top_k=top_k,
+            allowed_document_ids=(extra_params or {}).get('allowed_document_ids'))
+        return ToolResult(True, items, name, degradations=['lexical_retrieval'])
+
+
 def create_app():
     if os.getenv('RESOLVEFLOW_DEMO_MODE') != 'true':
         raise RuntimeError('Set RESOLVEFLOW_DEMO_MODE=true for the isolated demo host')
@@ -37,7 +53,22 @@ def create_app():
 
     def service(session):
         if session not in services:
-            services[session] = ConversationService(ExecutionContext(root / f'{session}.sqlite3', client=client))
+            svc = ConversationService(ExecutionContext(root / f'{session}.sqlite3', client=client))
+            if client:
+                from agents.agent_orchestrator import AgentOrchestrator
+                manager = PortfolioKnowledgeTools(svc.kb)
+                svc.answer_orchestrator = AgentOrchestrator(api_key='', client=client,
+                    model=client.model, recognizer=svc.recognizer, tool_manager=manager)
+                async def search(query, allowed_document_ids=None):
+                    result = await manager.search_with_rewrite('knowledge_search', query, top_k=10,
+                        extra_params={'allowed_document_ids': allowed_document_ids})
+                    return result.data
+                svc.knowledge_search = search
+                from datetime import date
+                svc.knowledge_document_ids = lambda domain=None: {
+                    d['id'] for d in svc.documents if (domain is None or d.get('domain') == domain)
+                    and d.get('effective_at', '2000-01-01') <= date.today().isoformat()}
+            services[session] = svc
         return services[session]
 
     # This module is a standalone process: production api.main is never imported.
@@ -71,7 +102,7 @@ def create_app():
     @app.get('/health')
     def health():
         return {'status': 'ok', 'demo': True, 'mode': 'live-model' if client else 'offline-rules',
-                'simulated': True}
+                'retrieval': 'lexical', 'simulated': True}
 
     @app.post('/demo/session')
     def bootstrap():

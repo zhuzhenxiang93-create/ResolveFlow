@@ -67,3 +67,42 @@ class PortfolioDemoTests(unittest.TestCase):
     def test_opt_in_required(self):
         with patch.dict(os.environ,{'RESOLVEFLOW_DEMO_MODE':'false'}):
             with self.assertRaises(RuntimeError):create_app()
+
+class PortfolioLiveWiringTests(unittest.TestCase):
+    def test_read_only_knowledge_tools_and_scoped_sources(self):
+        import asyncio, json
+        from pathlib import Path
+        from api.portfolio_demo import PortfolioKnowledgeTools
+        from mcp.knowledge_base import KnowledgeBase
+        from agents.chat_tools import build_tool_registry
+        docs=json.loads((Path(__file__).resolve().parents[1]/'data/knowledge/commerce_policy_v1.json').read_text())
+        manager=PortfolioKnowledgeTools(KnowledgeBase.lexical_documents(docs))
+        tools=build_tool_registry('technical',manager)
+        self.assertEqual(set(tools),{'lookup_error_code','inspect_request_context','knowledge_search'})
+        self.assertIn('词法',tools['knowledge_search'].description)
+        result=asyncio.run(manager.search_with_rewrite('knowledge_search','商品退款',extra_params={'allowed_document_ids':{'goods-refund'}}))
+        self.assertTrue(result.success)
+        self.assertTrue(result.data)
+        self.assertEqual({d['document_id'] for d in result.data},{'goods-refund'})
+        self.assertIn('lexical_retrieval',result.degradations)
+
+    def test_model_alias_is_grounded_and_unknown_alias_cannot_select(self):
+        import asyncio
+        from unittest.mock import AsyncMock
+        from business.conversation import CommerceConversation, Proposal, Intent
+        from business.execution import ExecutionContext
+        from memory.local_conversation_memory import LocalConversationMemory
+        with tempfile.TemporaryDirectory() as root:
+            runtime=ExecutionContext(root+'/db.sqlite3')
+            runtime.store.seed('alice')
+            service=CommerceConversation(runtime,LocalConversationMemory(runtime.path))
+            async def run(message, reference, conv):
+                service.interpret=AsyncMock(return_value=(Proposal(intents=[Intent(domain='subscription',operation='refund',reference=reference)]),'native_llm'))
+                return await service.send('alice',conv,message)
+            result=asyncio.run(run('把 Pro 会员重复扣的钱退掉','Pro 会员','a'))
+            quote=result['commerce_case']['operations'][0]['quote']
+            self.assertEqual(quote['amount_minor'],9900)
+            self.assertIn('Pro',quote['title'])
+            result=asyncio.run(run('我要退会员费用','Pro 会员','b'))
+            self.assertIsNone(result['commerce_case'])
+            self.assertEqual(len(result['candidates']),3)

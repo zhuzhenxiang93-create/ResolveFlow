@@ -6,13 +6,17 @@ An AI customer service application that answers policy questions, queries owned
 purchases, and carries after-sales requests through explicit confirmation,
 independent review and verifiable simulated results.
 
-> Recruiting demo implementation is under validation. API flows and build have
-> been tested; browser screenshots and live-model mixed support acceptance remain
-> outstanding. See [validation](docs/validation.md) before presenting it as complete.
+> Local recruiting-demo acceptance passed: browser refund lifecycle, identity
+> isolation, desktop/mobile layouts and real Qwen Plus + read-only tools verified.
+> Payments are simulated; retrieval is lexical. See [validation](docs/validation.md).
 
 ## Demo / screenshots
 
-[60–90 second walkthrough](docs/demo-script.md) · [Screenshot checklist](docs/screenshots/README.md)
+[30-second / 3-minute / 5-minute walkthrough](docs/demo-script.md) · [Actual screenshots](docs/screenshots/README.md)
+
+![ResolveFlow home](docs/screenshots/01-home.jpg)
+
+![Real Technical Agent and duplicate-charge quote](docs/screenshots/06-mixed.jpg)
 
 | Answer | Query | Action |
 |---|---|---|
@@ -70,8 +74,47 @@ The default demo uses deterministic rules, lexical policy retrieval, and SQLite
 memory. It does not claim live LLM or hybrid RAG execution. The interface labels
 this mode. For real general-support agents, set `AGENT_USE_LLM=1`, `LLM_API_KEY`,
 `LLM_MODEL`, and optionally `LLM_BASE_URL` / `LLM_PROVIDER` in the server environment.
-No credentials are embedded in the frontend. Live-model acceptance remains pending.
+No credentials are embedded in the frontend. Real Qwen Plus acceptance passed,
+including actual error-code and policy-search tool calls. The isolated host still
+uses lexical retrieval; this is not full hybrid-RAG acceptance.
 The [full backend](ResolveFlow/README.md) provides Redis/ChromaDB and hybrid RAG.
+
+### Existing Mac / Miniforge environment
+
+Use the existing Python 3.11 environment rather than macOS Python 3.9 or a stale
+`.venv`. From the repository root:
+
+```bash
+cd ResolveFlow
+RESOLVEFLOW_DEMO_MODE=true AGENT_USE_LLM=0 \
+  "$HOME/miniforge3/bin/conda" run --no-capture-output -n resolveflow-demo \
+  python -m uvicorn api.portfolio_demo:create_app --factory --host 127.0.0.1 --port 8000
+```
+
+For live mode, reuse an **existing project** environment file without editing it
+(the file stays ignored). Stop the old backend before changing modes:
+
+```bash
+RESOLVEFLOW_DEMO_MODE=true AGENT_USE_LLM=1 \
+  "$HOME/miniforge3/bin/conda" run --no-capture-output -n resolveflow-demo \
+  python -m dotenv -f .env.agent.local run -- \
+  python -m uvicorn api.portfolio_demo:create_app --factory --host 127.0.0.1 --port 8000
+```
+
+Vite explicitly proxies to `127.0.0.1:8000`: on this Mac, `localhost:8000` can
+resolve to a different Docker service listening on IPv6. The UI rejects a
+non-Demo health response instead of showing a misleading connected state.
+
+Run the local regression suite with an explicit interpreter:
+
+```bash
+make -C ResolveFlow test PYTHON="$HOME/miniforge3/envs/resolveflow-demo/bin/python"
+# From ResolveFlow/; --live authorizes real provider calls:
+PYTHONPATH=. "$HOME/miniforge3/envs/resolveflow-demo/bin/python" \
+  scripts/check_portfolio_live.py --live --env-file .env.agent.local
+```
+
+[Sanitized real-provider evidence](docs/live-validation.json).
 
 ## Technology
 
@@ -106,7 +149,8 @@ No real payment gateway, fulfilment provider or production identity provider.
 The isolated host is intended for local interviews; public hosting needs lifecycle,
 rate and resource controls. Reset retains old audit databases; operators manage
 retention. Offline rules have a limited language scope. Technical Agent answers
-require a model connection. Exact desktop/mobile layouts and browser interaction
-have not yet been accepted in this environment.
+require a model connection. Browser layouts were checked at 1440, 1024, 390 and
+320px. Model responses are nondeterministic; smoke checks are not reliability
+benchmarks. Refresh restores Cases, not the rendered chat transcript.
 
 [Backend guide](ResolveFlow/README.md) · [Frontend guide](ResolveFlowFrontend/README.md)

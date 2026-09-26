@@ -1,0 +1,55 @@
+{
+  "checked_at": "2026-09-26T23:07:11.393624+00:00",
+  "model": "qwen-plus",
+  "retrieval": "lexical",
+  "simulated": true,
+  "checks": [
+    {
+      "prompt": "商品退款政策是什么？",
+      "passed": true,
+      "mode": "native_llm",
+      "amounts_minor": [],
+      "support_agent": null,
+      "tools": [],
+      "sources": [
+        "commerce-payment",
+        "goods-refund",
+        "goods-shipping"
+      ],
+      "degradations": []
+    },
+    {
+      "prompt": "把 Pro 会员重复扣的钱退掉，而且登录一直报 401。",
+      "passed": true,
+      "mode": "native_llm",
+      "amounts_minor": [
+        9900
+      ],
+      "support_agent": "technical",
+      "tools": [
+        "lookup_error_code"
+      ],
+      "sources": [],
+      "degradations": []
+    },
+    {
+      "prompt": "请用知识库检索工具核对商品退货所需材料，并用错误码工具查询401。",
+      "passed": true,
+      "mode": "native_llm",
+      "amounts_minor": [],
+      "support_agent": "technical",
+      "tools": [
+        "knowledge_search",
+        "lookup_error_code"
+      ],
+      "sources": [
+        "commerce-payment",
+        "goods-refund",
+        "goods-shipping"
+      ],
+      "degradations": [
+        "lexical_retrieval"
+      ]
+    }
+  ]
+}

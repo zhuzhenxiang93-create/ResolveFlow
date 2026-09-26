@@ -1,15 +1,21 @@
-# Browser screenshots — pending
+# Actual browser screenshots — 2026-09-27
 
-The available cloud browser rejected the local development URL with
-`net::ERR_BLOCKED_BY_CLIENT`. No fabricated screenshots are included.
-Capture these after running the real API-backed interface:
+Unedited captures of the running Mac localhost application using the Codex in-app
+browser. Files retain the browser's native JPEG format. No mockups or fabricated
+model replies. Desktop captures use 1440×900.
 
-1. `01-home.jpg` — initial Answer / Query / Action screen.
-2. `02-selection.jpg` — bare refund request and explicit candidate choices.
-3. `03-confirmation.jpg` — headphones quote, CNY 259 and impact.
-4. `04-review.jpg` — independent reviewer approval.
-5. `05-completed.jpg` — completed refund after return and simulated receipt.
-6. `06-mixed.jpg` — live Technical Agent plus duplicate-charge Commerce result.
+| Image | What it proves |
+|---|---|
+| [01-home](01-home.jpg) | Answer / Query / Action, automatic purchases and no token setup |
+| [02-selection](02-selection.jpg) | Eight explicit candidates, no automatic refund |
+| [03-confirmation](03-confirmation.jpg) | ¥259 quote, impact and user confirmation |
+| [04-review](04-review.jpg) | Separate reviewer identity and approval |
+| [05-completed](05-completed.jpg) | Completed simulated refund and timeline |
+| [06-mixed](06-mixed.jpg) | **Real Qwen Plus** Technical reply plus ¥99 duplicate-charge quote |
+| [07-tablet](07-tablet.jpg) | 1024×900 mixed-result layout |
+| [08-mobile](08-mobile.jpg) | 390×844 action controls and preserved benefits |
 
-Check 1440×900 and 1024px, refresh recovery, user switch, sources and console.
-Offline mixed-request screenshots must be labelled as degraded capability.
+The final six story captures and responsive captures are from the real-model
+phase. The same business lifecycle was also exercised earlier in offline mode. The source policies remain
+lexically retrieved in both modes. 320×800 was also visually checked with no
+horizontal overflow. Details: [validation](../validation.md).

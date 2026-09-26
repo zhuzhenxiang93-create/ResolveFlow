@@ -228,7 +228,7 @@ function normalizeChatResponse(raw) {
     verified: raw.verified,
     grounded: raw.grounded,
     actionTask: raw.action_task || null,
-    sources: raw.sources || [],
+    sources: [...new Map((raw.sources || []).map(s => [s.document_id, s])).values()],
     raw,
   };
 }

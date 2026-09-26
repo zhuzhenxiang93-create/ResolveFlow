@@ -100,8 +100,21 @@ class ConversationService:
                 try:
                     context = await self.memory.get_context(owner, conv, remainder)
                     support = await self.answer_orchestrator.run(Request(message=remainder, user_id=owner, conv_id=conv,
-                        context=context.to_prompt_text()))
+                        context=context.to_prompt_text(),
+                        task_instruction='仅处理这条独立咨询：' + remainder +
+                        '。退款及订阅操作已由业务系统处理，不要重新建议退款或推断它与登录错误的因果关系。'
+                        '使用只读工具核对错误码；只给一般排查建议，不假设产品支持某种登录或找回方式，不编造等待时长。'))
                     result["response"] += "\n" + support.response
+                    result['support_result'] = {
+                        'response': support.response,
+                        'agent_type': getattr(getattr(support, 'agent_type', None), 'value', 'unknown'),
+                        'tools_used': getattr(support, 'tools_used', []),
+                        'tool_traces': getattr(support, 'tool_traces', []),
+                        'diagnostics': getattr(support, 'error_diagnostics', []),
+                    }
+                    result['degradations'].extend(getattr(support, 'degradations', []))
+                    if getattr(support, 'error_diagnostics', []):
+                        result['degradations'].append('agent_call_failed')
                     for trace in getattr(support, "tool_traces", []):
                         result["sources"].extend(trace.get("sources", []))
                         result["degradations"].extend(trace.get("degradations", []))

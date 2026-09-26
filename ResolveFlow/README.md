@@ -16,6 +16,9 @@ CommerceStore 使用 SQLite 保存用户购买记录、金额报价、确认、�
 `POST /demo/session` 生成随机会话、独立 user/reviewer 和各自 JWT，初始化隔离 SQLite。
 Reset 创建新会话，旧审计保留。不会签发 admin JWT，也不会访问正式业务数据库。
 默认使用离线规则、词法政策检索和本地会话记忆；技术 Agent 需要配置真实模型。
+已用项目 Qwen Plus 配置验证真实 Commerce + Technical 复合请求，工具追踪包含
+`lookup_error_code` 和 `knowledge_search`。隔离 Demo 检索仍为本地 BM25，
+不宣称向量检索或完整混合 RAG；模型无法执行交易写入。
 启动及验证说明见[根 README](../README.md)和[验收报告](../docs/validation.md)。
 
 ## 当前业务 API

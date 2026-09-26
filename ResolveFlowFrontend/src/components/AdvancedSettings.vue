@@ -6,13 +6,18 @@
         v-model="settings.endpoint"
         @change="saveSettings(settings)"
     /></label>
-    <label v-for="role in ['user', 'reviewer', 'admin']" :key="role"
+    <label v-for="role in (demoMode ? ['user', 'reviewer'] : ['user', 'reviewer', 'admin'])" :key="role"
       >{{ role }} token<input
         type="password"
         v-model="settings[role + 'Token']"
         @change="saveSettings(settings)"
         autocomplete="off"
     /></label>
+    <p v-if="demoMode" class="hint">
+      This isolated Demo has no admin identity. Knowledge administration and
+      monitoring are available only on the production API.
+    </p>
+    <template v-else>
     <div class="actions">
       <button @click="run(() => requestMonitor(settings))">Monitor</button
       ><button
@@ -55,6 +60,7 @@
       Knowledge administration and monitoring require the production API and an
       admin identity.
     </p>
+    </template>
     <pre v-if="output">{{ output }}</pre>
   </section>
 </template>
@@ -67,6 +73,7 @@ import {
   addKnowledge,
   uploadKnowledge,
   commerceRequest,
+  demoMode,
 } from "../lib/backends";
 const props = defineProps({ settings: Object });
 const query = ref("退款政策"),
