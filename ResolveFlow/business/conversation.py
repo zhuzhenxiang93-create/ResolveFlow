@@ -69,6 +69,11 @@ class CommerceConversation:
             ref = next((o["id"] for o in catalog if o["id"] in clause), "")
             if not ref:
                 ref = next((o["id"] for o in catalog if o["title"] in clause or any(i["title"] in clause for i in o["items"])), "")
+            if not ref and domain == "subscription":
+                aliases = [name for name in ("Pro", "Basic")
+                           if re.search(r"\b" + name + r"\b", clause, re.I)]
+                if len(aliases) == 1 and sum(aliases[0] in o["title"] for o in catalog) == 1:
+                    ref = aliases[0]
             if not ref and re.search(r"刚才|这笔|那个|上次", clause):
                 ref = "previous"
             item = next((i["id"] for o in catalog for i in o["items"] if (i["id"] in clause or ("只" in clause and i["title"] in clause))), None)
@@ -203,6 +208,13 @@ class CommerceConversation:
                     ref = ""
             if not ref:
                 grounded = [o for o in pool if o["id"] in message or o["title"] in message or any(i["title"] in message for i in o["items"])]
+                if not grounded:
+                    # Ground aliases in the user's words, never in a model-only reference.
+                    aliases = [name for name in ('Pro', 'Basic')
+                               if re.search(r'\b' + name + r'\b', message, re.I)]
+                    if len(aliases) == 1:
+                        grounded = [o for o in pool if o['domain'] == 'subscription'
+                                    and re.search(r'\b' + aliases[0] + r'\b', o['title'], re.I)]
                 if len(grounded) == 1:
                     ref = grounded[0]["id"]
             if ref == "previous" or re.search(r"刚才|这笔|那个|上次", ref):

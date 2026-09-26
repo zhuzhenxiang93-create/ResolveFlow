@@ -134,7 +134,7 @@ def build_shared_rag_tool(tool_manager: Any, tool_name: str = "knowledge_search"
 
     return AgentToolSpec(
         name=tool_name,
-        description="检索订阅/客服知识库（向量 + BM25 混合召回，命中后自动重排）。当需要引用具体政策条款或事实性资料时调用；无关的寒暄不需要调用。",
+        description=getattr(tool_manager, 'knowledge_description', "检索订阅/客服知识库（向量 + BM25 混合召回，命中后自动重排）。当需要引用具体政策条款或事实性资料时调用；无关的寒暄不需要调用。"),
         parameters={
             "type": "object",
             "properties": {
