@@ -45,3 +45,7 @@ eval-smoke:
 
 eval-final:
 	$(MAKE) -C ResolveFlow eval-final PYTHON=$(PYTHON)
+
+.PHONY: portfolio-demo
+portfolio-demo:
+	cd ResolveFlow && RESOLVEFLOW_DEMO_MODE=true $(PYTHON) -m uvicorn api.portfolio_demo:create_app --factory --host 127.0.0.1 --port 8000

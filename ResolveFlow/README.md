@@ -1,42 +1,43 @@
-# ResolveFlow 完整使用指南
+# ResolveFlow 后端开发指南
 
-新增 Agent 业务执行入口：`make agent-demo` 可离线演示工具调用、多步执行、
-跨轮任务状态、人工审批恢复、主辅证据交接及业务结果核验。
-接口与模型配置见 [Agent 执行指南](wiki/agent-execution.md)。
+当前主链：`POST /chat → ConversationService → CommerceConversation → CommerceStore`。
+CommerceStore 使用 SQLite 保存用户购买记录、金额报价、确认、审批和模拟退款状态。
+通用咨询进入 `IntentRecognizer → AgentOrchestrator → General / Technical / Billing / Escalation`，
+通过工具调用和 RAG 提供回答。复合请求保留 Commerce 结果，再处理独立的通用咨询。
 
-本轮业务执行增强提供 `make agent-eval`（内部确定性回归）和 `make agent-eval-live`
-（显式真实模型验证，缺少凭据/预算时明确降为离线）。报告独立保存，不覆盖 RAG 指标。
-查询不自动授权修改；退款先绑定审批，再根据模拟数据库核验结果。
-调研与技术取舍见 [外部调研](wiki/external_research.md)、[采用决策](wiki/adoption_decisions.md)。
+正式服务：`uvicorn api.main:app`。全站使用本地 HS256 JWT，user、reviewer、admin 分工；
+用户确认和独立审核为不同步骤，所有写入规则由 CommerceStore 检查。
+金额使用整数分；外部退款与履约为 simulated。
 
-2026-09-11：业务 action 新增 [LLM 目标理解与用户确认](wiki/goal-understanding-confirmation.md)。
-任何实际修改先进入 `awaiting_confirmation`，用户通过确认接口同意具体操作；退款另需人工审批。
-业务数据均为模拟。
+## 招聘 Demo
 
-2026-09-12：`/chat` 收敛为唯一对话入口（旧 mode=chat/action 直接调用编排器的入口已下线），
-鉴权扩展到 `/search`、`/knowledge/*`、`/skills`、`/monitor`、`/eval/run`（分层：只读任意角色，
-写/运维需 `role=admin`），身份统一为本地签发 JWT（`user`/`reviewer`/`admin` 三角色），
-见 [2.4 获取身份令牌](#24-获取身份令牌新增2026-09-12-起必需)。`ResolveFlowFrontend`
-（独立 Vue 项目）已接入这条统一链路，含身份令牌管理、模拟订单、任务卡、确认/审批交互；
-[Postgres 迁移方案与 POC](wiki/postgres-migration-plan.md) 已产出但生产 Action 层仍是 SQLite，
-未做真实切换。旧任务 schema 不复用旧授权，请新建任务。
+隔离服务：`RESOLVEFLOW_DEMO_MODE=true uvicorn api.portfolio_demo:create_app --factory`。
+这是单独进程，正式 `api.main` 不挂载匿名 Demo 身份签发接口。
+`POST /demo/session` 生成随机会话、独立 user/reviewer 和各自 JWT，初始化隔离 SQLite。
+Reset 创建新会话，旧审计保留。不会签发 admin JWT，也不会访问正式业务数据库。
+默认使用离线规则、词法政策检索和本地会话记忆；技术 Agent 需要配置真实模型。
+启动及验证说明见[根 README](../README.md)和[验收报告](../docs/validation.md)。
 
-本文档说明 ResolveFlow 的部署、启动、API 调用、知识库使用、ChromaDB 数据查看、监控评测和常见排障。
+## 当前业务 API
 
-ResolveFlow 是一个企业级智能客服系统，核心链路为：
+| API | 身份 / 用途 |
+|---|---|
+| `/chat` | user：统一对话入口 |
+| `/commerce/objects` | user：本人购买记录 |
+| `/commerce/cases` | user：本人售后记录 |
+| `/commerce/cases/{id}/decision` | user：confirm / cancel |
+| `/commerce/review` | reviewer：独立审核队列 |
+| `/commerce/review/{id}` | reviewer：approve / reject / receive_return / settle / fail |
+| `/commerce/memory` | user：偏好读取、修改、清除 |
+| `/knowledge/*` | 正式服务：读取需要 JWT；写入需要 admin |
 
-```text
-用户请求
-  -> FastAPI /chat
-  -> MemoryManager 读取 Redis 工作记忆 + ChromaDB 情景记忆 + 用户画像
-  -> IntentRecognizer 识别意图
-  -> AgentOrchestrator 选择主 Agent 与辅助 Agent
-  -> 复合请求生成结构化 TaskPlan，按 DAG 串并行调度
-  -> ResponseSynthesizer 去重、处理部分失败与明显冲突
-  -> Safety Guard / Human-in-the-loop
-  -> LLM 生成回复
-  -> 写入 Redis，并异步更新 ChromaDB 用户画像
-```
+旧 ActionRuntime、旧任务测试、历史报告保留用于兼容和只读追溯。
+旧 `/agent/tasks/*` 写入接口已退休；历史确认与审批不能授权新的 Commerce 操作。
+旧 `agent-demo`、P0 报告和 wiki 中的历史架构不代表当前主执行链。
+Postgres 仍为独立 POC；正式业务数据库为 SQLite。
+
+以下是正式全栈的部署、知识库和监控开发参考。生产会话记忆可使用 Redis / ChromaDB，
+隔离 Demo 使用 SQLite 本地记忆，两者的能力与验证范围应分别报告。
 
 ## 1. 项目结构
 
