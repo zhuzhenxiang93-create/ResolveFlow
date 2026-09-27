@@ -1,106 +1,116 @@
 # ResolveFlow
 
-**从客服对话到可核验的业务结果 · AI Customer Service with Controlled Business Actions**
+ResolveFlow 是一个用 Vue 3 和 FastAPI 编写的 AI 客服项目，支持政策问答、订单查询、退款和订阅管理。
 
-面向售后场景的 AI Agent 应用：回答政策、查询本人购买记录，并通过用户确认、独立审核和状态核验完成退款与停续费闭环。模型负责理解请求，后端业务规则决定金额、资格与执行权限。
+项目里实现了一套模拟售后流程。用户可以在聊天中提出退款，查看报价，确认申请，再切换到审核员完成审核。LLM 用于理解请求和回答问题，退款金额、资格判断和状态更新由后端处理。
 
-[5 分钟演示](docs/demo-script.md) · [产品设计与简历描述](docs/portfolio.md) · [验收证据](docs/validation.md) · [本地运行](docs/local-development.md)
+![ResolveFlow](docs/screenshots/01-home.jpg)
 
-> 本地招聘 Demo 已验收：真实 Qwen Plus、只读工具调用、浏览器业务闭环及移动端布局。支付与履约为 **simulated**；Demo 政策检索为 **BM25 词法检索**。本仓库提供可复现的本地 Demo，尚无公开托管的在线演示。
+[运行说明](docs/local-development.md) · [演示步骤](docs/demo-script.md) · [更多截图](docs/screenshots/README.md)
 
-![ResolveFlow 首页](docs/screenshots/01-home.jpg)
+## 功能
 
-## 30 秒理解：Answer / Query / Action
+- 查询商品和订阅政策，展开回答中的来源。
+- 查看当前用户的订单、支付、物流、发票和售后记录。
+- 申请商品退款、退还重复扣款，或关闭订阅自动续费。
+- 在同一次对话中处理售后申请和技术问题。
+- 切换用户与审核员视角，查看申请进度和处理结果。
 
-| 用户需求 | 实际能力 | 关键约束 |
-|---|---|---|
-| Answer：商品退款政策是什么？ | 政策回答与可展开来源 | 咨询不创建退款 Case |
-| Query：查询我的购买记录 | 商品、订阅、物流、发票和售后状态 | 只访问当前身份的记录 |
-| Action：帮我把无线耳机退掉 | ¥259 报价 → 确认 → 独立审核 → 模拟退货与到账 | 金额由 CommerceStore 计算；模型不能授权交易 |
+例如，输入“把 Pro 会员重复扣的钱退掉，而且登录一直报 401”，系统会生成一张 ¥99 的退款确认卡，同时由 Technical Agent 查询错误码并给出排查建议。
 
-## 一个复合请求，两条处理路径
+![重复扣款申请与技术问题处理](docs/screenshots/06-mixed.jpg)
 
-“把 Pro 会员重复扣的钱退掉，而且登录一直报 401。”
+退款需要先确认，再审核；商品退款还需要退货验收。这里的购买记录、物流和到账结果都是模拟数据，没有连接真实支付渠道。
 
-业务路径定位 **¥99 的重复账单**，等待确认；Technical Agent 独立调用错误码工具并返回排查建议。技术回答不替代退款审批，也不代表已修复真实账户。
+## 快速开始
 
-![真实模型：重复扣款报价与 Technical Agent 回答](docs/screenshots/06-mixed.jpg)
-
-[查看六个业务步骤与响应式截图](docs/screenshots/README.md)
-
-## 设计重点
-
-- **先消除歧义**：“我要退款”展示八个候选，不替用户挑选对象。
-- **分离理解与权限**：LLM 提取意图；CommerceStore 校验归属、资格、金额和状态。
-- **确认与审核分离**：user 和 reviewer 使用不同 JWT；用户不能自批退款。
-- **可恢复、可追溯**：报价绑定对象和版本；过期需重新确认；重复点击不重复退款，刷新可恢复 Case。
-- **明确行为影响**：Basic 停续费保留当前权益，不产生退款；Pro 重复扣款退款保留订阅设置。
-- **诚实降级**：无模型时使用离线规则，并明确提示 Technical Agent 不可用。
-
-## 架构与代码入口
-
-![ResolveFlow 架构](docs/architecture.svg)
-
-`/chat → ConversationService → CommerceConversation → CommerceStore` 是当前业务主链。独立咨询通过 `IntentRecognizer → AgentOrchestrator` 调用专业 Agent 和只读工具。
-
-| 位置 | 用途 |
-|---|---|
-| [Vue 前端](ResolveFlowFrontend/src/App.vue) | 五个场景、对话、来源和角色切换 |
-| [隔离 Demo 服务](ResolveFlow/api/portfolio_demo.py) | 自动身份签发、会话独立 SQLite、模型工具接入 |
-| [对话协调](ResolveFlow/agents/conversation_service.py) | 组合业务结果与独立技术咨询 |
-| [业务规则](ResolveFlow/business/commerce.py) | 所有权、报价、状态迁移、确认和审核 |
-| [Demo 回归测试](ResolveFlow/tests/test_portfolio_demo.py) | 隔离、幂等、停续费和来源边界 |
-| [真实模型检查](ResolveFlow/scripts/check_portfolio_live.py) | 显式开启的付费 API 验证，输出脱敏证据 |
-
-技术栈：**Vue 3 · Vite · Python 3.11 · FastAPI · Pydantic · SQLite · JWT · Qwen / OpenAI-compatible API**。
-完整后端另含 Redis、ChromaDB 和混合检索组件；它们不属于本次隔离 Demo 的完整验收范围。历史 ActionRuntime 保留兼容与只读追溯，不是当前写入引擎。
-
-## 本地体验
-
-需要 Python **3.11+** 和 Node **20.19+ / 22.12+**。首次安装：
+需要 Python 3.11+、Node.js 20.19+ 或 22.12+。以下命令适用于 macOS / Linux。
 
 ```bash
 git clone https://github.com/zhuzhenxiang93-create/ResolveFlow.git
 cd ResolveFlow
+
 python3.11 -m venv .venv
 .venv/bin/pip install -r ResolveFlow/requirements.txt
 npm ci --prefix ResolveFlowFrontend
 ```
 
-在仓库根目录分别打开两个终端：
+在仓库根目录启动后端：
 
 ```bash
-# 终端 1：无需模型密钥的离线模式
 AGENT_USE_LLM=0 make portfolio-demo PYTHON="$(pwd)/.venv/bin/python"
 ```
 
+另开一个终端启动前端：
+
 ```bash
-# 终端 2
 cd ResolveFlowFrontend
 VITE_DEMO_MODE=true npm run dev
 ```
 
-打开 `http://localhost:5173`，自动生成八条购买记录及 User / Reviewer 身份，无需手填 Token。使用 **Reset Demo** 开始新会话，旧审计保留。
+打开 [localhost:5173](http://localhost:5173)。页面会自动创建用户和审核员身份，并加载八条购买记录。点击 **Reset Demo** 可以开始新的会话。
 
-[真实模型配置、现有 Mac/Conda 环境与测试命令](docs/local-development.md)。本地工作区可以叫 `Echomind`；以上命令中的 `ResolveFlow/` 子目录始终指 Python 后端。
+不配置模型也能体验政策查询和售后操作，此时请求由规则解析，技术问答不可用。要启用 LLM，在后端配置 `AGENT_USE_LLM=1`、`LLM_API_KEY`、`LLM_MODEL`，以及对应的 `LLM_PROVIDER` 和 `LLM_BASE_URL`。项目已用 Qwen Plus 验证，具体启动方式见[运行说明](docs/local-development.md)。
 
-## 验证结果
+## 实现
 
-2026-09-27 本地验收；以下是内部回归与 smoke checks，不是公开基准或线上指标。
+前端使用 Vue 3 + Vite，后端使用 FastAPI。Demo 的业务记录和会话记忆保存在 SQLite 中，每个会话使用独立数据库；用户与审核员分别使用不同的 JWT。
 
-| 检查 | 结果 |
-|---|---|
-| 后端全套 | 313 项：304 通过、9 跳过、0 失败 |
-| Commerce 专项 | 42/42 通过 |
-| Demo 专项（已包含在全套中） | 8/8 通过 |
-| 真实 Qwen Plus 专项 | 3/3；实际调用错误码与知识检索工具 |
-| 浏览器 | 完整退款、刷新恢复、身份切换、来源展开；最终 Console 无错误/警告 |
-| 布局与构建 | 1440 / 1024 / 390 / 320px；Vite build 通过 |
+一次售后请求经过以下模块：
 
-9 项跳过为 5 项 Postgres POC 与 4 项 Redis/Chroma 可选依赖测试。详见[完整报告](docs/validation.md)和[脱敏模型证据](docs/live-validation.json)。
+```text
+/chat
+  → ConversationService     协调业务请求与其他咨询
+  → CommerceConversation    解析意图、确定操作对象
+  → CommerceStore           计算报价、校验权限、更新状态
+```
 
-## 范围与局限
+如果没有说清要退哪一笔，系统会先列出候选对象。报价绑定订单及其版本，过期或业务状态变化后需要重新确认。确认与审核是两个步骤，重复提交不会生成第二笔退款。
 
-退款、物流与到账均为模拟；没有生产支付渠道或身份提供方接入。Demo 检索为词法 BM25，不能宣传为已验收的完整混合 RAG。模型输出有不确定性；刷新恢复 Case，不恢复聊天画面。公开部署仍需会话回收、限流和资源控制。
+独立的技术咨询通过 `AgentOrchestrator` 分配给 Technical Agent，使用错误码查询等只读工具。Demo 的政策检索使用 BM25；完整后端另有 Redis、ChromaDB 和混合检索配置，见[后端文档](ResolveFlow/README.md)。
 
-[后端指南](ResolveFlow/README.md) · [前端指南](ResolveFlowFrontend/README.md) · [产品案例与简历用语](docs/portfolio.md)
+<details>
+<summary>架构图与目录</summary>
+
+![架构图](docs/architecture.svg)
+
+```text
+ResolveFlow/              Python 后端
+  api/                    API 与独立 Demo 服务
+  agents/                 对话协调、Agent 与工具
+  business/               订单、报价和售后规则
+  tests/                  后端测试
+ResolveFlowFrontend/      Vue 前端
+docs/                     运行说明、演示与测试记录
+```
+
+当前业务入口是 `api/portfolio_demo.py`，正式服务入口是 `api/main.py`。历史 `ActionRuntime` 保留兼容与只读查询，不再负责业务写入。
+
+</details>
+
+## 测试
+
+在仓库根目录运行：
+
+```bash
+make test PYTHON="$(pwd)/.venv/bin/python"
+npm run build --prefix ResolveFlowFrontend
+```
+
+2026-09-27 本地测试结果为 304 项通过、9 项跳过。跳过项需要额外的 Postgres、Redis 或 Chroma 测试环境。浏览器检查覆盖退款流程、刷新恢复、身份切换和移动端布局，记录见[测试报告](docs/validation.md)。
+
+真实模型检查需要单独运行，会调用已配置的模型 API：
+
+```bash
+cd ResolveFlow
+PYTHONPATH=. ../.venv/bin/python scripts/check_portfolio_live.py \
+  --live --env-file .env.agent.local
+```
+
+`.env.agent.local` 是本地配置文件，不随仓库提供。已有的三项检查结果保存在 [live-validation.json](docs/live-validation.json)。
+
+## 当前限制
+
+目前只提供本地 Demo，尚未部署在线体验。刷新页面可以恢复售后申请，但不会恢复聊天画面。模型回复可能有差异；Demo 使用词法检索，未启用向量检索或重排。部署到公网前还需要补充限流、会话清理和资源控制。
+
+[前端文档](ResolveFlowFrontend/README.md) · [后端文档](ResolveFlow/README.md)
