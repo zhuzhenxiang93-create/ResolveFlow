@@ -88,29 +88,5 @@ docs/                     运行说明、演示与测试记录
 
 </details>
 
-## 测试
-
-在仓库根目录运行：
-
-```bash
-make test PYTHON="$(pwd)/.venv/bin/python"
-npm run build --prefix ResolveFlowFrontend
-```
-
-2026-09-27 本地测试结果为 304 项通过、9 项跳过。跳过项需要额外的 Postgres、Redis 或 Chroma 测试环境。浏览器检查覆盖退款流程、刷新恢复、身份切换和移动端布局，记录见[测试报告](docs/validation.md)。
-
-真实模型检查需要单独运行，会调用已配置的模型 API：
-
-```bash
-cd ResolveFlow
-PYTHONPATH=. ../.venv/bin/python scripts/check_portfolio_live.py \
-  --live --env-file .env.agent.local
-```
-
-`.env.agent.local` 是本地配置文件，不随仓库提供。已有的三项检查结果保存在 [live-validation.json](docs/live-validation.json)。
-
-## 当前限制
-
-目前只提供本地 Demo，尚未部署在线体验。刷新页面可以恢复售后申请，但不会恢复聊天画面。模型回复可能有差异；Demo 使用词法检索，未启用向量检索或重排。部署到公网前还需要补充限流、会话清理和资源控制。
 
 [前端文档](ResolveFlowFrontend/README.md) · [后端文档](ResolveFlow/README.md)
