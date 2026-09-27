@@ -24,8 +24,6 @@ ResolveFlow 面向付费会员售后场景，把“咨询类客服”和“需�
 
 ![ResolveFlow](docs/screenshots/01-home.jpg)
 
-[运行说明](docs/local-development.md) · [演示步骤](docs/demo-script.md) · [更多截图](docs/screenshots/README.md)
-
 ## 功能
 
 - 查询商品和订阅政策，展开回答中的来源。
