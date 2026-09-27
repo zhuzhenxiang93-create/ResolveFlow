@@ -1,8 +1,26 @@
 # ResolveFlow
 
-ResolveFlow 是一个用 Vue 3 和 FastAPI 编写的 AI 客服项目，支持政策问答、订单查询、退款和订阅管理。
+**电商会员售后场景的 LLM Customer Service Agent｜Agent Routing · Controlled Workflow · RAG · Evaluation**
 
-项目里实现了一套模拟售后流程。用户可以在聊天中提出退款，查看报价，确认申请，再切换到审核员完成审核。LLM 用于理解请求和回答问题，退款金额、资格判断和状态更新由后端处理。
+ResolveFlow 面向付费会员售后场景，把“咨询类客服”和“需要改变业务状态的会员操作”放进同一个会话入口。用户可以询问政策、订单、物流、发票和技术问题，也可以发起退款、关闭自动续费等操作；系统通过 Agent 路由处理信息型请求，并通过确认、审核和确定性业务规则约束状态变更。
+
+## Product at a glance
+
+| 维度 | 设计 |
+|---|---|
+| **User problem** | 售后问题经常同时包含政策咨询、订单信息、技术故障和会员操作，用户需要在一次对话里完成理解、查询和处理。 |
+| **Product flow** | 用户请求 → 意图与对象解析 → 咨询类请求分配给领域 Agent / 操作类请求进入受控 Workflow → 用户确认 → 审核 → 执行与状态回显。 |
+| **AI role** | LLM 负责理解请求和生成自然语言回复；Technical Agent 可调用只读工具；政策问答通过检索获得上下文。 |
+| **Deterministic layer** | 退款金额、资格判断、权限、状态更新和重复提交控制由后端业务逻辑处理。 |
+| **Reliability** | 报价绑定订单版本；确认与审核分离；重复提交不会重复退款；购买、物流和支付均为模拟数据。 |
+
+## Recruiter 2-minute tour
+
+1. 按 [运行说明](docs/local-development.md) 启动 Demo，进入用户视角。
+2. 输入“把 Pro 会员重复扣的钱退掉，而且登录一直报 401”，观察系统同时生成退款确认卡和 Technical Agent 的排查建议。
+3. 完成用户确认后切换审核员视角，查看审核、状态变化和完整业务流程。
+
+[运行说明](docs/local-development.md) · [演示步骤](docs/demo-script.md) · [更多截图](docs/screenshots/README.md)
 
 ![ResolveFlow](docs/screenshots/01-home.jpg)
 
