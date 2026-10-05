@@ -42,6 +42,10 @@ ResolveFlow 是一个用 Vue 3 和 FastAPI 编写的 AI 客服项目，支持政
 make product-eval PYTHON="$(pwd)/.venv/bin/python"   # 重新生成 80 条主集与 16 条 holdout 报告
 ```
 
+## 在线 Demo
+
+仓库根目录的 `Dockerfile.demo` 和 `render.yaml` 可以把前端和 Demo API 部署成一个公开链接，例如 Render 的免费方案。公开链接默认使用离线规则，并带有按 IP 限流和会话自动清理。部署步骤和限制见 [部署在线 Demo](docs/deploy.md)。
+
 ## 快速开始
 
 需要 Python 3.11+、Node.js 20.19+ 或 22.12+。以下命令适用于 macOS / Linux。

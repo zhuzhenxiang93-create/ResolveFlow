@@ -1,3 +1,21 @@
+# Online demo packaging — 2026-10-05
+
+Added `Dockerfile.demo`, `render.yaml` and `api/portfolio_site.py`. One process serves the Vue build at `/` and the isolated Demo API at `/api/python`. Public mode adds per-IP limits and expires sessions by TTL or count. The frontend now replaces a stale saved identity on its own when the host restarts.
+
+Verified in the sandbox:
+- `tests.test_portfolio_site` passed 3/3.
+- The full suite ran 332 tests: **318 passed, 9 skipped and the same 5 Chroma-download errors**. Three consecutive runs gave the same result.
+- Running the site process natively, Playwright completed refund → confirm → reviewer approve.
+- After the session files were wiped, the page recovered silently. The Evaluation view loaded with 0 console errors.
+- Resident memory was about 135 MB.
+- The 21st session request from one IP within an hour returned 429.
+
+`docker build` could not be run because Docker Hub is blocked here. The image steps are the same commands that were verified natively.
+
+While doing this work, a flaky test (`test_execution_convergence`) exposed a bug introduced by the Product Evaluation fixes. A random legacy order ID containing e.g. `a432b` was mistaken for an HTTP error code, so the refund clause was dropped. Error codes now have to stand alone, and clauses that contain an object ID are never treated as technical. A regression test covers this. Both product-eval datasets were re-run with this fix (results not re-saved): 80/80 and 15/16, unchanged.
+
+---
+
 # Product Evaluation validation — 2026-10-05
 
 **Scope:** new Product Evaluation for the recruiting-demo Commerce chain, plus fixes

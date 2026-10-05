@@ -34,7 +34,8 @@ class Proposal(BaseModel):
 CLAUSE_SPLIT = r"[，,；;。？?！!]|并且|另外|顺便|而且|还有|此外"
 POLICY_RE = r"政策|规则|条件|流程|如何|怎么|多久|多长时间|期限|时效|能.*吗|可以.*吗|支持.*吗|会.*吗|兼容|规格|保修|退款相关|咨询退款|想了解退款|退款的问题|什么意思|是什么"
 REQUEST_RE = r"帮我|请.*(退|查|取消|关闭)|替我|麻烦"
-TECHNICAL_RE = r"登录|报错|崩溃|闪退|错误码|(?<!\d)[45]\d\d(?!\d)"
+# Error codes must stand alone: "a432b" inside an order/payment ID is not an HTTP status.
+TECHNICAL_RE = r"登录|报错|崩溃|闪退|错误码|(?<![A-Za-z0-9_-])[45]\d\d(?![A-Za-z0-9_-])"
 DEICTIC_RE = r"刚才|这笔|那笔|这单|那单|那个|这个|上次|之前|该订单|该会员"
 WITHDRAW_RE = r"还是算了|算了|不要了|不用了|先不(?:退|办|要)了|不退了|撤回|取消申请|不办了|改主意"
 REPLACE_RE = r"换成|改成|改为|换一个"
@@ -97,7 +98,8 @@ class CommerceConversation:
     def rules(message, catalog):
         """Explicitly labelled offline adapter: clause-level, grounded only in the user's words."""
         clauses = [c.strip() for c in re.split(CLAUSE_SPLIT, message) if c and c.strip()]
-        technical = [c for c in clauses if re.search(TECHNICAL_RE, c)]
+        ids = [o["id"] for o in catalog] + [p["id"] for o in catalog for p in o["payments"]]
+        technical = [c for c in clauses if re.search(TECHNICAL_RE, c) and not any(i in c for i in ids)]
         policy = [c for c in clauses if c not in technical and re.search(POLICY_RE, c) and not re.search(REQUEST_RE, c)]
         intents = []
         for clause in clauses:

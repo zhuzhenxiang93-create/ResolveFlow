@@ -30,6 +30,60 @@ class PortfolioKnowledgeTools:
         return ToolResult(True, items, name, degradations=['lexical_retrieval'])
 
 
+class PublicGuard:
+    """Opt-in limits for a publicly reachable demo (RESOLVEFLOW_PUBLIC=true).
+
+    In-memory per-IP sliding windows plus a session-file budget. Single process only;
+    this protects a free hosting instance from casual abuse, it is not production IAM.
+    """
+
+    def __init__(self, root, services):
+        import collections
+        self.root, self.services = root, services
+        self.enabled = os.getenv('RESOLVEFLOW_PUBLIC') == 'true'
+        self.ttl = int(os.getenv('RESOLVEFLOW_SESSION_TTL', '86400'))
+        self.max_sessions = int(os.getenv('RESOLVEFLOW_MAX_SESSIONS', '300'))
+        self.limits = {'/demo/session': (int(os.getenv('RESOLVEFLOW_SESSIONS_PER_HOUR', '20')), 3600),
+                       '/chat': (int(os.getenv('RESOLVEFLOW_CHATS_PER_MINUTE', '30')), 60)}
+        self.hits = collections.defaultdict(collections.deque)
+
+    @staticmethod
+    def client_ip(request):
+        forwarded = request.headers.get('x-forwarded-for', '')
+        return forwarded.split(',')[0].strip() if forwarded else (request.client.host if request.client else 'unknown')
+
+    def allow(self, request):
+        import time
+        if not self.enabled or request.url.path not in self.limits:
+            return True
+        limit, window = self.limits[request.url.path]
+        bucket = self.hits[(request.url.path, self.client_ip(request))]
+        now = time.time()
+        while bucket and bucket[0] < now - window:
+            bucket.popleft()
+        if len(bucket) >= limit:
+            return False
+        bucket.append(now)
+        if len(self.hits) > 10000:  # drop idle keys so the table cannot grow without bound
+            for key in [k for k, v in self.hits.items() if not v or v[-1] < now - 3600]:
+                del self.hits[key]
+        return True
+
+    def prune(self):
+        """Expire old demo sessions (files + cached services) before creating a new one."""
+        import time
+        if not self.enabled:
+            return
+        files = sorted(self.root.glob('*.sqlite3'), key=lambda f: f.stat().st_mtime)
+        cutoff = time.time() - self.ttl
+        stale = [f for f in files if f.stat().st_mtime < cutoff]
+        overflow = files[:max(0, len(files) - len(stale) - self.max_sessions + 1)]
+        for f in dict.fromkeys(stale + overflow):
+            self.services.pop(f.stem, None)
+            for suffix in ('', '-wal', '-shm', '-journal'):
+                Path(str(f) + suffix).unlink(missing_ok=True)
+
+
 def create_app():
     if os.getenv('RESOLVEFLOW_DEMO_MODE') != 'true':
         raise RuntimeError('Set RESOLVEFLOW_DEMO_MODE=true for the isolated demo host')
@@ -75,12 +129,15 @@ def create_app():
     commerce_routes.runtime = lambda: service(current.get()).runtime
     commerce_routes.conversation_service = lambda: service(current.get())
     app = FastAPI(title='ResolveFlow isolated portfolio demo')
+    guard = PublicGuard(root, services)
 
     @app.middleware('http')
     async def session_scope(request: Request, call_next):
+        from starlette.responses import JSONResponse
+        if not guard.allow(request):
+            return JSONResponse({'detail': 'Too many requests for this public demo. Please wait a minute and try again.'}, status_code=429)
         if request.url.path in {'/health', '/demo/session', '/docs', '/openapi.json'} or request.url.path.startswith('/eval/'):
             return await call_next(request)
-        from starlette.responses import JSONResponse
         try:
             auth = request.headers.get('authorization', '')
             if not auth.startswith('Bearer '):
@@ -102,11 +159,13 @@ def create_app():
     @app.get('/health')
     def health():
         return {'status': 'ok', 'demo': True, 'mode': 'live-model' if client else 'offline-rules',
-                'retrieval': 'lexical', 'simulated': True}
+                'retrieval': 'lexical', 'simulated': True, 'public': guard.enabled}
 
     @app.post('/demo/session')
     def bootstrap():
-        # A fresh namespace is also the reset operation: existing audits are retained.
+        # A fresh namespace is also the reset operation: existing audits are retained
+        # (in public mode only until the session TTL / budget expires them).
+        guard.prune()
         session = str(uuid.uuid4())
         user = f'{session}:user'
         service(session).execution.store.seed(user)

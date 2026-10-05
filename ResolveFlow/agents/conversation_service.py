@@ -186,7 +186,7 @@ def offline_error_code_support(text):
     such — not the Technical Agent and not a diagnosis of the user's account.
     """
     from agents.chat_tools import lookup_error_code
-    codes = list(dict.fromkeys(re.findall(r"(?<!\d)([45]\d\d)(?!\d)", text or "")))
+    codes = list(dict.fromkeys(re.findall(r"(?<![A-Za-z0-9_-])([45]\d\d)(?![A-Za-z0-9_-])", text or "")))
     if not codes:
         return None
     traces, lines = [], []

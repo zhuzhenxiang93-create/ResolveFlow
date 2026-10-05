@@ -1,0 +1,18 @@
+# Render Blueprint for the public recruiting demo (free plan, offline rules, simulated data).
+# Render → New → Blueprint → select this repository. See docs/deploy.md.
+services:
+  - type: web
+    name: resolveflow-demo
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile.demo
+    dockerContext: .
+    healthCheckPath: /api/python/health
+    autoDeploy: true
+    envVars:
+      - key: RESOLVEFLOW_DEMO_MODE
+        value: "true"
+      - key: RESOLVEFLOW_PUBLIC
+        value: "true"
+      - key: AGENT_USE_LLM
+        value: "0"
