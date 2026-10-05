@@ -380,6 +380,21 @@ class CommerceConversation:
                 if proposal not in resolved:
                     resolved.append(proposal)
             last = list(dict.fromkeys([obj["id"]]+last))[:4]
+        # A narrowed or re-scoped request ("我只想退键盘" after a full-order refund card) replaces the
+        # user's still-unconfirmed card for the same object and operation, so two competing amounts
+        # are never left side by side. Identical repeats keep the old card; it goes stale on confirm.
+        for proposal in resolved:
+            if proposal["operation"] not in WRITE_OPS:
+                continue
+            for old_case in self.store.cases(owner):
+                for action in old_case["operations"]:
+                    q = action["quote"]
+                    if (action["status"] == "awaiting_confirmation" and q["object_id"] == proposal["object_id"]
+                            and q["operation"] == proposal["operation"]
+                            and (q.get("item_id") != proposal["item_id"]
+                                 or (proposal["payment_id"] and q.get("payment_id") != proposal["payment_id"]))):
+                        self.store.transition(owner, old_case["id"], action["id"], "cancel", owner)
+                        lines.append(f"已替换之前未确认的申请：{q['title']} · {q['label']} · CNY {q['amount_minor']/100:.2f}（已作废，未执行）")
         case = self.store.create_case(owner, conv, resolved) if resolved else None
         if case:
             lines.append(case["response"])

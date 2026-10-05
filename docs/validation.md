@@ -1,3 +1,19 @@
+# Field-found bad case on the public demo — 2026-10-05
+
+**What happened.** A user typed “退机械键盘” and got a ¥399 full-order card. They then typed “我只想退键盘” and got a correct ¥299 line-item card. The old ¥399 card stayed open beside it, and the user confirmed the wrong one. The backend behaved as designed: it computed both amounts correctly and moved only the card that was actually confirmed. The product gap was leaving two competing, still-unconfirmed amounts for one object.
+
+**Fix.** When a new request changes the scope of the same object and operation (a different line item or a specific bill), the user's older unconfirmed card is cancelled. The reply says which card was replaced. Confirmed cards are never touched. An identical repeat keeps the old card, which turns stale on confirm, so PE-I02 is unchanged.
+
+**Verification.**
+- 2 regression tests added.
+- Full suite: 334 run, 320 passed, 9 skipped, plus the same 5 Chroma-download errors.
+- Commerce acceptance passed 42/42.
+- Product eval is unchanged at 80/80 on the main set and 15/16 on the holdout.
+
+The scenario was kept as a unit test and was not added to the 80-case set, so the baseline comparison remains on the same dataset.
+
+---
+
 # Online demo packaging — 2026-10-05
 
 Added `Dockerfile.demo`, `render.yaml` and `api/portfolio_site.py`. One process serves the Vue build at `/` and the isolated Demo API at `/api/python`. Public mode adds per-IP limits and expires sessions by TTL or count. The frontend now replaces a stale saved identity on its own when the host restarts.
