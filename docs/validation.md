@@ -1,3 +1,54 @@
+# Product Evaluation validation — 2026-10-05
+
+**Scope:** new Product Evaluation for the recruiting-demo Commerce chain, plus fixes
+driven by its Bad Case analysis. Base commit `822ff13` (origin/main). Run in a Linux
+cloud sandbox with Python 3.11 (`uv` venv from `ResolveFlow/requirements.txt`) and
+Node 22. **No model provider was reachable from this sandbox** (DashScope blocked by
+the egress policy), so every Product Evaluation number below is **offline-rules
+mode**. `--live` is implemented but has not been run yet.
+
+| Command | Result |
+|---|---|
+| `PYTHONPATH=. python -m unittest discover -s tests` (before changes) | 313 run: 299 passed, 9 skipped, **5 errors** |
+| same, after changes | 328 run (15 new): **314 passed, 9 skipped, 5 errors** |
+| `scripts/run_commerce_acceptance.py` | **42/42 passed** before and after |
+| `python -m unittest tests.test_portfolio_demo` | 8/8 passed |
+| `python -m unittest tests.test_product_eval` | 15/15 passed |
+| `scripts/run_product_eval.py --label baseline --save-baseline` | 48/80 passed (first run, kept) |
+| `scripts/run_product_eval.py --dataset holdout --label baseline --save-baseline` | 2/16 passed (written before any fix) |
+| `scripts/run_product_eval.py --label after_fix` / `--dataset holdout` | 80/80 · 15/16 |
+| `npm run build --prefix ResolveFlowFrontend` | Passed |
+| `git diff --check` | Passed |
+
+The 5 errors are the same before and after the changes. In each one, Chroma tries to
+download its ONNX embedding model and the sandbox proxy returns HTTP 403
+(`test_commerce_knowledge` ×1, `test_hybrid_retriever` ×1,
+`test_subscription_rag_scope` ×3). The 2026-09-27 macOS run below passed these
+tests with a cached model. Re-run `make test` locally to confirm before quoting new
+totals. The 9 skips are the same opt-in Postgres/Redis/Chroma tests.
+
+The browser check used Playwright/Chromium against Vite + the isolated Demo host, at
+1440×900 and 390×844. The Evaluation view loads from `/eval/product/latest` with
+0 console errors or warnings, and has no horizontal overflow on mobile. Clicking a
+bad case loads `/eval/product/cases/{id}`. On the Demo view, the Billing + technical
+scenario still shows the ¥99 quote. In offline mode, 401 is now explained by the
+read-only `lookup_error_code` table and labelled “Offline read-only tool · not a
+model diagnosis”.
+
+Regressions checked: refund confirmation → independent review → return → settlement;
+user/reviewer separation; cross-session isolation; idempotent double clicks; stale
+quotes; Reset Demo. These are covered by the unchanged portfolio/commerce tests and by
+the authorization, confirmation and idempotency cases of the evaluation itself.
+Refresh restore was not re-checked in a browser this time; the Case API it relies on
+is unchanged.
+
+What the numbers mean and do not mean: see [product-evaluation.md](product-evaluation.md).
+The fixes were derived from the 80-case failures, so the 100% re-run overstates
+generalisation. The 16-case holdout (93.8%) is the fairer signal. It is still a
+small, self-authored set on simulated data.
+
+---
+
 # Recruiting demo validation — 2026-09-27
 
 **Status: local recruiting-demo acceptance passed.** This is a simulated local

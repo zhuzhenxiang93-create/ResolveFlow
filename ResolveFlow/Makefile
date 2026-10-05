@@ -73,3 +73,12 @@ unified-live-check:
 
 summarize-p0:
 	PYTHONPATH=. $(PYTHON) scripts/summarize_p0.py
+
+.PHONY: product-eval product-eval-holdout product-eval-live
+# Product Evaluation of the recruiting-demo Commerce chain (offline rules, deterministic).
+product-eval:
+	PYTHONPATH=. $(PYTHON) scripts/run_product_eval.py --label current
+	PYTHONPATH=. $(PYTHON) scripts/run_product_eval.py --dataset holdout --label current
+
+product-eval-live:
+	PYTHONPATH=. $(PYTHON) scripts/run_product_eval.py --live --env-file .env.agent.local --label live

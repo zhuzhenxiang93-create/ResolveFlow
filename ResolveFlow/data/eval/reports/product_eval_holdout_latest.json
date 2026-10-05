@@ -1,0 +1,1669 @@
+{
+ "schema_version": 1,
+ "run_id": "20261005T045934Z-after_fix",
+ "label": "after_fix",
+ "generated_at": "2026-10-05T04:59:34.453271+00:00",
+ "git_commit": "822ff13",
+ "git_dirty": true,
+ "mode": "offline-rules",
+ "scope": {
+  "chain": "POST /chat → ConversationService → CommerceConversation → CommerceStore (isolated Demo host, real JWT user/reviewer identities)",
+  "judgement": "Final business state read from the per-session SQLite database (objects, refunds, cases, audit); assistant text only judged for read-only answers",
+  "storage": "SQLite per Demo session",
+  "retrieval": "BM25 lexical policy retrieval (Demo); no ChromaDB / hybrid RAG in this evaluation",
+  "simulated": true,
+  "not_covered": [
+   "real payments or orders",
+   "production traffic",
+   "Redis / ChromaDB full backend",
+   "live-model nondeterminism (unless mode=live-model)"
+  ]
+ },
+ "dataset": {
+  "path": "data/product_eval/product_eval_holdout.jsonl",
+  "sha256": "d80da8c09aefbb6da2144d817b847d3020bb6edfb3ee0108d9b88f5f250e6ab7",
+  "case_count": 16,
+  "categories": {
+   "single_task": 3,
+   "disambiguation": 2,
+   "multi_intent": 3,
+   "multi_turn": 4,
+   "business_rule": 2,
+   "confirmation_approval": 1,
+   "policy_technical": 1
+  }
+ },
+ "metrics": {
+  "task_success_rate": {
+   "value": 0.9375,
+   "numerator": 15,
+   "denominator": 16,
+   "definition": "全部 expected_goals 达成、SQLite 最终业务状态与 expected_final_state 一致、澄清/对象/确认/授权检查全部通过且用户轮数不超过 max_user_turns 的 Case 占比。"
+  },
+  "object_resolution_accuracy": {
+   "value": 1.0,
+   "numerator": 14,
+   "denominator": 14,
+   "definition": "有 expected_object 的 Case 中，所有写操作提案只落在目标对象上且每个目标都被提案；需澄清的 Case 必须先澄清、候选包含全部合法对象，才算正确。"
+  },
+  "multi_intent_completion_rate": {
+   "value": 1.0,
+   "numerator": 3,
+   "denominator": 3,
+   "definition": "包含 ≥2 个实质目标（action/policy/technical/read）的 Case 中，全部目标都达成的比例。"
+  },
+  "confirmation_compliance": {
+   "value": 1.0,
+   "numerator": 4,
+   "denominator": 4,
+   "definition": "所有真实发生的高风险写入（退款预留行、订阅/订单状态变更）中，审计日志能证明先有任务用户本人 confirm（退款还需非本人 reviewer approve）的比例。"
+  },
+  "unauthorized_operations": {
+   "value": 0,
+   "attack_attempts": 0,
+   "attacks_blocked": 0,
+   "unconfirmed_writes": 0,
+   "definition": "越权尝试被服务端接受或导致状态变化的次数 + 无确认/无独立审核的写入次数（目标为 0）。"
+  },
+  "action_tool_success_rate": {
+   "value": 1.0,
+   "numerator": 13,
+   "denominator": 13,
+   "definition": "包含 action/technical 目标的 Case 中，所需业务操作（对象、操作、金额、最终状态）或只读工具调用全部正确，且最终业务状态正确的比例。"
+  },
+  "clarification_accuracy": {
+   "value": 0.9375,
+   "numerator": 15,
+   "denominator": 16,
+   "precision": 0.8,
+   "recall": 1.0,
+   "unnecessary_clarifications": 1,
+   "missed_clarifications": 0,
+   "definition": "标注了 requires_clarification 的 Case 中：应澄清时先澄清再提案；不应澄清时没有进入澄清状态。"
+  },
+  "avg_turns_to_resolution": {
+   "value": 2.2,
+   "p50": 2,
+   "p90": 3,
+   "n": 15,
+   "definition": "成功 Case 的用户交互轮数（发送消息、点击候选、确认/取消；不含 Reviewer 操作）的平均值，并给出 P50/P90。"
+  },
+  "goal_completion_rate": {
+   "value": 0.9444,
+   "numerator": 17,
+   "denominator": 18,
+   "definition": "所有 Case 中实质目标（action/policy/technical/read）的目标级达成率。"
+  },
+  "multi_intent_goal_completion_rate": {
+   "value": 1.0,
+   "numerator": 6,
+   "denominator": 6,
+   "definition": "多目标 Case 内的目标级达成率（用于看部分完成）。"
+  }
+ },
+ "headline": [
+  "task_success_rate",
+  "object_resolution_accuracy",
+  "confirmation_compliance",
+  "unauthorized_operations",
+  "multi_intent_completion_rate",
+  "clarification_accuracy",
+  "action_tool_success_rate",
+  "avg_turns_to_resolution"
+ ],
+ "category_breakdown": {
+  "single_task": {
+   "total": 3,
+   "passed": 2,
+   "rate": 0.6667
+  },
+  "disambiguation": {
+   "total": 2,
+   "passed": 2,
+   "rate": 1.0
+  },
+  "multi_intent": {
+   "total": 3,
+   "passed": 3,
+   "rate": 1.0
+  },
+  "multi_turn": {
+   "total": 4,
+   "passed": 4,
+   "rate": 1.0
+  },
+  "business_rule": {
+   "total": 2,
+   "passed": 2,
+   "rate": 1.0
+  },
+  "confirmation_approval": {
+   "total": 1,
+   "passed": 1,
+   "rate": 1.0
+  },
+  "policy_technical": {
+   "total": 1,
+   "passed": 1,
+   "rate": 1.0
+  }
+ },
+ "bad_case_summary": {
+  "total": 1,
+  "by_failure_type": {
+   "AUTHORIZATION": {
+    "label": "Authorization",
+    "count": 0,
+    "share_of_bad_cases": 0.0,
+    "share_of_all_cases": 0.0
+   },
+   "CONFIRMATION_VIOLATION": {
+    "label": "Confirmation Violation",
+    "count": 0,
+    "share_of_bad_cases": 0.0,
+    "share_of_all_cases": 0.0
+   },
+   "MISSING_CLARIFICATION": {
+    "label": "Missing Clarification",
+    "count": 0,
+    "share_of_bad_cases": 0.0,
+    "share_of_all_cases": 0.0
+   },
+   "UNNECESSARY_CLARIFICATION": {
+    "label": "Unnecessary Clarification",
+    "count": 1,
+    "share_of_bad_cases": 1.0,
+    "share_of_all_cases": 0.0625
+   },
+   "OBJECT_RESOLUTION": {
+    "label": "Object Resolution",
+    "count": 0,
+    "share_of_bad_cases": 0.0,
+    "share_of_all_cases": 0.0
+   },
+   "TASK_PLANNING": {
+    "label": "Task Planning",
+    "count": 0,
+    "share_of_bad_cases": 0.0,
+    "share_of_all_cases": 0.0
+   },
+   "RESPONSE_QUALITY": {
+    "label": "Response Quality",
+    "count": 0,
+    "share_of_bad_cases": 0.0,
+    "share_of_all_cases": 0.0
+   }
+  },
+  "root_causes": {
+   "POLICY_QUESTION_TREATED_AS_ACTION": 1
+  }
+ },
+ "bad_cases": [
+  {
+   "case_id": "HO-03",
+   "category": "single_task",
+   "title": "政策：重复扣费多久到账",
+   "user_turns": [
+    "重复扣费退款一般多久能到账？"
+   ],
+   "expected": {
+    "goals": [
+     {
+      "type": "policy",
+      "sources_include": [
+       "subscription-commerce-refund"
+      ]
+     },
+     {
+      "type": "no_write"
+     }
+    ],
+    "expected_object": null,
+    "requires_clarification": false,
+    "requires_confirmation": false,
+    "requires_review": false,
+    "expected_final_state": {
+     "objects": {},
+     "others_unchanged": true
+    },
+    "max_user_turns": 1,
+    "behaviour": "政策回答带来源"
+   },
+   "actual": {
+    "actions": [],
+    "clarification_step": 0,
+    "first_write_proposal_step": null,
+    "routes": [
+     "commerce"
+    ],
+    "last_response": "你想了解商品退货退款，还是会员/订阅费用退款的规则？这一步只是咨询，不会提交退款申请。",
+    "user_turns_used": 1
+   },
+   "failed_metrics": [
+    "goals",
+    "clarification"
+   ],
+   "failure_type": "UNNECESSARY_CLARIFICATION",
+   "secondary_failure_types": [
+    "RESPONSE_QUALITY"
+   ],
+   "root_cause": "POLICY_QUESTION_TREATED_AS_ACTION: 政策咨询被当成售后操作，系统要求选择订单",
+   "evidence": [
+    "goal policy: ✗ sources=[] required=['subscription-commerce-refund']",
+    "clarification_step=0 (none expected)"
+   ],
+   "final_business_state": {},
+   "result": "FAILED"
+  }
+ ],
+ "cases": [
+  {
+   "id": "HO-01",
+   "category": "single_task",
+   "title": "口语化退款：音箱不要了",
+   "passed": true,
+   "result": "PASSED",
+   "user_turns": 2,
+   "max_user_turns": 2,
+   "checks": {
+    "goals": true,
+    "final_state": true,
+    "clarification": true,
+    "object_resolution": true,
+    "confirmation": null,
+    "authorization": true,
+    "turn_budget": true,
+    "no_chat_errors": true,
+    "action_tool": true,
+    "multi_intent": null
+   },
+   "failed_metrics": [],
+   "failure_type": null,
+   "root_cause": null,
+   "goals": [
+    {
+     "type": "action",
+     "object": "speaker",
+     "achieved": true,
+     "evidence": [
+      "latest speaker/refund status=awaiting_approval expected∈['awaiting_approval']",
+      "amount_minor=19900 expected=19900"
+     ]
+    }
+   ],
+   "writes": [],
+   "unauthorized": [],
+   "expected_behaviour": "口语退款意图，直接报价",
+   "trace": [
+    {
+     "step": 0,
+     "kind": "user",
+     "text": "蓝牙音箱我不想要了，退了吧",
+     "http": 200,
+     "status": "awaiting_confirmation",
+     "route": "commerce",
+     "candidates": [],
+     "operations": [
+      {
+       "object": "speaker",
+       "operation": "refund",
+       "status": "awaiting_confirmation",
+       "amount_minor": 19900
+      }
+     ],
+     "sources": [],
+     "tools_used": [],
+     "degradations": [],
+     "response": "蓝牙音箱 · 申请退款 · 待用户确认 · CNY 199.00：按优惠分摊后的实付金额退款；单品退款不退运费，全单退剩余实付款；已开发票进入调整流程；先等待退货验收，再进入模拟退款处理"
+    },
+    {
+     "step": 1,
+     "kind": "confirm",
+     "http": [
+      200
+     ],
+     "action": "speaker/refund (was awaiting_confirmation)"
+    }
+   ],
+   "latency_ms": 35.7
+  },
+  {
+   "id": "HO-02",
+   "category": "single_task",
+   "title": "停掉 Basic 续费的另一种说法",
+   "passed": true,
+   "result": "PASSED",
+   "user_turns": 2,
+   "max_user_turns": 2,
+   "checks": {
+    "goals": true,
+    "final_state": true,
+    "clarification": true,
+    "object_resolution": true,
+    "confirmation": true,
+    "authorization": true,
+    "turn_budget": true,
+    "no_chat_errors": true,
+    "action_tool": true,
+    "multi_intent": null
+   },
+   "failed_metrics": [],
+   "failure_type": null,
+   "root_cause": null,
+   "goals": [
+    {
+     "type": "action",
+     "object": "basic",
+     "achieved": true,
+     "evidence": [
+      "latest basic/cancel_renewal status=completed expected∈['completed']"
+     ]
+    }
+   ],
+   "writes": [
+    {
+     "object": "basic",
+     "kind": "state_change",
+     "compliant": true,
+     "evidence": "('active', True, 'Basic 月度会员') → ('active', False, 'Basic 月度会员'); confirmed actions=['cancel_renewal']"
+    }
+   ],
+   "unauthorized": [],
+   "expected_behaviour": "停续",
+   "trace": [
+    {
+     "step": 0,
+     "kind": "user",
+     "text": "Basic 会员的续费停掉吧",
+     "http": 200,
+     "status": "awaiting_confirmation",
+     "route": "commerce",
+     "candidates": [],
+     "operations": [
+      {
+       "object": "basic",
+       "operation": "cancel_renewal",
+       "status": "awaiting_confirmation",
+       "amount_minor": 0
+      }
+     ],
+     "sources": [],
+     "tools_used": [],
+     "degradations": [],
+     "response": "Basic 月度会员 · 关闭自动续费（保留本期权益） · 待用户确认：停止未来续费；保留本期权益；不退款"
+    },
+    {
+     "step": 1,
+     "kind": "confirm",
+     "http": [
+      200
+     ],
+     "action": "basic/cancel_renewal (was awaiting_confirmation)"
+    }
+   ],
+   "latency_ms": 24.0
+  },
+  {
+   "id": "HO-03",
+   "category": "single_task",
+   "title": "政策：重复扣费多久到账",
+   "passed": false,
+   "result": "FAILED",
+   "user_turns": 1,
+   "max_user_turns": 1,
+   "checks": {
+    "goals": false,
+    "final_state": true,
+    "clarification": false,
+    "object_resolution": null,
+    "confirmation": null,
+    "authorization": true,
+    "turn_budget": true,
+    "no_chat_errors": true,
+    "action_tool": null,
+    "multi_intent": null
+   },
+   "failed_metrics": [
+    "goals",
+    "clarification"
+   ],
+   "failure_type": "UNNECESSARY_CLARIFICATION",
+   "root_cause": "POLICY_QUESTION_TREATED_AS_ACTION: 政策咨询被当成售后操作，系统要求选择订单",
+   "goals": [
+    {
+     "type": "policy",
+     "object": null,
+     "achieved": false,
+     "evidence": [
+      "sources=[] required=['subscription-commerce-refund']"
+     ]
+    },
+    {
+     "type": "no_write",
+     "object": null,
+     "achieved": true,
+     "evidence": [
+      "objects changed by the system: none"
+     ]
+    }
+   ],
+   "writes": [],
+   "unauthorized": [],
+   "expected_behaviour": "政策回答带来源",
+   "trace": [
+    {
+     "step": 0,
+     "kind": "user",
+     "text": "重复扣费退款一般多久能到账？",
+     "http": 200,
+     "status": "awaiting_clarification",
+     "route": "commerce",
+     "candidates": [],
+     "operations": [],
+     "sources": [],
+     "tools_used": [],
+     "degradations": [],
+     "response": "你想了解商品退货退款，还是会员/订阅费用退款的规则？这一步只是咨询，不会提交退款申请。"
+    }
+   ],
+   "latency_ms": 15.5
+  },
+  {
+   "id": "HO-04",
+   "category": "disambiguation",
+   "title": "两笔同名键盘",
+   "passed": true,
+   "result": "PASSED",
+   "user_turns": 3,
+   "max_user_turns": 3,
+   "checks": {
+    "goals": true,
+    "final_state": true,
+    "clarification": true,
+    "object_resolution": true,
+    "confirmation": null,
+    "authorization": true,
+    "turn_budget": true,
+    "no_chat_errors": true,
+    "action_tool": true,
+    "multi_intent": null
+   },
+   "failed_metrics": [],
+   "failure_type": null,
+   "root_cause": null,
+   "goals": [
+    {
+     "type": "clarify",
+     "object": null,
+     "achieved": true,
+     "evidence": [
+      "first_clarification_step=0"
+     ]
+    },
+    {
+     "type": "action",
+     "object": "keyboard2",
+     "achieved": true,
+     "evidence": [
+      "latest keyboard2/refund status=awaiting_approval expected∈['awaiting_approval']",
+      "amount_minor=39900 expected=39900"
+     ]
+    }
+   ],
+   "writes": [],
+   "unauthorized": [],
+   "expected_behaviour": "两笔同名订单需选择",
+   "trace": [
+    {
+     "step": 0,
+     "kind": "user",
+     "text": "机械键盘与鼠标套装帮我退款",
+     "http": 200,
+     "status": "awaiting_clarification",
+     "route": "commerce",
+     "candidates": [
+      "keyboard",
+      "keyboard2"
+     ],
+     "operations": [],
+     "sources": [],
+     "tools_used": [],
+     "degradations": [],
+     "response": "请确认要处理的商品订单或订阅账单：机械键盘与鼠标套装、机械键盘与鼠标套装"
+    },
+    {
+     "step": 1,
+     "kind": "select",
+     "text": "G-80386a8a-keyboard2",
+     "http": 200,
+     "status": "awaiting_confirmation",
+     "route": "commerce",
+     "candidates": [],
+     "operations": [
+      {
+       "object": "keyboard2",
+       "operation": "refund",
+       "status": "awaiting_confirmation",
+       "amount_minor": 39900
+      }
+     ],
+     "sources": [],
+     "tools_used": [],
+     "degradations": [],
+     "response": "机械键盘与鼠标套装 · 申请退款 · 待用户确认 · CNY 399.00：按优惠分摊后的实付金额退款；单品退款不退运费，全单退剩余实付款；已开发票进入调整流程"
+    },
+    {
+     "step": 2,
+     "kind": "confirm",
+     "http": [
+      200
+     ],
+     "action": "keyboard2/refund (was awaiting_confirmation)"
+    }
+   ],
+   "latency_ms": 33.5
+  },
+  {
+   "id": "HO-05",
+   "category": "disambiguation",
+   "title": "退一下会员",
+   "passed": true,
+   "result": "PASSED",
+   "user_turns": 3,
+   "max_user_turns": 3,
+   "checks": {
+    "goals": true,
+    "final_state": true,
+    "clarification": true,
+    "object_resolution": true,
+    "confirmation": null,
+    "authorization": true,
+    "turn_budget": true,
+    "no_chat_errors": true,
+    "action_tool": true,
+    "multi_intent": null
+   },
+   "failed_metrics": [],
+   "failure_type": null,
+   "root_cause": null,
+   "goals": [
+    {
+     "type": "clarify",
+     "object": null,
+     "achieved": true,
+     "evidence": [
+      "first_clarification_step=0"
+     ]
+    },
+    {
+     "type": "action",
+     "object": "pro",
+     "achieved": true,
+     "evidence": [
+      "latest pro/refund status=awaiting_approval expected∈['awaiting_approval']",
+      "amount_minor=9900 expected=9900"
+     ]
+    }
+   ],
+   "writes": [],
+   "unauthorized": [],
+   "expected_behaviour": "三个订阅需选择",
+   "trace": [
+    {
+     "step": 0,
+     "kind": "user",
+     "text": "帮我退一下会员",
+     "http": 200,
+     "status": "awaiting_clarification",
+     "route": "commerce",
+     "candidates": [
+      "basic",
+      "pro",
+      "used"
+     ],
+     "operations": [],
+     "sources": [],
+     "tools_used": [],
+     "degradations": [],
+     "response": "请确认要处理的商品订单或订阅账单：Basic 月度会员、Pro 月度会员、已使用的年度会员"
+    },
+    {
+     "step": 1,
+     "kind": "select",
+     "text": "S-aecee440-pro",
+     "http": 200,
+     "status": "awaiting_confirmation",
+     "route": "commerce",
+     "candidates": [],
+     "operations": [
+      {
+       "object": "pro",
+       "operation": "refund",
+       "status": "awaiting_confirmation",
+       "amount_minor": 9900
+      }
+     ],
+     "sources": [],
+     "tools_used": [],
+     "degradations": [],
+     "response": "Pro 月度会员 · 申请退款 · 待用户确认 · CNY 99.00：仅退重复扣款；保留订阅权益和续费设置"
+    },
+    {
+     "step": 2,
+     "kind": "confirm",
+     "http": [
+      200
+     ],
+     "action": "pro/refund (was awaiting_confirmation)"
+    }
+   ],
+   "latency_ms": 34.3
+  },
+  {
+   "id": "HO-06",
+   "category": "multi_intent",
+   "title": "两个订阅都停续",
+   "passed": true,
+   "result": "PASSED",
+   "user_turns": 3,
+   "max_user_turns": 3,
+   "checks": {
+    "goals": true,
+    "final_state": true,
+    "clarification": true,
+    "object_resolution": true,
+    "confirmation": true,
+    "authorization": true,
+    "turn_budget": true,
+    "no_chat_errors": true,
+    "action_tool": true,
+    "multi_intent": true
+   },
+   "failed_metrics": [],
+   "failure_type": null,
+   "root_cause": null,
+   "goals": [
+    {
+     "type": "action",
+     "object": "pro",
+     "achieved": true,
+     "evidence": [
+      "latest pro/cancel_renewal status=completed expected∈['completed']"
+     ]
+    },
+    {
+     "type": "action",
+     "object": "basic",
+     "achieved": true,
+     "evidence": [
+      "latest basic/cancel_renewal status=completed expected∈['completed']"
+     ]
+    }
+   ],
+   "writes": [
+    {
+     "object": "basic",
+     "kind": "state_change",
+     "compliant": true,
+     "evidence": "('active', True, 'Basic 月度会员') → ('active', False, 'Basic 月度会员'); confirmed actions=['cancel_renewal']"
+    },
+    {
+     "object": "pro",
+     "kind": "state_change",
+     "compliant": true,
+     "evidence": "('active', True, 'basic') → ('active', False, 'basic'); confirmed actions=['cancel_renewal']"
+    }
+   ],
+   "unauthorized": [],
+   "expected_behaviour": "两个对象各一张卡",
+   "trace": [
+    {
+     "step": 0,
+     "kind": "user",
+     "text": "Pro 和 Basic 的自动续费都关掉",
+     "http": 200,
+     "status": "awaiting_confirmation",
+     "route": "commerce",
+     "candidates": [],
+     "operations": [
+      {
+       "object": "basic",
+       "operation": "cancel_renewal",
+       "status": "awaiting_confirmation",
+       "amount_minor": 0
+      },
+      {
+       "object": "pro",
+       "operation": "cancel_renewal",
+       "status": "awaiting_confirmation",
+       "amount_minor": 0
+      }
+     ],
+     "sources": [],
+     "tools_used": [],
+     "degradations": [],
+     "response": "Basic 月度会员 · 关闭自动续费（保留本期权益） · 待用户确认：停止未来续费；保留本期权益；不退款\nPro 月度会员 · 关闭自动续费（保留本期权益） · 待用户确认：停止未来续费；保留本期权益；不退款"
+    },
+    {
+     "step": 1,
+     "kind": "confirm",
+     "http": [
+      200
+     ],
+     "action": "pro/cancel_renewal (was awaiting_confirmation)"
+    },
+    {
+     "step": 2,
+     "kind": "confirm",
+     "http": [
+      200
+     ],
+     "action": "basic/cancel_renewal (was awaiting_confirmation)"
+    }
+   ],
+   "latency_ms": 28.7
+  },
+  {
+   "id": "HO-07",
+   "category": "multi_intent",
+   "title": "退款 + 发票政策",
+   "passed": true,
+   "result": "PASSED",
+   "user_turns": 2,
+   "max_user_turns": 3,
+   "checks": {
+    "goals": true,
+    "final_state": true,
+    "clarification": true,
+    "object_resolution": true,
+    "confirmation": null,
+    "authorization": true,
+    "turn_budget": true,
+    "no_chat_errors": true,
+    "action_tool": true,
+    "multi_intent": true
+   },
+   "failed_metrics": [],
+   "failure_type": null,
+   "root_cause": null,
+   "goals": [
+    {
+     "type": "action",
+     "object": "speaker",
+     "achieved": true,
+     "evidence": [
+      "latest speaker/refund status=awaiting_approval expected∈['awaiting_approval']",
+      "amount_minor=19900 expected=19900"
+     ]
+    },
+    {
+     "type": "policy",
+     "object": null,
+     "achieved": true,
+     "evidence": [
+      "sources=['commerce-payment', 'goods-invoice', 'goods-refund'] required=['goods-invoice']"
+     ]
+    }
+   ],
+   "writes": [],
+   "unauthorized": [],
+   "expected_behaviour": "动作与政策都要",
+   "trace": [
+    {
+     "step": 0,
+     "kind": "user",
+     "text": "蓝牙音箱帮我退款，另外退款后发票怎么处理？",
+     "http": 200,
+     "status": "awaiting_confirmation",
+     "route": "commerce",
+     "candidates": [],
+     "operations": [
+      {
+       "object": "speaker",
+       "operation": "refund",
+       "status": "awaiting_confirmation",
+       "amount_minor": 19900
+      }
+     ],
+     "sources": [
+      "goods-invoice",
+      "commerce-payment",
+      "goods-refund"
+     ],
+     "tools_used": [],
+     "degradations": [
+      "local_policy_fallback"
+     ],
+     "response": "蓝牙音箱 · 申请退款 · 待用户确认 · CNY 199.00：按优惠分摊后的实付金额退款；单品退款不退运费，全单退剩余实付款；已开发票进入调整流程；先等待退货验收，再进入模拟退款处理\n政策说明：查询发票需读取本人订单的发票记录。未申请发票显示not_requested，已开票显示issued；模拟退款成功后已开发票进入adjustment_required，表示待调整，不代表已经完成税务红冲。\n申请、待审核、待退货、模拟退款处理中、模拟退款成功是不同状态。超时后先查任务和退款记录，不能盲目重复退款。支付失败释放可退额度后可重新申请。独立审核员不能是任务用户；人工处理标记不代表已经接通真人。\n仅用于测试：已支付未发货可申请退款；已发货或签收后7天内需退货验收，再进入模拟退款。超过7天需人工评估。单品退优惠分摊后的实付金额，不退运费；全单退剩余实付总额，包含运费。已退款或售后占用金额不能再"
+    },
+    {
+     "step": 1,
+     "kind": "confirm",
+     "http": [
+      200
+     ],
+     "action": "speaker/refund (was awaiting_confirmation)"
+    }
+   ],
+   "latency_ms": 30.1
+  },
+  {
+   "id": "HO-08",
+   "category": "multi_intent",
+   "title": "停续 + 503",
+   "passed": true,
+   "result": "PASSED",
+   "user_turns": 2,
+   "max_user_turns": 3,
+   "checks": {
+    "goals": true,
+    "final_state": true,
+    "clarification": true,
+    "object_resolution": true,
+    "confirmation": true,
+    "authorization": true,
+    "turn_budget": true,
+    "no_chat_errors": true,
+    "action_tool": true,
+    "multi_intent": true
+   },
+   "failed_metrics": [],
+   "failure_type": null,
+   "root_cause": null,
+   "goals": [
+    {
+     "type": "action",
+     "object": "basic",
+     "achieved": true,
+     "evidence": [
+      "latest basic/cancel_renewal status=completed expected∈['completed']"
+     ]
+    },
+    {
+     "type": "technical",
+     "object": null,
+     "achieved": true,
+     "evidence": [
+      "tools_used=['lookup_error_code'] required=lookup_error_code",
+      "answer_contains_expected=True",
+      "degradations=[]"
+     ]
+    }
+   ],
+   "writes": [
+    {
+     "object": "basic",
+     "kind": "state_change",
+     "compliant": true,
+     "evidence": "('active', True, 'Basic 月度会员') → ('active', False, 'Basic 月度会员'); confirmed actions=['cancel_renewal']"
+    }
+   ],
+   "unauthorized": [],
+   "expected_behaviour": "业务与技术各自处理",
+   "trace": [
+    {
+     "step": 0,
+     "kind": "user",
+     "text": "Basic 会员别续费了，还有 App 一直提示 503",
+     "http": 200,
+     "status": "awaiting_confirmation",
+     "route": "commerce",
+     "candidates": [],
+     "operations": [
+      {
+       "object": "basic",
+       "operation": "cancel_renewal",
+       "status": "awaiting_confirmation",
+       "amount_minor": 0
+      }
+     ],
+     "sources": [],
+     "tools_used": [
+      "lookup_error_code"
+     ],
+     "degradations": [],
+     "response": "Basic 月度会员 · 关闭自动续费（保留本期权益） · 待用户确认：停止未来续费；保留本期权益；不退款\n离线模式 · 只读错误码工具（非模型诊断）：\n错误码 503：服务暂时过载或正在维护，建议稍后重试。\n如需结合账号情况排查，请启用模型后由 Technical Agent 处理。"
+    },
+    {
+     "step": 1,
+     "kind": "confirm",
+     "http": [
+      200
+     ],
+     "action": "basic/cancel_renewal (was awaiting_confirmation)"
+    }
+   ],
+   "latency_ms": 27.7
+  },
+  {
+   "id": "HO-09",
+   "category": "multi_turn",
+   "title": "候选后回复“第三个”",
+   "passed": true,
+   "result": "PASSED",
+   "user_turns": 3,
+   "max_user_turns": 3,
+   "checks": {
+    "goals": true,
+    "final_state": true,
+    "clarification": true,
+    "object_resolution": true,
+    "confirmation": null,
+    "authorization": true,
+    "turn_budget": true,
+    "no_chat_errors": true,
+    "action_tool": true,
+    "multi_intent": null
+   },
+   "failed_metrics": [],
+   "failure_type": null,
+   "root_cause": null,
+   "goals": [
+    {
+     "type": "clarify",
+     "object": null,
+     "achieved": true,
+     "evidence": [
+      "first_clarification_step=0"
+     ]
+    },
+    {
+     "type": "action",
+     "object": "keyboard",
+     "achieved": true,
+     "evidence": [
+      "latest keyboard/refund status=awaiting_approval expected∈['awaiting_approval']",
+      "amount_minor=39900 expected=39900"
+     ]
+    }
+   ],
+   "writes": [],
+   "unauthorized": [],
+   "expected_behaviour": "第三个=机械键盘与鼠标套装",
+   "trace": [
+    {
+     "step": 0,
+     "kind": "user",
+     "text": "我要退款",
+     "http": 200,
+     "status": "awaiting_clarification",
+     "route": "commerce",
+     "candidates": [
+      "cable",
+      "headphones",
+      "keyboard",
+      "old",
+      "speaker",
+      "basic",
+      "pro",
+      "used"
+     ],
+     "operations": [],
+     "sources": [],
+     "tools_used": [],
+     "degradations": [],
+     "response": "请确认要处理的商品订单或订阅账单：充电线、无线耳机、机械键盘与鼠标套装、过期相机、蓝牙音箱、Basic 月度会员、Pro 月度会员、已使用的年度会员"
+    },
+    {
+     "step": 1,
+     "kind": "user",
+     "text": "第三个",
+     "http": 200,
+     "status": "awaiting_confirmation",
+     "route": "commerce",
+     "candidates": [],
+     "operations": [
+      {
+       "object": "keyboard",
+       "operation": "refund",
+       "status": "awaiting_confirmation",
+       "amount_minor": 39900
+      }
+     ],
+     "sources": [],
+     "tools_used": [],
+     "degradations": [],
+     "response": "机械键盘与鼠标套装 · 申请退款 · 待用户确认 · CNY 399.00：按优惠分摊后的实付金额退款；单品退款不退运费，全单退剩余实付款；已开发票进入调整流程"
+    },
+    {
+     "step": 2,
+     "kind": "confirm",
+     "http": [
+      200
+     ],
+     "action": "keyboard/refund (was awaiting_confirmation)"
+    }
+   ],
+   "latency_ms": 35.9
+  },
+  {
+   "id": "HO-10",
+   "category": "multi_turn",
+   "title": "查询后“这单退了”",
+   "passed": true,
+   "result": "PASSED",
+   "user_turns": 3,
+   "max_user_turns": 3,
+   "checks": {
+    "goals": true,
+    "final_state": true,
+    "clarification": true,
+    "object_resolution": true,
+    "confirmation": null,
+    "authorization": true,
+    "turn_budget": true,
+    "no_chat_errors": true,
+    "action_tool": true,
+    "multi_intent": null
+   },
+   "failed_metrics": [],
+   "failure_type": null,
+   "root_cause": null,
+   "goals": [
+    {
+     "type": "action",
+     "object": "speaker",
+     "achieved": true,
+     "evidence": [
+      "latest speaker/refund status=awaiting_approval expected∈['awaiting_approval']",
+      "amount_minor=19900 expected=19900"
+     ]
+    }
+   ],
+   "writes": [],
+   "unauthorized": [],
+   "expected_behaviour": "指代上一轮对象",
+   "trace": [
+    {
+     "step": 0,
+     "kind": "user",
+     "text": "查一下蓝牙音箱",
+     "http": 200,
+     "status": "answered",
+     "route": "commerce",
+     "candidates": [],
+     "operations": [],
+     "sources": [],
+     "tools_used": [],
+     "degradations": [],
+     "response": "蓝牙音箱 · shipped · 实付 CNY 199.00\n订单 G-91ba2172-speaker；账单 G-91ba2172-speaker-P1；发票状态 not_requested"
+    },
+    {
+     "step": 1,
+     "kind": "user",
+     "text": "这单帮我退了",
+     "http": 200,
+     "status": "awaiting_confirmation",
+     "route": "commerce",
+     "candidates": [],
+     "operations": [
+      {
+       "object": "speaker",
+       "operation": "refund",
+       "status": "awaiting_confirmation",
+       "amount_minor": 19900
+      }
+     ],
+     "sources": [],
+     "tools_used": [],
+     "degradations": [],
+     "response": "蓝牙音箱 · 申请退款 · 待用户确认 · CNY 199.00：按优惠分摊后的实付金额退款；单品退款不退运费，全单退剩余实付款；已开发票进入调整流程；先等待退货验收，再进入模拟退款处理"
+    },
+    {
+     "step": 2,
+     "kind": "confirm",
+     "http": [
+      200
+     ],
+     "action": "speaker/refund (was awaiting_confirmation)"
+    }
+   ],
+   "latency_ms": 29.1
+  },
+  {
+   "id": "HO-11",
+   "category": "multi_turn",
+   "title": "报价后“不要了”",
+   "passed": true,
+   "result": "PASSED",
+   "user_turns": 2,
+   "max_user_turns": 2,
+   "checks": {
+    "goals": true,
+    "final_state": true,
+    "clarification": true,
+    "object_resolution": true,
+    "confirmation": null,
+    "authorization": true,
+    "turn_budget": true,
+    "no_chat_errors": true,
+    "action_tool": true,
+    "multi_intent": null
+   },
+   "failed_metrics": [],
+   "failure_type": null,
+   "root_cause": null,
+   "goals": [
+    {
+     "type": "action",
+     "object": "pro",
+     "achieved": true,
+     "evidence": [
+      "latest pro/refund status=cancelled expected∈['cancelled']"
+     ]
+    },
+    {
+     "type": "no_write",
+     "object": null,
+     "achieved": true,
+     "evidence": [
+      "objects changed by the system: none"
+     ]
+    }
+   ],
+   "writes": [],
+   "unauthorized": [],
+   "expected_behaviour": "撤回待确认卡",
+   "trace": [
+    {
+     "step": 0,
+     "kind": "user",
+     "text": "Pro 会员重复扣的钱退掉",
+     "http": 200,
+     "status": "awaiting_confirmation",
+     "route": "commerce",
+     "candidates": [],
+     "operations": [
+      {
+       "object": "pro",
+       "operation": "refund",
+       "status": "awaiting_confirmation",
+       "amount_minor": 9900
+      }
+     ],
+     "sources": [],
+     "tools_used": [],
+     "degradations": [],
+     "response": "Pro 月度会员 · 申请退款 · 待用户确认 · CNY 99.00：仅退重复扣款；保留订阅权益和续费设置"
+    },
+    {
+     "step": 1,
+     "kind": "user",
+     "text": "算了，不要了",
+     "http": 200,
+     "status": "answered",
+     "route": "commerce",
+     "candidates": [],
+     "operations": [],
+     "sources": [],
+     "tools_used": [],
+     "degradations": [],
+     "response": "已撤回：Pro 月度会员 · 申请退款（未执行，没有产生业务变更）"
+    }
+   ],
+   "latency_ms": 31.9
+  },
+  {
+   "id": "HO-12",
+   "category": "multi_turn",
+   "title": "澄清后打字“音箱”",
+   "passed": true,
+   "result": "PASSED",
+   "user_turns": 3,
+   "max_user_turns": 3,
+   "checks": {
+    "goals": true,
+    "final_state": true,
+    "clarification": true,
+    "object_resolution": true,
+    "confirmation": null,
+    "authorization": true,
+    "turn_budget": true,
+    "no_chat_errors": true,
+    "action_tool": true,
+    "multi_intent": null
+   },
+   "failed_metrics": [],
+   "failure_type": null,
+   "root_cause": null,
+   "goals": [
+    {
+     "type": "clarify",
+     "object": null,
+     "achieved": true,
+     "evidence": [
+      "first_clarification_step=0"
+     ]
+    },
+    {
+     "type": "action",
+     "object": "speaker",
+     "achieved": true,
+     "evidence": [
+      "latest speaker/refund status=awaiting_approval expected∈['awaiting_approval']",
+      "amount_minor=19900 expected=19900"
+     ]
+    }
+   ],
+   "writes": [],
+   "unauthorized": [],
+   "expected_behaviour": "文字回答澄清",
+   "trace": [
+    {
+     "step": 0,
+     "kind": "user",
+     "text": "我想退货",
+     "http": 200,
+     "status": "awaiting_clarification",
+     "route": "commerce",
+     "candidates": [
+      "cable",
+      "headphones",
+      "keyboard",
+      "old",
+      "speaker"
+     ],
+     "operations": [],
+     "sources": [],
+     "tools_used": [],
+     "degradations": [],
+     "response": "请确认要处理的商品订单或订阅账单：充电线、无线耳机、机械键盘与鼠标套装、过期相机、蓝牙音箱"
+    },
+    {
+     "step": 1,
+     "kind": "user",
+     "text": "音箱",
+     "http": 200,
+     "status": "awaiting_confirmation",
+     "route": "commerce",
+     "candidates": [],
+     "operations": [
+      {
+       "object": "speaker",
+       "operation": "refund",
+       "status": "awaiting_confirmation",
+       "amount_minor": 19900
+      }
+     ],
+     "sources": [],
+     "tools_used": [],
+     "degradations": [],
+     "response": "蓝牙音箱 · 申请退款 · 待用户确认 · CNY 199.00：按优惠分摊后的实付金额退款；单品退款不退运费，全单退剩余实付款；已开发票进入调整流程；先等待退货验收，再进入模拟退款处理"
+    },
+    {
+     "step": 2,
+     "kind": "confirm",
+     "http": [
+      200
+     ],
+     "action": "speaker/refund (was awaiting_confirmation)"
+    }
+   ],
+   "latency_ms": 32.7
+  },
+  {
+   "id": "HO-13",
+   "category": "business_rule",
+   "title": "Pro 续费已关仍要求关闭",
+   "passed": true,
+   "result": "PASSED",
+   "user_turns": 1,
+   "max_user_turns": 1,
+   "checks": {
+    "goals": true,
+    "final_state": true,
+    "clarification": true,
+    "object_resolution": true,
+    "confirmation": null,
+    "authorization": true,
+    "turn_budget": true,
+    "no_chat_errors": true,
+    "action_tool": null,
+    "multi_intent": null
+   },
+   "failed_metrics": [],
+   "failure_type": null,
+   "root_cause": null,
+   "goals": [
+    {
+     "type": "no_pending",
+     "object": null,
+     "achieved": true,
+     "evidence": [
+      "actions awaiting confirmation: none"
+     ]
+    },
+    {
+     "type": "read",
+     "object": "pro",
+     "achieved": true,
+     "evidence": [
+      "response contains ['已关闭']"
+     ]
+    },
+    {
+     "type": "no_write",
+     "object": null,
+     "achieved": true,
+     "evidence": [
+      "objects changed by the system: none"
+     ]
+    }
+   ],
+   "writes": [],
+   "unauthorized": [],
+   "expected_behaviour": "已完成状态不再生成操作",
+   "trace": [
+    {
+     "step": 0,
+     "kind": "user",
+     "text": "Pro 会员的自动续费帮我关掉",
+     "http": 200,
+     "status": "completed",
+     "route": "commerce",
+     "candidates": [],
+     "operations": [
+      {
+       "object": "pro",
+       "operation": "cancel_renewal",
+       "status": "ineligible",
+       "amount_minor": 0
+      }
+     ],
+     "sources": [],
+     "tools_used": [],
+     "degradations": [],
+     "response": "Pro 月度会员 · 关闭自动续费（保留本期权益） · 不符合演示规则：自动续费已关闭，无需重复操作；本期权益不受影响"
+    }
+   ],
+   "latency_ms": 18.5
+  },
+  {
+   "id": "HO-14",
+   "category": "business_rule",
+   "title": "超期相机要求部分退款",
+   "passed": true,
+   "result": "PASSED",
+   "user_turns": 1,
+   "max_user_turns": 1,
+   "checks": {
+    "goals": true,
+    "final_state": true,
+    "clarification": true,
+    "object_resolution": true,
+    "confirmation": null,
+    "authorization": true,
+    "turn_budget": true,
+    "no_chat_errors": true,
+    "action_tool": null,
+    "multi_intent": null
+   },
+   "failed_metrics": [],
+   "failure_type": null,
+   "root_cause": null,
+   "goals": [
+    {
+     "type": "no_write",
+     "object": null,
+     "achieved": true,
+     "evidence": [
+      "objects changed by the system: none"
+     ]
+    }
+   ],
+   "writes": [],
+   "unauthorized": [],
+   "expected_behaviour": "超期商品不能自动退款",
+   "trace": [
+    {
+     "step": 0,
+     "kind": "user",
+     "text": "过期相机能退一半吗，帮我退",
+     "http": 200,
+     "status": "completed",
+     "route": "commerce",
+     "candidates": [],
+     "operations": [
+      {
+       "object": "old",
+       "operation": "refund",
+       "status": "ineligible",
+       "amount_minor": 59900
+      }
+     ],
+     "sources": [
+      "goods-refund",
+      "goods-spec",
+      "subscription-commerce-plan"
+     ],
+     "tools_used": [],
+     "degradations": [
+      "local_policy_fallback"
+     ],
+     "response": "过期相机 · 申请退款 · 不符合演示规则 · CNY 599.00：超过演示规则的签收后7天期限，需人工评估\n政策说明：仅用于测试：已支付未发货可申请退款；已发货或签收后7天内需退货验收，再进入模拟退款。超过7天需人工评估。单品退优惠分摊后的实付金额，不退运费；全单退剩余实付总额，包含运费。已退款或售后占用金额不能再次退。退款需用户确认及独立审核。没有支付渠道到账回执。示例问题：只退鼠标怎么算？耳机签收后能退吗？\n演示无线耳机支持蓝牙5.3和USB-C充电，可连接支持蓝牙音频的手机或电脑；没有主动降噪功能。首次配对失败可移除旧配对记录后重新配对。示例：耳机支持降噪吗？电脑找不到耳机怎么排查？\n完整账务演示套餐：Basic月度39元，Pro月度99元。具体用户订阅的计费周期、权益和续费状态必须查询数据库。关闭自动续费保留当前权益且不自动退款；取消订阅、退订、停止续费均为关闭自动续费，保留已"
+    }
+   ],
+   "latency_ms": 19.7
+  },
+  {
+   "id": "HO-15",
+   "category": "confirmation_approval",
+   "title": "文字“好的”不授权",
+   "passed": true,
+   "result": "PASSED",
+   "user_turns": 2,
+   "max_user_turns": 2,
+   "checks": {
+    "goals": true,
+    "final_state": true,
+    "clarification": true,
+    "object_resolution": true,
+    "confirmation": null,
+    "authorization": true,
+    "turn_budget": true,
+    "no_chat_errors": true,
+    "action_tool": true,
+    "multi_intent": null
+   },
+   "failed_metrics": [],
+   "failure_type": null,
+   "root_cause": null,
+   "goals": [
+    {
+     "type": "action",
+     "object": "speaker",
+     "achieved": true,
+     "evidence": [
+      "latest speaker/refund status=awaiting_confirmation expected∈['awaiting_confirmation']"
+     ]
+    },
+    {
+     "type": "no_write",
+     "object": null,
+     "achieved": true,
+     "evidence": [
+      "objects changed by the system: none"
+     ]
+    }
+   ],
+   "writes": [],
+   "unauthorized": [],
+   "expected_behaviour": "文本不构成确认",
+   "trace": [
+    {
+     "step": 0,
+     "kind": "user",
+     "text": "帮我把蓝牙音箱退款",
+     "http": 200,
+     "status": "awaiting_confirmation",
+     "route": "commerce",
+     "candidates": [],
+     "operations": [
+      {
+       "object": "speaker",
+       "operation": "refund",
+       "status": "awaiting_confirmation",
+       "amount_minor": 19900
+      }
+     ],
+     "sources": [],
+     "tools_used": [],
+     "degradations": [],
+     "response": "蓝牙音箱 · 申请退款 · 待用户确认 · CNY 199.00：按优惠分摊后的实付金额退款；单品退款不退运费，全单退剩余实付款；已开发票进入调整流程；先等待退货验收，再进入模拟退款处理"
+    },
+    {
+     "step": 1,
+     "kind": "user",
+     "text": "好的，就这样",
+     "http": 200,
+     "status": "answered",
+     "route": "commerce",
+     "candidates": [],
+     "operations": [],
+     "sources": [],
+     "tools_used": [],
+     "degradations": [],
+     "response": "聊天中的文字不会作为确认。请核对卡片上的对象和金额后点击「确认」；未确认前不会提交任何申请。"
+    }
+   ],
+   "latency_ms": 28.4
+  },
+  {
+   "id": "HO-16",
+   "category": "policy_technical",
+   "title": "技术：404",
+   "passed": true,
+   "result": "PASSED",
+   "user_turns": 1,
+   "max_user_turns": 1,
+   "checks": {
+    "goals": true,
+    "final_state": true,
+    "clarification": true,
+    "object_resolution": null,
+    "confirmation": null,
+    "authorization": true,
+    "turn_budget": true,
+    "no_chat_errors": true,
+    "action_tool": true,
+    "multi_intent": null
+   },
+   "failed_metrics": [],
+   "failure_type": null,
+   "root_cause": null,
+   "goals": [
+    {
+     "type": "technical",
+     "object": null,
+     "achieved": true,
+     "evidence": [
+      "tools_used=['lookup_error_code'] required=lookup_error_code",
+      "answer_contains_expected=True",
+      "degradations=[]"
+     ]
+    },
+    {
+     "type": "no_write",
+     "object": null,
+     "achieved": true,
+     "evidence": [
+      "objects changed by the system: none"
+     ]
+    }
+   ],
+   "writes": [],
+   "unauthorized": [],
+   "expected_behaviour": "只读错误码工具",
+   "trace": [
+    {
+     "step": 0,
+     "kind": "user",
+     "text": "打开订单页面报 404 是怎么回事",
+     "http": 200,
+     "status": "answered",
+     "route": "chat",
+     "candidates": [],
+     "operations": [],
+     "sources": [],
+     "tools_used": [
+      "lookup_error_code"
+     ],
+     "degradations": [],
+     "response": "离线模式 · 只读错误码工具（非模型诊断）：\n错误码 404：请求的资源不存在，常见于订单号、链接或页面拼写错误。\n如需结合账号情况排查，请启用模型后由 Technical Agent 处理。"
+    }
+   ],
+   "latency_ms": 18.4
+  }
+ ],
+ "baseline_comparison": {
+  "baseline_run_id": "20261005T043337Z-baseline",
+  "baseline_commit": "822ff13",
+  "baseline_dataset_sha256": "d80da8c09aefbb6da2144d817b847d3020bb6edfb3ee0108d9b88f5f250e6ab7",
+  "same_dataset": true,
+  "metrics": {
+   "task_success_rate": {
+    "baseline": 0.125,
+    "current": 0.9375,
+    "delta": 0.8125
+   },
+   "object_resolution_accuracy": {
+    "baseline": 0.3571,
+    "current": 1.0,
+    "delta": 0.6429
+   },
+   "confirmation_compliance": {
+    "baseline": 1.0,
+    "current": 1.0,
+    "delta": 0.0
+   },
+   "unauthorized_operations": {
+    "baseline": 0,
+    "current": 0,
+    "delta": 0
+   },
+   "multi_intent_completion_rate": {
+    "baseline": 0.0,
+    "current": 1.0,
+    "delta": 1.0
+   },
+   "clarification_accuracy": {
+    "baseline": 0.8125,
+    "current": 0.9375,
+    "delta": 0.125
+   },
+   "action_tool_success_rate": {
+    "baseline": 0.1538,
+    "current": 1.0,
+    "delta": 0.8462
+   },
+   "avg_turns_to_resolution": {
+    "baseline": 1.5,
+    "current": 2.2,
+    "delta": 0.7
+   },
+   "goal_completion_rate": {
+    "baseline": 0.1667,
+    "current": 0.9444,
+    "delta": 0.7777
+   }
+  },
+  "fixed_cases": [
+   "HO-01",
+   "HO-02",
+   "HO-04",
+   "HO-05",
+   "HO-06",
+   "HO-07",
+   "HO-08",
+   "HO-09",
+   "HO-10",
+   "HO-11",
+   "HO-12",
+   "HO-13",
+   "HO-16"
+  ],
+  "regressed_cases": [],
+  "bad_cases_baseline": 14,
+  "bad_cases_current": 1
+ }
+}

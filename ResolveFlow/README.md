@@ -308,6 +308,22 @@ data/eval/reports/latest_metrics.json
 data/eval/reports/latest_metrics.md
 ```
 
+以上是 **Component Evaluation**（意图、路由、RAG、回答质量），测的是完整后端，RAG 使用 ChromaDB 混合检索。招聘 Demo 主链另有一套 **Product Evaluation**，两套分开维护、分开展示：
+
+```bash
+make product-eval        # 80 条主集 + 16 条 holdout，offline rules，确定性
+make product-eval-live   # 读取 .env.agent.local，用真实模型回放；结果写入 product_eval_main_live_latest.json
+```
+
+| 文件 | 作用 |
+|---|---|
+| `data/product_eval/product_eval_cases.jsonl` / `product_eval_holdout.jsonl` | Ground Truth（fixture、对话步骤、目标、期望最终状态） |
+| `evaluation/product_evaluator.py` | 通过 `api.portfolio_demo` 的 HTTP 接口和真实 JWT 回放，并采集 SQLite 状态与审计日志 |
+| `evaluation/product_metrics.py` | 单条判分与 8 项 Product Metrics |
+| `evaluation/bad_case_analyzer.py` | 有限枚举的 failure_type；root cause 仅在可证明时给出，否则为 NEEDS_REVIEW |
+| `data/eval/reports/product_eval_{latest,baseline}.json` | 报告；Demo 通过只读接口 `GET /eval/product/latest`、`/eval/product/cases`、`/eval/product/cases/{id}` 读取 |
+| `../docs/product-evaluation.md` | 由报告自动生成的可读版本 |
+
 `latest_metrics.md` 中的 `Resume-safe bullets` 只使用内部 golden set 和真实报告里的数值，适合复制到简历前复核。未接入真实线上流量前，不应写线上用户数、线上 QPS 或生产 SLA。
 
 ### 5.1 接口总览

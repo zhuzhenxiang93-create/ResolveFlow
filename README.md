@@ -6,7 +6,7 @@ ResolveFlow 是一个用 Vue 3 和 FastAPI 编写的 AI 客服项目，支持政
 
 ![ResolveFlow](docs/screenshots/01-home.jpg)
 
-[运行说明](docs/local-development.md) · [演示步骤](docs/demo-script.md) · [更多截图](docs/screenshots/README.md)
+[运行说明](docs/local-development.md) · [演示步骤](docs/demo-script.md) · [Product Evaluation](docs/product-evaluation.md) · [更多截图](docs/screenshots/README.md)
 
 ## 功能
 
@@ -21,6 +21,26 @@ ResolveFlow 是一个用 Vue 3 和 FastAPI 编写的 AI 客服项目，支持政
 ![重复扣款申请与技术问题处理](docs/screenshots/06-mixed.jpg)
 
 退款需要先确认，再审核；商品退款还需要退货验收。这里的购买记录、物流和到账结果都是模拟数据，没有连接真实支付渠道。
+
+## Product Evaluation
+
+招聘 Demo 自带一套面向产品结果的评测。80 条脚本化对话会经过真实的 `/chat → ConversationService → CommerceConversation → CommerceStore` 链路，并使用真实的 user/reviewer JWT。是否成功由 SQLite 中持久化的业务状态和审计日志判定，不看回复文本里有没有“处理成功”。
+
+| 指标（offline rules，80 条） | 第一次评测 | 针对 Bad Case 修复后 |
+|---|---|---|
+| Task Success Rate | 60.0%（48/80） | 100%（80/80） |
+| Object Resolution Accuracy | 72.6%（53/73） | 100%（73/73） |
+| Multi-intent Completion | 25.0%（3/12） | 100%（12/12） |
+| Confirmation Compliance | 100%（19/19 次写入） | 100%（28/28） |
+| Unauthorized Operations | 0（11/11 次越权尝试被拦截） | 0（12/12） |
+
+修复是对照这 80 条的失败 Case 做的，所以“修复后”在同一数据集上会高估效果。另有 16 条在修复前就写好、修复过程中没有参考过的 holdout 改写：Task Success 从 12.5%（2/16）提升到 93.8%（15/16），剩下 1 条失败也保留在报告里。
+
+以上结果均为离线规则模式，没有调用模型；实时模型模式可以用 `make product-eval-live` 自行复现。页面右上角的 **Evaluation** 标签（或 `#evaluation`）会读取已生成的报告 JSON，打开页面不会触发评测。完整指标定义和逐条 Bad Case 见 [Product Evaluation 报告](docs/product-evaluation.md)。
+
+```bash
+make product-eval PYTHON="$(pwd)/.venv/bin/python"   # 重新生成 80 条主集与 16 条 holdout 报告
+```
 
 ## 快速开始
 

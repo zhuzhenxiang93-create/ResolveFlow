@@ -15,6 +15,7 @@ data/chroma/
 data/eval/.cache/
 data/eval/reports/*.json
 !data/eval/reports/latest_*.json
+!data/eval/reports/product_eval_*.json
 logs/
 
 # IDE
