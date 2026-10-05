@@ -149,3 +149,10 @@ class ConversationFixTests(unittest.IsolatedAsyncioTestCase):
         r = await self.s.send("alice", "接口返回 429 是什么意思")
         self.assertEqual(r["support_result"]["tools_used"], ["lookup_error_code"])
         self.assertIn("限流", r["response"])
+
+    async def test_digits_inside_object_id_are_not_error_codes(self):
+        from business.conversation import CommerceConversation
+        catalog = [{"id": "S-a432b-pro", "title": "Pro 月度会员", "domain": "subscription", "items": [], "payments": []}]
+        proposal = CommerceConversation.rules("申请退款 S-a432b-pro", catalog)
+        self.assertEqual([i.operation for i in proposal.intents], ["refund"])
+        self.assertEqual(proposal.general_remainder, "")

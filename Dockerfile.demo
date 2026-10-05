@@ -1,0 +1,27 @@
+# Public recruiting demo: one container serving the Vue build and the isolated Demo API.
+# Offline rules by default (no model key, no per-request cost). See docs/deploy.md.
+
+FROM node:22-alpine AS frontend
+WORKDIR /web
+COPY ResolveFlowFrontend/package.json ResolveFlowFrontend/package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY ResolveFlowFrontend/ ./
+RUN VITE_DEMO_MODE=true npm run build
+
+FROM python:3.11-slim
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONPATH=/app/ResolveFlow \
+    RESOLVEFLOW_DEMO_MODE=true RESOLVEFLOW_PUBLIC=true AGENT_USE_LLM=0 \
+    RESOLVEFLOW_DEMO_DIR=/tmp/resolveflow-portfolio \
+    RESOLVEFLOW_FRONTEND_DIST=/app/ResolveFlowFrontend/dist \
+    ANONYMIZED_TELEMETRY=False PORT=8000
+WORKDIR /app
+COPY ResolveFlow/requirements.txt ResolveFlow/requirements.txt
+RUN pip install -r ResolveFlow/requirements.txt
+RUN useradd -m -u 1000 resolveflow
+COPY --chown=resolveflow:resolveflow ResolveFlow/ ResolveFlow/
+COPY --from=frontend --chown=resolveflow:resolveflow /web/dist ResolveFlowFrontend/dist
+USER resolveflow
+WORKDIR /app/ResolveFlow
+EXPOSE 8000
+CMD ["sh", "-c", "python -m uvicorn api.portfolio_site:create_site --factory --host 0.0.0.0 --port ${PORT} --proxy-headers --forwarded-allow-ips='*'"]

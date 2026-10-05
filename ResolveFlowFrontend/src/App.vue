@@ -186,6 +186,7 @@ import {
   requestHealth,
   demoMode,
   startDemo,
+  commerceRequest,
 } from "./lib/backends";
 const settings = reactive(createInitialSettings()),
   messages = ref([]),
@@ -343,9 +344,18 @@ onMounted(async () => {
   try {
     const h = await requestHealth(settings);
     if (demoMode && h.demo !== true)
-      throw new Error("Wrong API: start the isolated Demo server on 127.0.0.1:8000.");
+      throw new Error("Wrong API: this page needs the isolated ResolveFlow Demo server.");
     connected.value = h.status === "ok";
     mode.value = h.mode || "";
+    if (demoMode && settings.userToken) {
+      // A restarted or cleaned-up demo host invalidates saved identities: start fresh silently.
+      try {
+        await commerceRequest(settings, "/objects");
+      } catch (e) {
+        if (String(e.message).startsWith("401")) settings.userToken = "";
+        else throw e;
+      }
+    }
     if (demoMode && !settings.userToken) await reset();
   } catch (e) {
     connected.value = false;
