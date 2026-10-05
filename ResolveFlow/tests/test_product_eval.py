@@ -156,3 +156,19 @@ class ConversationFixTests(unittest.IsolatedAsyncioTestCase):
         proposal = CommerceConversation.rules("申请退款 S-a432b-pro", catalog)
         self.assertEqual([i.operation for i in proposal.intents], ["refund"])
         self.assertEqual(proposal.general_remainder, "")
+
+    async def test_narrowed_refund_replaces_unconfirmed_full_order_card(self):
+        # Found on the public demo: "退机械键盘" then "我只想退键盘" left a ¥399 and a ¥299 card open.
+        first = await self.s.send("alice", "退机械键盘")
+        second = await self.s.send("alice", "我只想退键盘", conversation_id=first["conversation_id"])
+        old = self.runtime.store.get_case("alice", first["commerce_case"]["id"])["operations"][0]
+        new = second["commerce_case"]["operations"][0]
+        self.assertEqual(old["status"], "cancelled")
+        self.assertEqual((new["quote"]["amount_minor"], new["status"]), (29900, "awaiting_confirmation"))
+        self.assertIn("已替换之前未确认的申请", second["response"])
+
+    async def test_identical_repeat_keeps_both_cards(self):
+        a = await self.s.send("alice", "帮我把无线耳机退掉")
+        b = await self.s.send("alice", "帮我把无线耳机退掉", conversation_id=a["conversation_id"])
+        self.assertEqual(self.runtime.store.get_case("alice", a["commerce_case"]["id"])["operations"][0]["status"], "awaiting_confirmation")
+        self.assertEqual(b["commerce_case"]["operations"][0]["status"], "awaiting_confirmation")
