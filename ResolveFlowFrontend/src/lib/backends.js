@@ -58,6 +58,11 @@ export async function requestSearch(settings, query, topK = 5) {
   });
 }
 
+// Read-only evaluation reports generated offline; no auth, never runs a model.
+export async function requestEval(settings, path) {
+  return requestJson(backendMeta(settings).baseUrl, path);
+}
+
 export async function requestChat(settings, message, { taskId, orderId } = {}) {
   const meta = backendMeta(settings);
   const payload = buildChatPayload(settings, message, { taskId, orderId });

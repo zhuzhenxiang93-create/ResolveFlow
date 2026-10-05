@@ -8,6 +8,10 @@
           <p>AI Customer Service with Controlled Business Actions</p>
         </div>
       </div>
+      <nav class="view-nav" aria-label="Sections">
+        <a :class="{ selected: view === 'demo' }" href="#demo" @click="view = 'demo'">Demo</a>
+        <a :class="{ selected: view === 'evaluation' }" href="#evaluation" @click="view = 'evaluation'">Evaluation</a>
+      </nav>
       <div class="header-actions">
         <span class="badge">{{
           demoMode ? "Demo environment" : "Connected workspace"
@@ -24,7 +28,14 @@
         </button>
       </div>
     </header>
-    <main>
+    <main v-if="view === 'evaluation'">
+      <EvaluationDashboard :settings="settings" />
+      <footer>
+        ResolveFlow / Portfolio demo
+        <span>Numbers above are read from the generated evaluation report.</span>
+      </footer>
+    </main>
+    <main v-else>
       <section class="hero">
         <div>
           <span class="eyebrow">From conversation to resolution</span>
@@ -167,6 +178,7 @@
 import { reactive, ref, onMounted, watch, nextTick } from "vue";
 import CommercePanel from "./components/CommercePanel.vue";
 import AdvancedSettings from "./components/AdvancedSettings.vue";
+import EvaluationDashboard from "./components/EvaluationDashboard.vue";
 import {
   createInitialSettings,
   saveSettings,
@@ -188,7 +200,11 @@ const settings = reactive(createInitialSettings()),
   trace = ref({}),
   advanced = ref(false),
   mode = ref(""),
+  view = ref(location.hash === "#evaluation" ? "evaluation" : "demo"),
   messageList = ref(null);
+window.addEventListener("hashchange", () => {
+  view.value = location.hash === "#evaluation" ? "evaluation" : "demo";
+});
 const scenarios = [
   { type: "Answer", title: "Refund policy", prompt: "商品退款政策是什么？" },
   { type: "Action", title: "Choose a purchase", prompt: "我要退款。" },
@@ -273,7 +289,9 @@ async function send(selection) {
         : r.agentType || "Business support",
     });
     if (support?.response) append('assistant', support.response, {
-      meta: `${support.agent_type} support · ${support.diagnostics?.length ? 'Unavailable' : 'Live model'}`,
+      meta: support.mode === 'offline_tool'
+        ? 'Offline read-only tool · not a model diagnosis'
+        : `${support.agent_type} support · ${support.diagnostics?.length ? 'Unavailable' : 'Live model'}`,
     });
   } catch (e) {
     if (identity === settings.userToken)

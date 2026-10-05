@@ -36,6 +36,13 @@ Show the three value statements, scenario buttons, conversation and purchases.
 8. **Reset Demo** shows a new identity with eight fresh purchases and no prior
    Cases. Prior audit databases are preserved.
 
+9. Optional (1 min): open the **Evaluation** tab (`#evaluation`). Show the four
+   top tiles, then switch Bad cases to **Baseline · 32**. Click a disambiguation
+   case: the baseline auto-picked one of two identical headphone orders. Close
+   with the holdout card (2/16 → 15/16), explaining that the main set was used for
+   fixing, so the holdout is the honest generalisation check. Everything comes from
+   the generated JSON report; nothing runs on page load.
+
 If the banner says **Offline rules**, scenes 1–4 still work; scene 5 explicitly
 states that Technical Agent is unavailable. Do not use that as a live-model demo.
 

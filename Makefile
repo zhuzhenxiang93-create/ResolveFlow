@@ -49,3 +49,7 @@ eval-final:
 .PHONY: portfolio-demo
 portfolio-demo:
 	cd ResolveFlow && RESOLVEFLOW_DEMO_MODE=true $(PYTHON) -m uvicorn api.portfolio_demo:create_app --factory --host 127.0.0.1 --port 8000
+
+.PHONY: product-eval product-eval-live
+product-eval product-eval-live:
+	$(MAKE) -C ResolveFlow $@ PYTHON=$(PYTHON)

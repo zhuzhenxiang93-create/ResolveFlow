@@ -95,6 +95,11 @@ class ConversationService:
             return await commerce._answer(owner, conv, message, "业务查询暂时失败，请重试并核对任务状态。", mode="commerce_error")
         if result is not None:
             remainder = result.pop("general_remainder", "")
+            if remainder and not self.answer_orchestrator:
+                offline = offline_error_code_support(remainder)
+                if offline:
+                    result["response"] += "\n" + offline["response"]
+                    result["support_result"] = offline
             if remainder and self.answer_orchestrator:
                 from agents.agent_orchestrator import Request
                 try:
@@ -139,6 +144,7 @@ class ConversationService:
                     "knowledge_used": False, "sources": [], "memory_mode": getattr(self.memory, "mode", "redis_chroma"),
                     "degradations": errors + ["intent_unavailable"], "status": "retryable_error"}
         intent_value, intent_source_scores = intent.intent.value, intent.source_scores
+        offline = None
         if self.answer_orchestrator:
             from agents.agent_orchestrator import Request
             result = await self.answer_orchestrator.run(Request(message=message, user_id=owner, conv_id=conv,
@@ -159,12 +165,39 @@ class ConversationService:
                     {**d, "source": "agent_orchestrator"} for d in result.error_diagnostics)
                 errors.append("agent_call_failed")
         else:
-            answer = "你好，我可以解释商品和订阅政策、查询购买记录，并在你确认后办理权益修复、关闭续费或退款申请。" if intent.intent == IntentCategory.GREETING else "请说明要咨询的商品或订阅规则、查询的信息或希望办理的操作。"
+            offline = offline_error_code_support(message)
+            if offline:
+                answer = offline["response"]
+            else:
+                answer = "你好，我可以解释商品和订阅政策、查询购买记录，并在你确认后办理权益修复、关闭续费或退款申请。" if intent.intent == IntentCategory.GREETING else "请说明要咨询的商品或订阅规则、查询的信息或希望办理的操作。"
         result = await commerce._answer(owner, conv, message, answer, mode="general_support")
+        if not self.answer_orchestrator and offline:
+            result["support_result"] = offline
         result.update(route="chat", intent=intent_value, intent_source_scores=intent_source_scores,
                       interpretation=record, sources=knowledge, knowledge_used=bool(knowledge))
         result["degradations"].extend(errors)
         return result
+
+
+def offline_error_code_support(text):
+    """No model configured: answer explicit error codes with the read-only lookup tool only.
+
+    This is a deterministic table lookup (agents.chat_tools.lookup_error_code), labelled as
+    such — not the Technical Agent and not a diagnosis of the user's account.
+    """
+    from agents.chat_tools import lookup_error_code
+    codes = list(dict.fromkeys(re.findall(r"(?<!\d)([45]\d\d)(?!\d)", text or "")))
+    if not codes:
+        return None
+    traces, lines = [], []
+    for code in codes[:3]:
+        out = lookup_error_code(None, {"code": code})
+        traces.append({"tool": "lookup_error_code", "arguments": {"code": code}, "success": out.get("success", False),
+                       "known": out.get("known", False)})
+        lines.append(f"错误码 {code}：{out.get('explanation', '未收录该错误码')}")
+    response = "离线模式 · 只读错误码工具（非模型诊断）：\n" + "\n".join(lines) + "\n如需结合账号情况排查，请启用模型后由 Technical Agent 处理。"
+    return {"response": response, "agent_type": "technical_offline_tool", "tools_used": ["lookup_error_code"],
+            "tool_traces": traces, "diagnostics": [], "mode": "offline_tool"}
 
 
 # Legacy telemetry labels remain pure helpers for historical report readers.

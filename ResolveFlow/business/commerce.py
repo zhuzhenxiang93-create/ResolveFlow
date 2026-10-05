@@ -149,6 +149,8 @@ class CommerceStore:
             q["effect"] = {"cancel_renewal": "停止未来续费；保留本期权益；不退款", "terminate": "立即移除权益并关闭续费；不退款", "repair": "同步到已购买套餐权益；不退款"}[op]
             if obj["status"] != "active" or (op == "repair" and obj["service"] != "healthy"):
                 q.update(eligible=False, reason="订阅非活跃或服务异常，需要人工核实")
+            elif op == "cancel_renewal" and obj.get("auto_renew") is False:
+                q.update(eligible=False, reason="自动续费已关闭，无需重复操作；本期权益不受影响")
             return q
         if op == "cancel_order":
             q["effect"] = "取消未支付商品订单；没有退款"

@@ -7,7 +7,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
-from api import commerce_routes
+from api import commerce_routes, eval_routes
 from api.action_routes import owner
 from agents.conversation_service import ConversationService
 from business.execution import ExecutionContext
@@ -78,7 +78,7 @@ def create_app():
 
     @app.middleware('http')
     async def session_scope(request: Request, call_next):
-        if request.url.path in {'/health', '/demo/session', '/docs', '/openapi.json'}:
+        if request.url.path in {'/health', '/demo/session', '/docs', '/openapi.json'} or request.url.path.startswith('/eval/'):
             return await call_next(request)
         from starlette.responses import JSONResponse
         try:
@@ -127,11 +127,14 @@ def create_app():
             result = await service(current.get()).send(user, body.message,
                         conversation_id=body.conv_id, order_id=body.order_id)
             if not client and any(word in body.message for word in ('401', '登录', '报错')):
-                result['response'] += '\n离线模式未连接 Technical Agent；技术问题需要启用模型后处理。'
+                if not result.get('support_result'):
+                    result['response'] += '\n离线模式未连接 Technical Agent；技术问题需要启用模型后处理。'
                 result.setdefault('degradations', []).append('technical_agent_offline')
             return result
         except ValueError as ex:
             raise HTTPException(400, str(ex))
 
     app.include_router(commerce_routes.router)
+    # Static, read-only evaluation reports; public within the local Demo, never runs a model.
+    app.include_router(eval_routes.router)
     return app
