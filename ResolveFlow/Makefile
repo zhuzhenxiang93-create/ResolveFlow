@@ -79,6 +79,7 @@ summarize-p0:
 product-eval:
 	PYTHONPATH=. $(PYTHON) scripts/run_product_eval.py --label current
 	PYTHONPATH=. $(PYTHON) scripts/run_product_eval.py --dataset holdout --label current
+	PYTHONPATH=. $(PYTHON) scripts/run_product_eval.py --dataset memory --label current
 
 product-eval-live:
 	PYTHONPATH=. $(PYTHON) scripts/run_product_eval.py --live --env-file .env.agent.local --label live

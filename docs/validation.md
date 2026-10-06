@@ -1,3 +1,32 @@
+# Memory & personalisation — 2026-10-07
+
+Added a 12-case memory suite (`product_eval_memory.jsonl`). It covers:
+- recalling a reference or a refund's progress in a new conversation;
+- learning, keeping and correcting a reply-style preference;
+- not storing a "这次" one-off request as a preference;
+- a preference set in the UI;
+- forgetting;
+- memory never counting as consent;
+- redacting one-time codes;
+- a memory summary;
+- preferences never changing business decisions.
+
+The harness gained steps for opening a new conversation and for the memory API, plus goals that check the stored profile and the stored message text.
+
+- **Labelling correction before any fix.** MEM-09 was written with `requires_clarification: false` by mistake. The intent was not to judge clarification and only to check that nothing gets authorized, so it is now unlabelled. The suite was re-run and the baseline re-saved before any system code changed.
+- **Baseline (offline rules): 9/12.** Three bad cases:
+  - The natural correction “我还是喜欢详细一点的回答” was not recognised as a preference.
+  - “我的验证码是 382915” was stored verbatim. The redaction rule only matched “验证码:”.
+  - The memory API did not say what “last time” could refer to.
+- **Fixes:**
+  - A standing preference is now recognised as a preference cue plus a style word, and the latest statement wins.
+  - Redaction now covers one-time codes and passwords with or without a colon, and card-like numbers.
+  - `GET /commerce/memory` returns `recent_objects`, taken from the case records.
+  - The Demo shows a visible “What ResolveFlow remembers” card with Concise, Detailed and Forget controls. The card is labelled “Never used as consent”.
+- **After the fixes: 12/12.** The 80-case set is still 80/80 and the holdout still 15/16. The full suite ran 336 tests: the same 5 Chroma-download errors and 9 skips, and everything else passed. The memory suite was tuned on its own failures. It is small and has no holdout, so the 12/12 shows the fixes work but does not prove they generalise.
+
+---
+
 # Field-found bad case on the public demo — 2026-10-05
 
 **What happened.** A user typed “退机械键盘” and got a ¥399 full-order card. They then typed “我只想退键盘” and got a correct ¥299 line-item card. The old ¥399 card stayed open beside it, and the user confirmed the wrong one. The backend behaved as designed: it computed both amounts correctly and moved only the card that was actually confirmed. The product gap was leaving two competing, still-unconfirmed amounts for one object.

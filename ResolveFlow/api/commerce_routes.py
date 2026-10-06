@@ -86,7 +86,26 @@ def review(case_id: str, req: ReviewDecision, actor=Depends(reviewer)):
 async def memory(user=Depends(owner)):
     adapter = conversation_service().memory
     status = await adapter.profile_status(user) if hasattr(adapter, "profile_status") else {"state": "synchronous"}
-    return {"profile": await adapter.get_profile(user), "mode": getattr(adapter, "mode", "redis_chroma"), "update_status": status}
+    return {"profile": await adapter.get_profile(user), "mode": getattr(adapter, "mode", "redis_chroma"), "update_status": status,
+            "recent_objects": recent_objects(user)}
+
+
+def recent_objects(user, limit=5):
+    """What "last time" can refer to: the user's most recently handled objects, newest first.
+
+    Derived from persisted cases (the business record), so it is shown to the user as-is and is
+    never used as consent: a remembered object still needs a fresh, amount-bound confirmation.
+    """
+    seen, out = set(), []
+    for case in store().cases(user):
+        for action in case["operations"]:
+            q = action["quote"]
+            if q["object_id"] in seen:
+                continue
+            seen.add(q["object_id"])
+            out.append({"id": q["object_id"], "title": q["title"], "operation": q["label"], "status": action["status"],
+                        "updated_at": case.get("updated_at")})
+    return out[:limit]
 
 
 class ProfileUpdate(BaseModel):

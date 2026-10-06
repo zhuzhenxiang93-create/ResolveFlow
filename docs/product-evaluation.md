@@ -73,6 +73,14 @@ Baseline run `20261005T043204Z-baseline`（commit `822ff13`），同一数据集
 
 Holdout 仍失败：HO-03 UNNECESSARY_CLARIFICATION · POLICY_QUESTION_TREATED_AS_ACTION: 政策咨询被当成售后操作，系统要求选择订单
 
+## 记忆与个性化评测
+
+`data/product_eval/product_eval_memory.jsonl`，12 条：跨会话指代、跨会话进度、偏好学习 / 保留 / 纠正、临时要求不入记忆、界面设置偏好、遗忘、记忆不构成授权、敏感信息脱敏、记忆摘要、偏好不影响业务判断。
+
+- Baseline：75.0% (9/12)；修复后：100.0% (12/12)
+- 失败（修复前）：MEM-06 PREFERENCE_NOT_STORED_OR_WRONG: 期望偏好 {'response_style': 'detailed'}，实际 {'response_style': 'concise'}, MEM-10 SENSITIVE_TEXT_STORED: 敏感内容被写入长期记忆, MEM-11 MEMORY_NOT_SURFACED: 记忆摘要接口没有列出最近处理过的对象
+- 说明：MEM-09 的 requires_clarification 在任何系统修改前由 false 更正为“不标注”（原意即不评价是否澄清，只评价不授权），随后重跑并保存 baseline。该套件同样是看着失败修复的，规模小，未另设 holdout。
+
 ## 针对 Bad Case 的修复
 
 | 针对的 root cause | 修复 | 文件 |
@@ -86,6 +94,9 @@ Holdout 仍失败：HO-03 UNNECESSARY_CLARIFICATION · POLICY_QUESTION_TREATED_A
 | COMPLETED_STATE_NOT_CHECKED | CommerceStore 报价时检查自动续费已关闭，返回 ineligible 与原因，不再生成无意义的待确认操作。 | `ResolveFlow/business/commerce.py` |
 | TECHNICAL_AGENT_UNAVAILABLE_OFFLINE, TECHNICAL_QUESTION_NOT_ROUTED | 无模型时，消息中的明确错误码由只读 lookup_error_code 确定性查表回答，并在回复/元数据中标注“离线只读工具，非模型诊断”；技术子句不再被当作政策咨询。 | `ResolveFlow/agents/conversation_service.py`, `ResolveFlow/api/portfolio_demo.py` |
 | (regression guard) | 退款动词泛化后，“确认，退吧”这类文字可能被当成新请求；新增文字确认防护：存在待确认卡片时，短句确认语只提示点击卡片，不建单、不授权。 | `ResolveFlow/business/conversation.py` |
+| PREFERENCE_NOT_STORED_OR_WRONG | 长期偏好识别改为“表态词 + 风格词”（如“以后…”“我还是喜欢…”），按时间顺序后者覆盖前者；“这次/暂时”仍不写入长期偏好。 | `ResolveFlow/memory/local_conversation_memory.py` |
+| SENSITIVE_TEXT_STORED | 记忆写入前脱敏：验证码/密码/动态码（无论是否带冒号）、API Key、13–19 位卡号样式数字。 | `ResolveFlow/memory/local_conversation_memory.py` |
+| MEMORY_NOT_SURFACED | 记忆接口返回“最近处理的事项”（取自业务记录），前端在显眼位置展示“我记得什么”，并提供简洁/详细切换和忘记按钮；明确标注记忆不构成授权。 | `ResolveFlow/api/commerce_routes.py`, `ResolveFlowFrontend/src/components/CommercePanel.vue` |
 
 ## 当前 Bad Case
 

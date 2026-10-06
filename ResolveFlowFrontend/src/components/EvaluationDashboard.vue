@@ -73,6 +73,21 @@
           <p class="hint">Task success on the holdout. Remaining failures stay visible under Bad cases → Holdout.</p>
         </section>
 
+        <section class="eval-card" v-if="memory.current">
+          <h3>Memory &amp; personalisation</h3>
+          <p class="hint">{{ memory.current.dataset.case_count }} cases on cross-session recall, preferences, forgetting, redaction and “memory is never consent”.</p>
+          <div class="holdout-figures">
+            <div><span class="tile-label">Before fixes</span><strong>{{ pct(memory.baseline?.metrics.task_success_rate) }}</strong><small>{{ frac(memory.baseline?.metrics.task_success_rate) }}</small></div>
+            <span class="arrow">→</span>
+            <div><span class="tile-label">After fixes</span><strong>{{ pct(memory.current.metrics.task_success_rate) }}</strong><small>{{ frac(memory.current.metrics.task_success_rate) }}</small></div>
+          </div>
+          <ul class="check-list">
+            <li v-for="c in memory.checks" :key="c.id" :class="c.passed ? 'ok' : 'bad'" :title="c.id">
+              <span>{{ c.passed ? "✓" : "✕" }}</span>{{ c.title }}
+            </li>
+          </ul>
+        </section>
+
         <section class="eval-card">
           <h3>Pass rate by scenario</h3>
           <div v-for="c in categories" :key="c.key" class="cat-row" :title="`${c.label}: ${c.passed} of ${c.total} passed`">
@@ -183,12 +198,12 @@ const caseRows = ref([]), detail = ref(null), filterType = ref("");
 const LABELS = {
   AUTHORIZATION: "Authorization", CONFIRMATION_VIOLATION: "Confirmation violation", MISSING_CLARIFICATION: "Missing clarification",
   UNNECESSARY_CLARIFICATION: "Unnecessary clarification", OBJECT_RESOLUTION: "Object resolution", TASK_PLANNING: "Task planning",
-  WRONG_ACTION: "Wrong action", STATE_VERIFICATION: "State verification", RESPONSE_QUALITY: "Response quality", HARNESS_ERROR: "Harness error",
+  WRONG_ACTION: "Wrong action", STATE_VERIFICATION: "State verification", MEMORY: "Memory", RESPONSE_QUALITY: "Response quality", HARNESS_ERROR: "Harness error",
 };
 const CATEGORY = {
   single_task: "Single task", disambiguation: "Object disambiguation", multi_intent: "Multi-intent", multi_turn: "Multi-turn context",
   business_rule: "Business rules", confirmation_approval: "Confirmation & approval", idempotency_state: "Idempotency & state",
-  authorization: "Authorization & safety", policy_technical: "Policy & technical tools",
+  authorization: "Authorization & safety", policy_technical: "Policy & technical tools", memory: "Memory",
 };
 const label = (k) => LABELS[k] || k || "—";
 const pct = (m) => (m && m.value != null ? `${(m.value * 100).toFixed(1)}%` : "n/a");
@@ -197,6 +212,7 @@ const modeLabel = (m) => (m === "live-model" ? "Live model" : "Offline rules (de
 
 const cur = computed(() => (run.value === "baseline" && data.value.baseline ? data.value.baseline : data.value.current));
 const holdout = computed(() => data.value?.holdout || {});
+const memory = computed(() => data.value?.memory || {});
 const comparison = computed(() => data.value?.current.baseline_comparison);
 const runOptions = computed(() => [
   { key: "current", label: data.value?.baseline ? "After fixes" : "Latest" },
@@ -210,10 +226,12 @@ const badRunOptions = computed(() => [
   { key: "current", label: `Current · ${data.value?.current.bad_case_summary.total}` },
   ...(holdout.value.current ? [{ key: "holdout", label: `Holdout · ${holdout.value.current.bad_case_summary.total}` }] : []),
   ...(holdout.value.baseline ? [{ key: "holdout_baseline", label: `Holdout baseline · ${holdout.value.baseline.bad_case_summary.total}` }] : []),
+  ...(memory.value.baseline ? [{ key: "memory_baseline", label: `Memory baseline · ${memory.value.baseline.bad_case_summary.total}` }] : []),
 ]);
 const badSummary = computed(() => {
   const d = data.value;
-  const map = { current: d.current, baseline: d.baseline, holdout: holdout.value.current, holdout_baseline: holdout.value.baseline };
+  const map = { current: d.current, baseline: d.baseline, holdout: holdout.value.current, holdout_baseline: holdout.value.baseline,
+    memory: memory.value.current, memory_baseline: memory.value.baseline };
   return (map[badRun.value] || d.current).bad_case_summary;
 });
 

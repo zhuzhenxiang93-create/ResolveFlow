@@ -16,8 +16,10 @@ RUNS = {
     "baseline": REPORTS / "product_eval_baseline.json",
     "holdout": REPORTS / "product_eval_holdout_latest.json",
     "holdout_baseline": REPORTS / "product_eval_holdout_baseline.json",
+    "memory": REPORTS / "product_eval_memory_latest.json",
+    "memory_baseline": REPORTS / "product_eval_memory_baseline.json",
 }
-Run = Literal["current", "baseline", "holdout", "holdout_baseline"]
+Run = Literal["current", "baseline", "holdout", "holdout_baseline", "memory", "memory_baseline"]
 router = APIRouter(prefix="/eval", tags=["Evaluation (read-only reports)"])
 _cache = {}
 
@@ -59,6 +61,19 @@ def _fix_log():
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
 
 
+def _memory_checks(report):
+    """Per memory behaviour: pass/fail with the case title, for the dashboard list."""
+    if not report:
+        return []
+    labels = {c["id"]: c.get("memory_check") for c in _cases_meta()}
+    return [{"id": c["id"], "check": labels.get(c["id"]), "title": c["title"], "passed": c["passed"]} for c in report["cases"]]
+
+
+def _cases_meta():
+    path = ROOT / "data/product_eval/product_eval_memory.jsonl"
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()] if path.exists() else []
+
+
 @router.get("/product/latest")
 def latest():
     current = _load("current")
@@ -66,6 +81,8 @@ def latest():
         raise HTTPException(404, "No product evaluation report. Run scripts/run_product_eval.py first.")
     return {"current": _summary(current), "baseline": _summary(_load("baseline")),
             "holdout": {"current": _summary(_load("holdout")), "baseline": _summary(_load("holdout_baseline"))},
+            "memory": {"current": _summary(_load("memory")), "baseline": _summary(_load("memory_baseline")),
+                       "checks": _memory_checks(_load("memory"))},
             "fix_log": _fix_log(), "component": _component()}
 
 

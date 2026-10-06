@@ -1,32 +1,120 @@
 {
   "note": "Hand-written record of the fixes made after the baseline Bad Case analysis. Each entry names the root cause it targets; fixes were validated on the 80-case set (which they were derived from) and on a 16-case holdout written before any fix.",
   "fixes": [
-    {"root_causes": ["INTENT_NOT_EXTRACTED", "REQUEST_DOWNGRADED_TO_READ"],
-     "fix": "离线规则改为按子句解析：退款动词泛化为“退”（排除退订/退出与否定），停续/取消订单/权益同步支持口语与倒装（“续费关了”“订单帮我取消”“权益显示不对帮我同步”）。",
-     "files": ["ResolveFlow/business/conversation.py"]},
-    {"root_causes": ["AUTO_SELECTED_AMBIGUOUS_OBJECT"],
-     "fix": "同名订单不再取第一条：标题命中多个对象时保留标题作为引用并进入澄清；对象指称统一用 mentions()（标题/明细/品类词/Pro·Basic），基于用户原话。",
-     "files": ["ResolveFlow/business/conversation.py"]},
-    {"root_causes": ["INTENT_NOT_EXTRACTED（澄清后的文字回复）", "TARGET_NOT_RESOLVED"],
-     "fix": "澄清后的文字回复（“第二个”“耳机”“Basic 那个”）只在已展示候选中解析；候选顺序持久化在 commerce_dialogs.candidates。",
-     "files": ["ResolveFlow/business/conversation.py"]},
-    {"root_causes": ["GOAL_DROPPED"],
-     "fix": "一个子句提到多个不同对象时分别生成意图（“耳机和音箱都退掉”）；补充子句只修饰已有目标时不再生成新目标（“按 999 元退给我”）；同对象同操作去重。",
-     "files": ["ResolveFlow/business/conversation.py"]},
-    {"root_causes": ["ACTION_ROUTED_AS_POLICY_ONLY", "NO_POLICY_SOURCE", "POLICY_QUESTION_TREATED_AS_ACTION"],
-     "fix": "政策检测下沉到子句级：操作子句照常建单，政策子句写入 Proposal.policy_question 并附检索来源；补充“多久/期限/支持…吗/什么意思”等咨询信号与“退货/签收/发票”商品域信号。",
-     "files": ["ResolveFlow/business/conversation.py"]},
-    {"root_causes": ["REVISION_NOT_APPLIED"],
-     "fix": "撤回/改主意（“还是算了”“商品不退了”“不退音箱了，换成耳机”）在意图判断前处理：只取消本会话中未执行的提案，按提到的对象或商品/订阅范围限定；“换成 X”沿用被撤回的操作。",
-     "files": ["ResolveFlow/business/conversation.py"]},
-    {"root_causes": ["COMPLETED_STATE_NOT_CHECKED"],
-     "fix": "CommerceStore 报价时检查自动续费已关闭，返回 ineligible 与原因，不再生成无意义的待确认操作。",
-     "files": ["ResolveFlow/business/commerce.py"]},
-    {"root_causes": ["TECHNICAL_AGENT_UNAVAILABLE_OFFLINE", "TECHNICAL_QUESTION_NOT_ROUTED"],
-     "fix": "无模型时，消息中的明确错误码由只读 lookup_error_code 确定性查表回答，并在回复/元数据中标注“离线只读工具，非模型诊断”；技术子句不再被当作政策咨询。",
-     "files": ["ResolveFlow/agents/conversation_service.py", "ResolveFlow/api/portfolio_demo.py"]},
-    {"root_causes": ["(regression guard)"],
-     "fix": "退款动词泛化后，“确认，退吧”这类文字可能被当成新请求；新增文字确认防护：存在待确认卡片时，短句确认语只提示点击卡片，不建单、不授权。",
-     "files": ["ResolveFlow/business/conversation.py"]}
+    {
+      "root_causes": [
+        "INTENT_NOT_EXTRACTED",
+        "REQUEST_DOWNGRADED_TO_READ"
+      ],
+      "fix": "离线规则改为按子句解析：退款动词泛化为“退”（排除退订/退出与否定），停续/取消订单/权益同步支持口语与倒装（“续费关了”“订单帮我取消”“权益显示不对帮我同步”）。",
+      "files": [
+        "ResolveFlow/business/conversation.py"
+      ]
+    },
+    {
+      "root_causes": [
+        "AUTO_SELECTED_AMBIGUOUS_OBJECT"
+      ],
+      "fix": "同名订单不再取第一条：标题命中多个对象时保留标题作为引用并进入澄清；对象指称统一用 mentions()（标题/明细/品类词/Pro·Basic），基于用户原话。",
+      "files": [
+        "ResolveFlow/business/conversation.py"
+      ]
+    },
+    {
+      "root_causes": [
+        "INTENT_NOT_EXTRACTED（澄清后的文字回复）",
+        "TARGET_NOT_RESOLVED"
+      ],
+      "fix": "澄清后的文字回复（“第二个”“耳机”“Basic 那个”）只在已展示候选中解析；候选顺序持久化在 commerce_dialogs.candidates。",
+      "files": [
+        "ResolveFlow/business/conversation.py"
+      ]
+    },
+    {
+      "root_causes": [
+        "GOAL_DROPPED"
+      ],
+      "fix": "一个子句提到多个不同对象时分别生成意图（“耳机和音箱都退掉”）；补充子句只修饰已有目标时不再生成新目标（“按 999 元退给我”）；同对象同操作去重。",
+      "files": [
+        "ResolveFlow/business/conversation.py"
+      ]
+    },
+    {
+      "root_causes": [
+        "ACTION_ROUTED_AS_POLICY_ONLY",
+        "NO_POLICY_SOURCE",
+        "POLICY_QUESTION_TREATED_AS_ACTION"
+      ],
+      "fix": "政策检测下沉到子句级：操作子句照常建单，政策子句写入 Proposal.policy_question 并附检索来源；补充“多久/期限/支持…吗/什么意思”等咨询信号与“退货/签收/发票”商品域信号。",
+      "files": [
+        "ResolveFlow/business/conversation.py"
+      ]
+    },
+    {
+      "root_causes": [
+        "REVISION_NOT_APPLIED"
+      ],
+      "fix": "撤回/改主意（“还是算了”“商品不退了”“不退音箱了，换成耳机”）在意图判断前处理：只取消本会话中未执行的提案，按提到的对象或商品/订阅范围限定；“换成 X”沿用被撤回的操作。",
+      "files": [
+        "ResolveFlow/business/conversation.py"
+      ]
+    },
+    {
+      "root_causes": [
+        "COMPLETED_STATE_NOT_CHECKED"
+      ],
+      "fix": "CommerceStore 报价时检查自动续费已关闭，返回 ineligible 与原因，不再生成无意义的待确认操作。",
+      "files": [
+        "ResolveFlow/business/commerce.py"
+      ]
+    },
+    {
+      "root_causes": [
+        "TECHNICAL_AGENT_UNAVAILABLE_OFFLINE",
+        "TECHNICAL_QUESTION_NOT_ROUTED"
+      ],
+      "fix": "无模型时，消息中的明确错误码由只读 lookup_error_code 确定性查表回答，并在回复/元数据中标注“离线只读工具，非模型诊断”；技术子句不再被当作政策咨询。",
+      "files": [
+        "ResolveFlow/agents/conversation_service.py",
+        "ResolveFlow/api/portfolio_demo.py"
+      ]
+    },
+    {
+      "root_causes": [
+        "(regression guard)"
+      ],
+      "fix": "退款动词泛化后，“确认，退吧”这类文字可能被当成新请求；新增文字确认防护：存在待确认卡片时，短句确认语只提示点击卡片，不建单、不授权。",
+      "files": [
+        "ResolveFlow/business/conversation.py"
+      ]
+    },
+    {
+      "root_causes": [
+        "PREFERENCE_NOT_STORED_OR_WRONG"
+      ],
+      "fix": "长期偏好识别改为“表态词 + 风格词”（如“以后…”“我还是喜欢…”），按时间顺序后者覆盖前者；“这次/暂时”仍不写入长期偏好。",
+      "files": [
+        "ResolveFlow/memory/local_conversation_memory.py"
+      ]
+    },
+    {
+      "root_causes": [
+        "SENSITIVE_TEXT_STORED"
+      ],
+      "fix": "记忆写入前脱敏：验证码/密码/动态码（无论是否带冒号）、API Key、13–19 位卡号样式数字。",
+      "files": [
+        "ResolveFlow/memory/local_conversation_memory.py"
+      ]
+    },
+    {
+      "root_causes": [
+        "MEMORY_NOT_SURFACED"
+      ],
+      "fix": "记忆接口返回“最近处理的事项”（取自业务记录），前端在显眼位置展示“我记得什么”，并提供简洁/详细切换和忘记按钮；明确标注记忆不构成授权。",
+      "files": [
+        "ResolveFlow/api/commerce_routes.py",
+        "ResolveFlowFrontend/src/components/CommercePanel.vue"
+      ]
+    }
   ]
 }

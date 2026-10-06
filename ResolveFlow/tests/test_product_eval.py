@@ -172,3 +172,28 @@ class ConversationFixTests(unittest.IsolatedAsyncioTestCase):
         b = await self.s.send("alice", "帮我把无线耳机退掉", conversation_id=a["conversation_id"])
         self.assertEqual(self.runtime.store.get_case("alice", a["commerce_case"]["id"])["operations"][0]["status"], "awaiting_confirmation")
         self.assertEqual(b["commerce_case"]["operations"][0]["status"], "awaiting_confirmation")
+
+
+class MemoryTests(unittest.IsolatedAsyncioTestCase):
+    async def asyncSetUp(self):
+        from memory.local_conversation_memory import LocalConversationMemory
+        self.tmp = tempfile.TemporaryDirectory()
+        self.mem = LocalConversationMemory(self.tmp.name + "/m.sqlite3")
+
+    async def asyncTearDown(self):
+        self.tmp.cleanup()
+
+    async def test_one_time_codes_and_card_numbers_are_redacted(self):
+        from memory.conversation_memory import MsgRole
+        await self.mem.add_message("u", "c", MsgRole.USER, "我的验证码是 382915，卡号 6222020200112233445")
+        context = await self.mem.get_context("u", "c")
+        stored = context.recent_messages[0].content
+        self.assertNotIn("382915", stored)
+        self.assertNotIn("6222020200112233445", stored)
+
+    async def test_latest_standing_preference_wins_and_temporary_is_ignored(self):
+        from memory.conversation_memory import MsgRole
+        for text in ["以后回复请简短一点", "我还是喜欢详细一点的回答", "这次简洁点"]:
+            await self.mem.add_message("u", "c", MsgRole.USER, text)
+        await self.mem.update_profile("u", "c")
+        self.assertEqual((await self.mem.get_profile("u"))["response_style"], "detailed")

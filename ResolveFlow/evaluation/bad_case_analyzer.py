@@ -8,14 +8,14 @@ from __future__ import annotations
 
 FAILURE_TYPES = [
     "AUTHORIZATION", "CONFIRMATION_VIOLATION", "MISSING_CLARIFICATION", "UNNECESSARY_CLARIFICATION",
-    "OBJECT_RESOLUTION", "TASK_PLANNING", "WRONG_ACTION", "STATE_VERIFICATION", "RESPONSE_QUALITY",
+    "OBJECT_RESOLUTION", "TASK_PLANNING", "WRONG_ACTION", "STATE_VERIFICATION", "MEMORY", "RESPONSE_QUALITY",
     "HARNESS_ERROR",
 ]
 FAILURE_LABELS = {
     "AUTHORIZATION": "Authorization", "CONFIRMATION_VIOLATION": "Confirmation Violation",
     "MISSING_CLARIFICATION": "Missing Clarification", "UNNECESSARY_CLARIFICATION": "Unnecessary Clarification",
     "OBJECT_RESOLUTION": "Object Resolution", "TASK_PLANNING": "Task Planning", "WRONG_ACTION": "Wrong Action",
-    "STATE_VERIFICATION": "State Verification", "RESPONSE_QUALITY": "Response Quality", "HARNESS_ERROR": "Harness Error",
+    "STATE_VERIFICATION": "State Verification", "MEMORY": "Memory", "RESPONSE_QUALITY": "Response Quality", "HARNESS_ERROR": "Harness Error",
 }
 
 
@@ -74,6 +74,12 @@ def _root_cause(result, failure_type, failed_goals):
         if goal["type"] == "policy" and not any(r["sources"] for r in responses):
             routes = sorted({r["route"] for r in responses})
             return f"NO_POLICY_SOURCE: 回答没有附带政策来源 (routes={routes})"
+        if goal["type"] == "profile":
+            return f"PREFERENCE_NOT_STORED_OR_WRONG: 期望偏好 {goal['expect']}，实际 {result.get('memory', {}).get('profile')}"
+        if goal["type"] == "memory_summary":
+            return "MEMORY_NOT_SURFACED: 记忆摘要接口没有列出最近处理过的对象"
+        if goal["type"] == "memory_not_contains":
+            return "SENSITIVE_TEXT_STORED: 敏感内容被写入长期记忆"
         if goal["type"] == "no_pending":
             return "COMPLETED_STATE_NOT_CHECKED: 目标状态已达成，系统仍生成待确认操作"
     if failure_type == "MISSING_CLARIFICATION" and fallback:
@@ -125,6 +131,8 @@ def classify(result, grade):
             types.append("WRONG_ACTION" if not matches or later_fallback else "STATE_VERIFICATION")
         elif goal["type"] in {"policy", "technical", "read"}:
             types.append("RESPONSE_QUALITY")
+        elif goal["type"] in {"profile", "memory_not_contains", "memory_summary", "no_action_status"}:
+            types.append("MEMORY")
         elif goal["type"] in {"no_write", "no_pending"}:
             types.append("WRONG_ACTION")
         elif goal["type"] == "clarify" and "MISSING_CLARIFICATION" not in types:

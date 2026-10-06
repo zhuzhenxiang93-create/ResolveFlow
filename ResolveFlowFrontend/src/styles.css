@@ -801,7 +801,7 @@ footer {
 }
 .eval-grid {
   display: grid;
-  grid-template-columns: 1.3fr 0.8fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 .eval-card {
@@ -1113,4 +1113,68 @@ footer {
   .case-detail dl {
     grid-template-columns: 1fr;
   }
+}
+
+.memory-card {
+  border: 1px solid #d9e2dd;
+  border-radius: 12px;
+  background: #fbfcfb;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.memory-card h3 {
+  margin: 4px 0 8px;
+}
+.memory-card dl {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 6px 12px;
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+.memory-card dt {
+  color: #60776b;
+  font-weight: 600;
+}
+.memory-card dd {
+  margin: 0;
+  min-width: 0;
+}
+.memory-chip {
+  display: inline-block;
+  background: #edf2ee;
+  border-radius: 6px;
+  padding: 2px 8px;
+  margin: 0 6px 4px 0;
+  font-size: 12px;
+}
+.memory-card .actions button.selected {
+  background: #176755;
+  border-color: #176755;
+  color: #fff;
+}
+@media (max-width: 450px) {
+  .memory-card dl {
+    grid-template-columns: 1fr;
+  }
+}
+
+.check-list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 12.5px;
+}
+.check-list li span {
+  display: inline-block;
+  width: 18px;
+  font-weight: 700;
+}
+.check-list li.ok span {
+  color: #176755;
+}
+.check-list li.bad span {
+  color: #a3412b;
 }

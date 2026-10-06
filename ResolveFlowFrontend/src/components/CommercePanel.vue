@@ -28,6 +28,50 @@
         {{ c.title }} <span>→</span>
       </button>
     </section>
+    <section v-if="!reviewer && settings.userToken" class="memory-card" aria-labelledby="memory-title">
+      <div class="panel-heading">
+        <span class="eyebrow">Memory</span
+        ><span class="badge">Never used as consent</span>
+      </div>
+      <h3 id="memory-title">What ResolveFlow remembers</h3>
+      <dl>
+        <dt>Reply style</dt>
+        <dd>
+          {{ styleLabel }}
+          <small v-if="!profile.response_style">· say “以后回复简短一点” or pick below</small>
+        </dd>
+        <dt>“Last time” can mean</dt>
+        <dd v-if="recent.length">
+          <span v-for="r in recent.slice(0, 3)" :key="r.id" class="memory-chip"
+            >{{ r.title }} · {{ r.operation }} · {{ caseLabel(r.status) }}</span
+          >
+        </dd>
+        <dd v-else>Nothing yet — queries and requests you make show up here.</dd>
+      </dl>
+      <div class="actions">
+        <button
+          :class="['secondary', { selected: profile.response_style === 'concise' }]"
+          :disabled="busy"
+          @click="setStyle('concise')"
+        >
+          Concise</button
+        ><button
+          :class="['secondary', { selected: profile.response_style === 'detailed' }]"
+          :disabled="busy"
+          @click="setStyle('detailed')"
+        >
+          Detailed</button
+        ><button class="text-button" :disabled="busy" @click="forget">
+          Forget conversation memory
+        </button>
+      </div>
+      <p class="hint">
+        Memory helps with “上次那笔” and reply length. It never changes
+        eligibility or authorization; a remembered request still needs your
+        confirmation on its card. One-time codes and card numbers are not
+        stored.
+      </p>
+    </section>
     <div class="case-list">
       <template v-for="c in visibleCases" :key="c.id"
         ><ActionCard
@@ -118,21 +162,6 @@
           </div>
         </article>
       </div>
-      <details class="preferences">
-        <summary>
-          Preferences · {{ profile.response_style || "Default" }}
-        </summary>
-        <p class="hint">
-          Memory improves continuity and response style. It never changes
-          eligibility or authorization.
-        </p>
-        <div class="actions">
-          <button class="secondary" @click="setStyle('concise')">Concise</button
-          ><button class="secondary" @click="setStyle('detailed')">
-            Detailed</button
-          ><button class="text-button" @click="forget">Clear memory</button>
-        </div>
-      </details>
     </template>
   </section>
 </template>
@@ -151,6 +180,7 @@ const emit = defineEmits(["ask", "select", "updated", "busy"]);
 const objects = ref([]),
   cases = ref([]),
   profile = ref({}),
+  recent = ref([]),
   error = ref(""),
   busy = ref(false);
 const visibleCases = computed(() => cases.value);
@@ -174,6 +204,25 @@ const labels = {
   awaiting_return: "Waiting for return",
 };
 const label = (s) => labels[s] || s;
+const caseStates = {
+  awaiting_confirmation: "awaiting your confirmation",
+  awaiting_approval: "awaiting review",
+  awaiting_return: "waiting for return",
+  refund_processing: "refund processing",
+  completed: "completed",
+  cancelled: "cancelled",
+  rejected: "rejected",
+  stale: "expired",
+  ineligible: "not eligible",
+};
+const caseLabel = (s) => caseStates[s] || s;
+const styleLabel = computed(() =>
+  profile.value.response_style === "concise"
+    ? "Concise"
+    : profile.value.response_style === "detailed"
+      ? "Detailed"
+      : "Default (detailed)",
+);
 let generation = 0;
 async function refresh() {
   const g = ++generation;
@@ -194,6 +243,7 @@ async function refresh() {
     objects.value = o.objects;
     cases.value = c.cases;
     profile.value = m.profile;
+    recent.value = m.recent_objects || [];
     error.value = "";
   } catch (e) {
     if (g === generation) error.value = e.message;
@@ -249,6 +299,7 @@ watch(
     objects.value = [];
     cases.value = [];
     profile.value = {};
+    recent.value = [];
     error.value = '';
     refresh();
   },

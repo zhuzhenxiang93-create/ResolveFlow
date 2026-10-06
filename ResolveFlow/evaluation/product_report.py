@@ -148,7 +148,7 @@ def _breakdown_md(summary):
     return lines
 
 
-def markdown(report, baseline=None, baseline_report=None, holdout=None, fix_log=None):
+def markdown(report, baseline=None, baseline_report=None, holdout=None, fix_log=None, memory=None):
     m = report["metrics"]
     lines = ["# Product Evaluation · Recruiting Demo Commerce chain", "",
              f"> 自动生成，请勿手改。生成时间 {report['generated_at']} · run `{report['run_id']}` · commit `{report['git_commit']}`"
@@ -197,6 +197,13 @@ def markdown(report, baseline=None, baseline_report=None, holdout=None, fix_log=
                   "action_tool_success_rate", "confirmation_compliance"]:
             lines.append(f"| {k} | {_pct(hb['metrics'][k]) if hb else 'n/a'} | {_pct(hc['metrics'][k])} |")
         lines += ["", f"Holdout 仍失败：{', '.join(b['case_id'] + ' ' + b['failure_type'] + ' · ' + b['root_cause'] for b in hc['bad_cases']) or '无'}", ""]
+    if memory and memory.get("current"):
+        mc, mb = memory["current"], memory.get("baseline")
+        lines += ["## 记忆与个性化评测", "",
+                  f"`{mc['dataset']['path']}`，{mc['dataset']['case_count']} 条：跨会话指代、跨会话进度、偏好学习 / 保留 / 纠正、临时要求不入记忆、界面设置偏好、遗忘、记忆不构成授权、敏感信息脱敏、记忆摘要、偏好不影响业务判断。", "",
+                  f"- Baseline：{_pct(mb['metrics']['task_success_rate']) if mb else 'n/a'}；修复后：{_pct(mc['metrics']['task_success_rate'])}",
+                  "- 失败（修复前）：" + (", ".join(b["case_id"] + " " + b["root_cause"] for b in mb["bad_cases"]) if mb else "n/a"),
+                  "- 说明：MEM-09 的 requires_clarification 在任何系统修改前由 false 更正为“不标注”（原意即不评价是否澄清，只评价不授权），随后重跑并保存 baseline。该套件同样是看着失败修复的，规模小，未另设 holdout。", ""]
     if fix_log:
         lines += ["## 针对 Bad Case 的修复", "", "| 针对的 root cause | 修复 | 文件 |", "|---|---|---|"]
         lines += [f"| {', '.join(f['root_causes'])} | {f['fix']} | {', '.join(f'`{x}`' for x in f['files'])} |" for f in fix_log["fixes"]]
@@ -240,5 +247,7 @@ def write_doc_file():
         return
     h_latest, h_base = paths("holdout")
     fix_log = load(ROOT / "data/product_eval/fix_log.json")
+    m_latest, m_base = paths("memory")
     DOC.write_text(markdown(current, current.get("baseline_comparison"), base,
-                            {"current": load(h_latest), "baseline": load(h_base)}, fix_log))
+                            {"current": load(h_latest), "baseline": load(h_base)}, fix_log,
+                            {"current": load(m_latest), "baseline": load(m_base)}))

@@ -86,9 +86,32 @@ def grade_goal(goal, result):
         degr = sorted({d for r in responses for d in r["degradations"]})
         return ok, [f"tools_used={sorted(tools)} required={goal['tool']}", f"answer_contains_expected={hit}", f"degradations={degr}"]
     if kind == "read":
-        needles = [_fill(s, result) for s in goal.get("contains_any", ["{title:" + goal["object"] + "}"])]
+        # Judged on the reply to one turn when "turn" is given (e.g. the query after a preference change).
+        if "turn" in goal:
+            step = next((t for t in result["trace"] if t["step"] == goal["turn"]), None)
+            text = step["result"]["response"] if step and isinstance(step.get("result"), dict) and "response" in step["result"] else ""
+        default = ["{title:" + goal["object"] + "}"] if goal.get("object") else []
+        needles = [_fill(s, result) for s in goal.get("contains_any", default)]
         hit = [n for n in needles if n in text]
-        return bool(hit), [f"response contains {hit or 'none of'} {needles if not hit else ''}".strip()]
+        banned = [_fill(s, result) for s in goal.get("not_contains", []) if _fill(s, result) in text]
+        ok = (bool(hit) or not needles) and not banned
+        return ok, [f"response contains {hit or 'none of'} {needles if not hit else ''}".strip(), f"forbidden text present: {banned or 'none'}"]
+    if kind == "profile":
+        profile = result.get("memory", {}).get("profile", {})
+        ok = all(profile.get(k) == v for k, v in goal["expect"].items())
+        return ok, [f"stored profile={profile} expected={goal['expect']}"]
+    if kind == "memory_not_contains":
+        stored = result.get("memory", {}).get("messages", "")
+        return goal["text"] not in stored, [f"'{goal['text']}' {'found' if goal['text'] in stored else 'absent'} in stored conversation memory"]
+    if kind == "memory_summary":
+        summary = result.get("memory", {}).get("summary") or {}
+        recent = [result["slug_ids"].get(s) for s in goal["objects"]]
+        listed = [o.get("id") for o in summary.get("recent_objects", [])] if isinstance(summary, dict) else []
+        missing = [s for s, oid in zip(goal["objects"], recent) if oid not in listed]
+        return not missing, [f"memory summary recent_objects={listed or 'none'} missing={missing or 'none'}"]
+    if kind == "no_action_status":
+        hits = [f"{a['object']}/{a['operation']}={a['status']}" for a in result["actions"] if a["status"] in goal["statuses"]]
+        return not hits, [f"actions in {goal['statuses']}: {hits or 'none'}"]
     if kind == "no_pending":
         pending = [f"{a['object']}/{a['operation']}" for a in result["actions"] if a["status"] == "awaiting_confirmation"]
         return not pending, [f"actions awaiting confirmation: {pending or 'none'}"]

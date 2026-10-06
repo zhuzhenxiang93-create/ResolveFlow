@@ -23,7 +23,7 @@ def main():
     parser.add_argument("--save-baseline", action="store_true", help="also store this run as product_eval_baseline.json")
     parser.add_argument("--only", nargs="*", help="run a subset of case ids (does not write reports)")
     parser.add_argument("--no-doc", action="store_true")
-    parser.add_argument("--dataset", default="main", choices=["main", "holdout"],
+    parser.add_argument("--dataset", default="main", choices=["main", "holdout", "memory"],
                         help="main = 80-case set; holdout = paraphrase set written before fixes, never tuned on")
     args = parser.parse_args()
     logging.disable(logging.CRITICAL)
@@ -35,7 +35,7 @@ def main():
         for key in ("LLM_API_KEY", "LLM_MODEL"):
             if not os.getenv(key):
                 parser.error(f"--live requires {key}")
-    data_path = product_evaluator.DATASET if args.dataset == "main" else product_evaluator.HOLDOUT
+    data_path = {"main": product_evaluator.DATASET, "holdout": product_evaluator.HOLDOUT, "memory": product_evaluator.MEMORY}[args.dataset]
     cases = product_evaluator.load_cases(data_path)
     if args.only:
         cases = [c for c in cases if c["id"] in set(args.only)]

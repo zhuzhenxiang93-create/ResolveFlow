@@ -36,6 +36,8 @@ ResolveFlow 是一个用 Vue 3 和 FastAPI 编写的 AI 客服项目，支持政
 
 修复是对照这 80 条的失败 Case 做的，所以“修复后”在同一数据集上会高估效果。另有 16 条在修复前就写好、修复过程中没有参考过的 holdout 改写：Task Success 从 12.5%（2/16）提升到 93.8%（15/16），剩下 1 条失败也保留在报告里。
 
+另有 12 条记忆与个性化评测，覆盖跨会话指代、偏好的学习与纠正、遗忘、敏感信息脱敏，以及“记忆不构成授权”：修复前 9/12，修复后 12/12。
+
 以上结果均为离线规则模式，没有调用模型；实时模型模式可以用 `make product-eval-live` 自行复现。页面右上角的 **Evaluation** 标签（或 `#evaluation`）会读取已生成的报告 JSON，打开页面不会触发评测。完整指标定义和逐条 Bad Case 见 [Product Evaluation 报告](docs/product-evaluation.md)。
 
 ```bash

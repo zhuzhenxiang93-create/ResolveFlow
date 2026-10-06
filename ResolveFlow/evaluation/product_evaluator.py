@@ -32,8 +32,9 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[1]
 DATASET = ROOT / "data/product_eval/product_eval_cases.jsonl"
 HOLDOUT = ROOT / "data/product_eval/product_eval_holdout.jsonl"
+MEMORY = ROOT / "data/product_eval/product_eval_memory.jsonl"
 WRITE_OPS = {"refund", "cancel_renewal", "terminate", "cancel_order", "repair"}
-USER_STEPS = {"user", "select", "confirm", "cancel"}
+USER_STEPS = {"user", "select", "confirm", "cancel", "memory"}
 DAY = 86400
 
 
@@ -240,7 +241,7 @@ class Runner:
             return r.status_code, body
 
         for index, step in enumerate(case["turns"]):
-            kind = next(k for k in ("user", "select", "confirm", "cancel", "reviewer", "attack", "system") if k in step)
+            kind = next(k for k in ("user", "select", "confirm", "cancel", "reviewer", "attack", "system", "memory", "new_conversation") if k in step)
             record = {"step": index, "kind": kind, "spec": step}
             if kind in USER_STEPS:
                 user_turns += 1
@@ -298,6 +299,16 @@ class Runner:
                 outcome = self._attack(step, a, b, chat)
                 record.update(attack=outcome)
                 attacks.append(outcome)
+            elif kind == "new_conversation":
+                # The same identity opens a fresh chat (the UI "New chat" button): only memory carries over.
+                a.conversation = None
+                record.update(applied=True)
+            elif kind == "memory":
+                if step["memory"] == "forget":
+                    r = self.client.delete("/commerce/memory", headers=a.user)
+                else:
+                    r = self.client.put("/commerce/memory", headers=a.user, json={"response_style": step["memory"]})
+                record.update(http=r.status_code)
             elif kind == "system":
                 if step["system"] == "expire_quotes":
                     with _db(a.path) as db:
@@ -323,6 +334,15 @@ class Runner:
             trace.append(record)
 
         final = a.snapshot()
+        memory = {"profile": {}, "messages": "", "summary": None}
+        with _db(a.path) as db:
+            if db.execute("SELECT 1 FROM sqlite_master WHERE name='conversation_profiles'").fetchone():
+                row = db.execute("SELECT body FROM conversation_profiles WHERE owner=?", (a.owner,)).fetchone()
+                memory["profile"] = json.loads(row[0]) if row else {}
+            if db.execute("SELECT 1 FROM sqlite_master WHERE name='conversation_messages'").fetchone():
+                memory["messages"] = "\n".join(r[0] for r in db.execute("SELECT content FROM conversation_messages WHERE owner=?", (a.owner,)))
+        r = self.client.get("/commerce/memory", headers=a.user)
+        memory["summary"] = r.json() if r.status_code == 200 else {"http": r.status_code}
         return {
             "case": case, "trace": trace, "attacks": attacks, "user_turns": user_turns,
             "initial": initial, "final": final, "actions": a.actions(), "audit": a.audit(), "owner": a.owner,
@@ -331,6 +351,7 @@ class Runner:
             "latency_ms": round((time.perf_counter() - started) * 1000, 1),
             "slug_titles": {k: v["title"] for k, v in final.items()},
             "slug_ids": {k: v["id"] for k, v in final.items()},
+            "memory": memory,
         }
 
     def _attack(self, step, a, b, chat):

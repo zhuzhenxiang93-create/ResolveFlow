@@ -9,6 +9,21 @@ from memory.conversation_memory import MemoryContext, Message, MsgRole
 from mcp.hybrid_retriever import BM25Index
 
 
+# A standing preference is stated as one ("以后…", "我还是喜欢…"); "这次/暂时" is filtered out earlier.
+STANDING = r"(?:以后|今后|之后|往后|一直|默认|都|请|我(?:还是|更|比较)?喜欢|我(?:还是|更)?偏好|我希望)"
+CONCISE = r"(?:简短|简洁|精简|短一点|简单一点|少说点)"
+DETAILED = r"(?:详细|具体|完整|多解释)"
+_SECRETS = re.compile(
+    r"sk-[A-Za-z0-9_-]+"
+    r"|(?i:password|passcode|otp|密码|验证码|校验码|动态码|口令)\s*(?:是|为|:|：|=)?\s*[A-Za-z0-9]{4,}"
+    r"|(?<!\d)\d{13,19}(?!\d)")  # card-like numbers
+
+
+def redact(text):
+    """Never retain credentials, one-time codes or card-like numbers as memory."""
+    return _SECRETS.sub("[REDACTED]", text)
+
+
 class LocalConversationMemory:
     mode = "sqlite_recent_and_lexical_history"
 
@@ -29,7 +44,7 @@ class LocalConversationMemory:
 
     async def add_message(self, user_id, conv_id, role, content, metadata=None):
         # Never retain common pasted API keys or credential-like fields as memory.
-        text = re.sub(r"sk-[A-Za-z0-9_-]+|(?i:password|密码|验证码)\s*[:：=]\s*\S+", "[REDACTED]", content)
+        text = redact(content)
         with self.connect() as db:
             db.execute("INSERT INTO conversation_messages(owner,conversation,role,content,timestamp) VALUES(?,?,?,?,?)",
                        (user_id, conv_id, role.value, text[:8000], datetime.now().isoformat()))
@@ -54,9 +69,10 @@ class LocalConversationMemory:
             text = message.content
             if re.search(r"这次|本次|这一条|暂时", text):
                 continue
-            if re.search(r"请.*(简短|简洁)|我喜欢.*简洁", text):
+            # Later statements win: messages are read oldest → newest.
+            if re.search(STANDING + r"[^。！？]{0,10}" + CONCISE, text):
                 profile["response_style"] = "concise"
-            if re.search(r"请.*(详细|具体).*解释|我喜欢.*详细", text):
+            if re.search(STANDING + r"[^。！？]{0,10}" + DETAILED, text):
                 profile["response_style"] = "detailed"
         with self.connect() as db:
             db.execute("INSERT OR REPLACE INTO conversation_profiles VALUES(?,?)", (user_id, json.dumps(profile)))
