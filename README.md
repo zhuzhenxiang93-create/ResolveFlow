@@ -130,3 +130,7 @@ docs/                     运行说明、演示与测试记录
 
 
 [前端文档](ResolveFlowFrontend/README.md) · [后端文档](ResolveFlow/README.md)
+
+## Dify 工作流
+
+新增 [Dify 集成](dify/README.md)：用 Dify 编排多意图解析、政策检索和技术咨询，复用后端报价、确认、独立审核与幂等业务规则。工作流 DSL 可导入，应用 API Key 保留在本机忽略文件中。

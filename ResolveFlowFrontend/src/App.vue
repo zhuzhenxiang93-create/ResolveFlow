@@ -53,7 +53,9 @@
       </section>
       <div class="demo-note" v-if="demoMode">
         {{
-          mode === "live-model"
+          mode === "dify-workflow"
+            ? "Dify workflow · Qwen · Policy retrieval · Read-only support tools"
+            : mode === "live-model"
             ? "Live model · Read-only Agent tools · Lexical policy retrieval"
             : "Offline rules demo · Technical Agent requires a model connection"
         }}<span>All payments and fulfilment are simulated.</span>
@@ -121,6 +123,7 @@
                 <details v-for="s in m.sources" :key="s.document_id">
                   <summary>↗ {{ s.title }} · {{ s.version }}</summary>
                   <p>{{ s.source }}</p>
+                  <p v-if="s.content">{{ s.content }}</p>
                   <small>{{ s.document_id }}</small>
                 </details>
               </div>
