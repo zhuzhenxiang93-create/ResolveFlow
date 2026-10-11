@@ -1,3 +1,30 @@
+# Dify native multi-Agent acceptance — 2026-10-11
+
+Local macOS, Python 3.11 (`resolveflow-demo`), branch `codex/dify-agent`. The published Dify Workflow contains 25 nodes and five native v2 Agent packages, using Qwen3.6 Plus; Supervisor uses Qwen Plus. Specialists run conditionally in sequence. A compound request can dispatch multiple specialists. Business authority remains in CommerceStore.
+
+Backend: **351 run, 342 passed, 9 skipped**, no failures or errors. Skips: Postgres POC 5, optional Redis/Chroma 4. Frontend production build and whitespace checks passed.
+
+Live end-to-end API checks:
+
+| Request | Actual result |
+|---|---|
+| Refund policy | General Agent + knowledge sources; no Case |
+| Refund with no object | Commerce; eight candidates; no arbitrary target |
+| Refund headphones | ¥259; confirmation → separate review → return received → simulated settlement; repeated settlement has one refund; Case restored through API; foreign session denied |
+| Stop Basic renewal | Confirmation turns renewal OFF; benefits retained; no refund |
+| Refund duplicate Pro charge + login 401 | ¥99 waiting for consent; Commerce + Technical; actual error-code tool result |
+| Compare 99/198 + request human | Billing + Escalation; 99.00 difference on user-provided amounts; summary explicitly not connected to a human |
+
+The first live pass exposed incorrect role routing. Failed cases were fixed and re-run. A browser request later exposed Supervisor returning a legal Commerce role inside support_roles; validation rejected that request before business writes. The parser now derives Commerce participation from validated intents and accepts canonical or capitalized known role names, while rejecting unknown roles.
+
+These checks are a small live smoke test, not an accuracy benchmark. Native sandbox Agents have substantial latency and token overhead. Tool traces returned in final text are model-reported evidence, not authorization or independently signed audit. No production payment provider or real human-helpdesk connection is configured.
+
+Browser: live compound request shows a ¥99 card and a separate Technical Agent answer; confirm → reviewer approve → simulated receipt → Completed; refresh restores Case. Latest console errors/warnings: 0. At 1440×900, 1024×900 and 390×900, document width equals viewport width. Loading disables repeat sends and role changes.
+
+Screenshots and browser details: [Dify integration](../dify/README.md).
+
+---
+
 # Field-found bad case on the public demo — 2026-10-05
 
 **What happened.** A user typed “退机械键盘” and got a ¥399 full-order card. They then typed “我只想退键盘” and got a correct ¥299 line-item card. The old ¥399 card stayed open beside it, and the user confirmed the wrong one. The backend behaved as designed: it computed both amounts correctly and moved only the card that was actually confirmed. The product gap was leaving two competing, still-unconfirmed amounts for one object.

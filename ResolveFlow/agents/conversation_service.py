@@ -28,6 +28,7 @@ class ConversationService:
         self.memory = memory or LocalConversationMemory(runtime.path)
         self.recognizer = recognizer or IntentRecognizer(api_key="", client=runtime.client,
             use_llm=bool(runtime.client), base_url="local-compatible" if runtime.client else None)
+        self.dify = None
         self.answer_orchestrator = answer_orchestrator
         if self.answer_orchestrator is None and runtime.client:
             from agents.agent_orchestrator import AgentOrchestrator
@@ -87,12 +88,58 @@ class ConversationService:
     async def _send(self, owner, message, conv, active_id, last_order, order_id, new_task):
         from business.conversation import CommerceConversation
         commerce = CommerceConversation(self.runtime, self.memory, self.knowledge_search, self.knowledge_document_ids)
+        dify_result = None
+        if self.dify:
+            try:
+                context = await self.memory.get_context(owner, conv, message)
+                history = [{"role": m.role.value, "content": m.content} for m in context.recent_messages][-6:]
+                dify_result = await self.dify.run(owner, message, commerce.store.catalog(owner), history)
+            except Exception:
+                import logging
+                logging.getLogger(__name__).warning("Dify turn failed; no business proposal applied")
+                result = await commerce._answer(owner, conv, message,
+                    "Dify 工作流暂时不可用，本轮未提交业务申请。请稍后重试并核对已有申请。", mode="dify_error")
+                result["degradations"].append("dify_workflow_failed")
+                return result
         try:
-            result = await commerce.send(owner, conv, message, selection=order_id)
+            result = await commerce.send(owner, conv, message, selection=order_id,
+                proposal_override=dify_result["proposal"] if dify_result else None)
         except Exception as ex:
             import logging
             logging.getLogger(__name__).exception("Unified commerce failed (%s)", type(ex).__name__)
             return await commerce._answer(owner, conv, message, "业务查询暂时失败，请重试并核对任务状态。", mode="commerce_error")
+        if dify_result:
+            if result is None:
+                result = await commerce._answer(owner, conv, message, "", mode="dify_workflow")
+            result.pop("general_remainder", None)
+            result["agent_plan"] = dify_result["agent_plan"]
+            result["agent_results"] = dify_result["agent_results"]
+            result["degradations"].extend("dify_" + a["agent_type"] + "_failed"
+                for a in dify_result["agent_results"] if a["status"] == "failed")
+            if dify_result["policy_answer"]:
+                # The model's policy response cannot replace a business quote or status.
+                if result.get("route") == "knowledge":
+                    result["response"] = dify_result["policy_answer"]
+                else:
+                    result["response"] += "\n政策说明：" + dify_result["policy_answer"]
+                result["sources"] = dify_result["sources"]
+                result["knowledge_used"] = bool(dify_result["sources"])
+            if dify_result["sources"]:
+                result["sources"] = dify_result["sources"]
+                result["knowledge_used"] = True
+            if dify_result["support_answer"]:
+                result["response"] += "\n" + dify_result["support_answer"]
+                result["support_result"] = {"response": dify_result["support_answer"],
+                    "agent_type": "dify_support", "tools_used": [t.get("tool") for t in dify_result["tool_traces"]],
+                    "tool_traces": dify_result["tool_traces"], "diagnostics": []}
+            result["response"] = result["response"].strip() or "请说明要咨询的政策、查询的订单或需要办理的售后操作。"
+            try:
+                await self.memory.add_message(owner, conv, MsgRole.ASSISTANT, result["response"])
+            except Exception:
+                result["degradations"].append("dify_answer_memory_unavailable")
+            result["mode"] = "dify_workflow"
+            result["degradations"] = [d for d in result["degradations"] if d != "technical_agent_offline"]
+            return result
         if result is not None:
             remainder = result.pop("general_remainder", "")
             if remainder and not self.answer_orchestrator:

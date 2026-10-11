@@ -19,3 +19,7 @@ The final six story captures and responsive captures are from the real-model
 phase. The same business lifecycle was also exercised earlier in offline mode. The source policies remain
 lexically retrieved in both modes. 320×800 was also visually checked with no
 horizontal overflow. Details: [validation](../validation.md).
+
+## Dify native multi-Agent — 2026-10-11
+
+Actual local/Dify Cloud captures: [workflow](../../dify/screenshots/multiagent-workflow.png), [mixed request](../../dify/screenshots/multiagent-mixed.jpg), [completed](../../dify/screenshots/multiagent-completed.jpg), [1024px](../../dify/screenshots/multiagent-1024.jpg), [390px](../../dify/screenshots/multiagent-mobile.jpg). Technical output uses a real model; payments remain simulated.

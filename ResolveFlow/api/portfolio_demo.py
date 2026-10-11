@@ -108,6 +108,9 @@ def create_app():
     def service(session):
         if session not in services:
             svc = ConversationService(ExecutionContext(root / f'{session}.sqlite3', client=client))
+            if os.getenv('RESOLVEFLOW_USE_DIFY') == '1':
+                from agents.dify_workflow import DifyWorkflow
+                svc.dify = DifyWorkflow()
             if client:
                 from agents.agent_orchestrator import AgentOrchestrator
                 manager = PortfolioKnowledgeTools(svc.kb)
@@ -158,8 +161,8 @@ def create_app():
 
     @app.get('/health')
     def health():
-        return {'status': 'ok', 'demo': True, 'mode': 'live-model' if client else 'offline-rules',
-                'retrieval': 'lexical', 'simulated': True, 'public': guard.enabled}
+        return {'status': 'ok', 'demo': True, 'mode': 'dify-workflow' if os.getenv('RESOLVEFLOW_USE_DIFY') == '1' else ('live-model' if client else 'offline-rules'),
+                'retrieval': 'dify-knowledge' if os.getenv('RESOLVEFLOW_USE_DIFY') == '1' else 'lexical', 'simulated': True, 'public': guard.enabled}
 
     @app.post('/demo/session')
     def bootstrap():
@@ -171,7 +174,7 @@ def create_app():
         service(session).execution.store.seed(user)
         return {'userId': user, 'userToken': mint_token(user, 'user', 86400),
                 'reviewerToken': mint_token(f'{session}:reviewer', 'reviewer', 86400),
-                'mode': 'live-model' if client else 'offline-rules', 'simulated': True}
+                'mode': 'dify-workflow' if os.getenv('RESOLVEFLOW_USE_DIFY') == '1' else ('live-model' if client else 'offline-rules'), 'simulated': True}
 
     class Chat(BaseModel):
         model_config = ConfigDict(extra='forbid')
@@ -185,7 +188,7 @@ def create_app():
         try:
             result = await service(current.get()).send(user, body.message,
                         conversation_id=body.conv_id, order_id=body.order_id)
-            if not client and any(word in body.message for word in ('401', '登录', '报错')):
+            if not client and not service(current.get()).dify and any(word in body.message for word in ('401', '登录', '报错')):
                 if not result.get('support_result'):
                     result['response'] += '\n离线模式未连接 Technical Agent；技术问题需要启用模型后处理。'
                 result.setdefault('degradations', []).append('technical_agent_offline')

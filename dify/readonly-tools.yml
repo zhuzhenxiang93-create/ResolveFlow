@@ -1,0 +1,291 @@
+app:
+  description: 根据角色字段路由只读操作；身份与业务授权由后端检查；不提供退款执行、确认、审批、凭据修改工具。
+  icon: 🤖
+  icon_background: '#D1E9FF'
+  icon_type: emoji
+  mode: workflow
+  name: ResolveFlow Scoped Readonly Tools
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/tongyi:0.2.22@9cea96ffc7977f536c02999c80ff1283b1819aab9b6fa2fdf789d0c6c7d03715
+    version: null
+kind: app
+version: 0.7.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 50
+        image_file_batch_limit: 10
+        image_file_size_limit: 10
+        knowledge_file_size_limit: 15
+        single_chunk_attachment_limit: 10
+        skill_file_size_limit: 50
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    nodes:
+    - id: tool_start
+      type: custom
+      position:
+        x: 0
+        y: 100
+      data:
+        type: start
+        title: 只读工具输入
+        variables:
+        - variable: role
+          label: role
+          type: paragraph
+          required: true
+          max_length: 60000
+          options: []
+        - variable: operation
+          label: operation
+          type: paragraph
+          required: true
+          max_length: 60000
+          options: []
+        - variable: query
+          label: query
+          type: paragraph
+          required: true
+          max_length: 60000
+          options: []
+        - variable: arguments_json
+          label: arguments_json
+          type: paragraph
+          required: true
+          max_length: 60000
+          options: []
+        - variable: context
+          label: context
+          type: paragraph
+          required: true
+          max_length: 60000
+          options: []
+      sourcePosition: right
+      targetPosition: left
+      width: 260
+      height: 100
+    - id: tool_knowledge
+      type: custom
+      position:
+        x: 320
+        y: 100
+      data:
+        dataset_ids:
+        - nHzCx8ZPiSfNMzRluU8T0cJmgImlPOlvz6YpuX3sw4AXZRC0BGAZOekELpF7yyUg
+        desc: 在知识库中搜索与用户问题最相关的内容，并将结果传递给 LLM。
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: reranking_model
+          reranking_model:
+            model: qwen3-rerank
+            provider: langgenius/tongyi/tongyi
+          top_k: 4
+        query_attachment_selector: []
+        query_variable_selector:
+        - tool_start
+        - query
+        retrieval_mode: multiple
+        selected: false
+        title: 动态检索：工具查询
+        type: knowledge-retrieval
+      sourcePosition: right
+      targetPosition: left
+      width: 260
+      height: 100
+    - id: tool_dispatch
+      type: custom
+      position:
+        x: 640
+        y: 100
+      data:
+        type: code
+        title: 校验权限并执行只读工具
+        code_language: python3
+        code: "\"\"\"Portable Dify tool dispatcher. Role is bound manually in each\
+          \ Agent node.\"\"\"\nimport json, re\nfrom decimal import Decimal, InvalidOperation\n\
+          SCOPES = {\n    \"commerce\": {\"inspect_request_context\", \"knowledge_search\"\
+          },\n    \"general\": {\"inspect_request_context\", \"knowledge_search\"\
+          , \"create_handoff_summary\"},\n    \"technical\": {\"inspect_request_context\"\
+          , \"knowledge_search\", \"lookup_error_code\"},\n    \"billing\": {\"knowledge_search\"\
+          , \"check_billing_fields\", \"compare_amounts\"},\n    \"escalation\": {\"\
+          inspect_request_context\", \"create_handoff_summary\"},\n}\nERRORS = {'401':\
+          \ '身份验证失败，通常是登录态过期或凭据错误，需要重新登录或重置密码。', '403': '权限不足，账号可能缺少对应权益或被限制访问该资源。',\
+          \ '404': '请求的资源不存在，常见于订单号、链接或页面拼写错误。', '429': '请求过于频繁被限流，建议提示用户稍后重试。', '500':\
+          \ '服务端内部错误，通常与本次输入无关，需要记录现场供技术团队排查。', '502': '网关或上游服务暂时不可用，多为临时性故障，建议重试。',\
+          \ '503': '服务暂时过载或正在维护，建议稍后重试。'}\ndef main(role: str, operation: str, query:\
+          \ str, arguments_json: str, context: str, documents: list):\n    def finish(data,\
+          \ success=True):\n        trace={\"agent_type\":role,\"tool\":operation,\"\
+          arguments\":args,\"success\":success,\"result\":data}\n        return {\"\
+          result\":json.dumps({\"success\":success,\"data\":data,\"trace\":trace},ensure_ascii=False)}\n\
+          \    try: args=json.loads(arguments_json or \"{}\")\n    except (TypeError,ValueError):\
+          \ args={};return finish({\"error\":\"Arguments must be JSON\"},False)\n\
+          \    if not isinstance(args,dict):args={};return finish({\"error\":\"Arguments\
+          \ must be an object\"},False)\n    if operation not in SCOPES.get(role,set()):return\
+          \ finish({\"error\":\"Tool not permitted for this role\"},False)\n    try:\
+          \ ctx=json.loads(context or \"{}\")\n    except (TypeError,ValueError):return\
+          \ finish({\"error\":\"Invalid context\"},False)\n    if operation==\"lookup_error_code\"\
+          :\n        c=str(args.get(\"code\",\"\")).strip()\n        if not re.fullmatch(r\"\
+          [45]\\d\\d\",c):return finish({\"error\":\"A three-digit error code is required\"\
+          },False)\n        return finish({\"known\":c in ERRORS,\"code\":c,\"explanation\"\
+          :ERRORS.get(c,\"未收录该错误码，需要进一步核查\")})\n    if operation==\"inspect_request_context\"\
+          :return finish({\"query\":query,\"known_context\":ctx,\"simulated\":True})\n\
+          \    if operation==\"knowledge_search\":\n        sources=[]\n        for\
+          \ d in documents[:4]:\n            meta=d.get(\"metadata\",{})\n       \
+          \     sources.append({\"document_id\":meta.get(\"document_id\",\"\")+\"\
+          :\"+str(meta.get(\"segment_id\",d.get(\"id\",\"\"))),\"title\":d.get(\"\
+          title\",\"\"),\"source\":\"Dify knowledge retrieval\",\"content\":d.get(\"\
+          content\",\"\")})\n        return finish({\"query\":query,\"sources\":sources,\"\
+          found\":bool(sources)})\n    if operation==\"check_billing_fields\":\n \
+          \       text=ctx.get(\"message\",query) if isinstance(ctx,dict) else query\n\
+          \        amounts=re.findall(r\"(?<![A-Za-z0-9_-])\\d+(?:\\.\\d{1,2})?\\\
+          s*(?:元|块|人民币)\",text)\n        ids=re.findall(r\"[GS]-[A-Za-z0-9_-]+\",text)\n\
+          \        return finish({\"known_order_ids\":ids,\"known_amounts\":amounts,\"\
+          missing_fields\":([\"order_id\"] if not ids else [])+([\"amount\"] if not\
+          \ amounts else [])})\n    if operation==\"compare_amounts\":\n        try:\n\
+          \            a=Decimal(str(args[\"expected\"]));b=Decimal(str(args[\"actual\"\
+          ]))\n            if not a.is_finite() or not b.is_finite() or a<0 or b<0:raise\
+          \ ValueError()\n            diff=(b-a).quantize(Decimal(\"0.01\"))\n   \
+          \     except (KeyError,InvalidOperation,ValueError,TypeError):return finish({\"\
+          error\":\"Finite nonnegative expected and actual required\"},False)\n  \
+          \      return finish({\"expected\":str(a),\"actual\":str(b),\"difference\"\
+          :str(diff),\"overcharged\":diff>0,\"matches\":diff==0,\"basis\":\"user-provided\
+          \ amounts, not verified charges\"})\n    return finish({\"summary\":{\"\
+          query\":query,\"known_context\":ctx,\"reason\":str(args.get(\"reason\",\"\
+          需要人工核查\"))},\"handoff_connected\":False,\"note\":\"仅生成交接摘要，没有接通真人或提交工单\"\
+          })\n"
+        variables:
+        - variable: role
+          value_selector:
+          - tool_start
+          - role
+        - variable: operation
+          value_selector:
+          - tool_start
+          - operation
+        - variable: query
+          value_selector:
+          - tool_start
+          - query
+        - variable: arguments_json
+          value_selector:
+          - tool_start
+          - arguments_json
+        - variable: context
+          value_selector:
+          - tool_start
+          - context
+        - variable: documents
+          value_selector:
+          - tool_knowledge
+          - result
+        outputs:
+          result:
+            type: string
+            children: null
+      sourcePosition: right
+      targetPosition: left
+      width: 260
+      height: 100
+    - id: tool_end
+      type: custom
+      position:
+        x: 960
+        y: 100
+      data:
+        type: end
+        title: 工具证据
+        outputs:
+        - variable: result
+          value_selector:
+          - tool_dispatch
+          - result
+      sourcePosition: right
+      targetPosition: left
+      width: 260
+      height: 100
+    edges:
+    - id: tool_start-tool_knowledge
+      type: custom
+      source: tool_start
+      target: tool_knowledge
+      sourceHandle: source
+      targetHandle: target
+      data:
+        sourceType: start
+        targetType: knowledge-retrieval
+        isInIteration: false
+        isInLoop: false
+    - id: tool_knowledge-tool_dispatch
+      type: custom
+      source: tool_knowledge
+      target: tool_dispatch
+      sourceHandle: source
+      targetHandle: target
+      data:
+        sourceType: knowledge-retrieval
+        targetType: code
+        isInIteration: false
+        isInLoop: false
+    - id: tool_dispatch-tool_end
+      type: custom
+      source: tool_dispatch
+      target: tool_end
+      sourceHandle: source
+      targetHandle: target
+      data:
+        sourceType: code
+        targetType: end
+        isInIteration: false
+        isInLoop: false
+    viewport:
+      x: 0
+      y: 100
+      zoom: 0.6
+  rag_pipeline_variables: []

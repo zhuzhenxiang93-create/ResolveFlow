@@ -53,7 +53,9 @@
       </section>
       <div class="demo-note" v-if="demoMode">
         {{
-          mode === "live-model"
+          mode === "dify-workflow"
+            ? "Dify multi-Agent · Supervisor + 5 specialist Agents · Read-only tools"
+            : mode === "live-model"
             ? "Live model · Read-only Agent tools · Lexical policy retrieval"
             : "Offline rules demo · Technical Agent requires a model connection"
         }}<span>All payments and fulfilment are simulated.</span>
@@ -121,12 +123,13 @@
                 <details v-for="s in m.sources" :key="s.document_id">
                   <summary>↗ {{ s.title }} · {{ s.version }}</summary>
                   <p>{{ s.source }}</p>
+                  <p v-if="s.content">{{ s.content }}</p>
                   <small>{{ s.document_id }}</small>
                 </details>
               </div>
             </article>
             <div v-if="busy" class="typing" role="status">
-              ● ● ● &nbsp; Checking your request and business state…
+              ● ● ● &nbsp; {{ mode === "dify-workflow" ? "Specialist Agents are working; this can take about a minute…" : "Checking your request and business state…" }}
             </div>
           </div>
           <form class="composer" @submit.prevent="send">
@@ -283,13 +286,20 @@ async function send(selection) {
     const support = r.raw.support_result;
     const businessResponse = support?.response && r.response.endsWith(support.response)
       ? r.response.slice(0, -support.response.length).trim() : r.response;
-    append("assistant", readable(businessResponse), {
+    if (businessResponse.trim()) append("assistant", readable(businessResponse), {
       sources: r.sources,
       meta: r.knowledgeUsed
         ? "Knowledge sources"
         : r.agentType || "Business support",
     });
-    if (support?.response) append('assistant', support.response, {
+    const agents = r.raw.agent_results || [];
+    const specialists = agents.filter(a => ['technical', 'billing', 'escalation'].includes(a.agent_type) || (a.agent_type === 'general' && a.answer_kind === 'support'));
+    if (specialists.length) {
+      for (const agent of specialists) append('assistant', agent.answer, {
+        sources: businessResponse.trim() ? [] : r.sources,
+        meta: `${agent.agent_type[0].toUpperCase() + agent.agent_type.slice(1)} Agent · ${agent.status === 'completed' ? 'Live model' : 'Failed — retry needed'}`,
+      });
+    } else if (support?.response) append('assistant', support.response, {
       meta: support.mode === 'offline_tool'
         ? 'Offline read-only tool · not a model diagnosis'
         : `${support.agent_type} support · ${support.diagnostics?.length ? 'Unavailable' : 'Live model'}`,

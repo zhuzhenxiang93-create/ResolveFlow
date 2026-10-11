@@ -1,0 +1,93 @@
+{
+  "date": "2026-10-11",
+  "mode": "dify_native_multiagent",
+  "backend": {
+    "total": 351,
+    "passed": 342,
+    "skipped": 9
+  },
+  "live_scenarios": [
+    {
+      "scenario": 3,
+      "seconds": 20.4,
+      "agents": [
+        "commerce"
+      ],
+      "passed": true
+    },
+    {
+      "scenario": 4,
+      "seconds": 21.0,
+      "agents": [
+        "commerce"
+      ],
+      "passed": true
+    },
+    {
+      "scenario": 2,
+      "seconds": 22.3,
+      "agents": [
+        "commerce"
+      ],
+      "passed": true
+    },
+    {
+      "scenario": 1,
+      "seconds": 32.8,
+      "agents": [
+        "general"
+      ],
+      "passed": true
+    },
+    {
+      "scenario": 5,
+      "seconds": 35.7,
+      "agents": [
+        "commerce",
+        "technical"
+      ],
+      "passed": true
+    },
+    {
+      "scenario": 6,
+      "seconds": 51.3,
+      "agents": [
+        "billing",
+        "escalation"
+      ],
+      "passed": true
+    }
+  ],
+  "limitations": [
+    "small live smoke test, not an accuracy benchmark",
+    "simulated commerce",
+    "no real helpdesk connection",
+    "model-reported tool traces are not business authorization"
+  ],
+  "browser": {
+    "mixed_request": "passed",
+    "confirmation_review_settlement": "passed",
+    "refresh_case_restore": "passed",
+    "console_errors": 0,
+    "console_warnings": 0,
+    "responsive": [
+      {
+        "chatWidth": 723.78125,
+        "scrollWidth": 1440,
+        "width": 1440
+      },
+      {
+        "chatWidth": 501.8671875,
+        "scrollWidth": 1024,
+        "width": 1024
+      },
+      {
+        "chatWidth": 358.8125,
+        "scrollWidth": 390,
+        "width": 390
+      }
+    ],
+    "general_consultation": "passed",
+    "sources_expand": "passed"
+  }
+}

@@ -231,7 +231,7 @@ class CommerceConversation:
         degradations = (["local_policy_fallback"] if fallback else []) + retrieval_errors
         return answer, docs[:3], degradations
 
-    async def send(self, owner, conv, message, selection=None):
+    async def send(self, owner, conv, message, selection=None, proposal_override=None):
         catalog = self.store.catalog(owner)
         with self.store.connect() as db:
             row = db.execute("SELECT pending,last_objects,candidates FROM commerce_dialogs WHERE owner=? AND conversation=?", (owner, conv)).fetchone()
@@ -268,7 +268,10 @@ class CommerceConversation:
             mode = "explicit_selection"
         else:
             try:
-                proposed, mode = await self.interpret(message, catalog, history)
+                if proposal_override is not None:
+                    proposed, mode = Proposal.model_validate(proposal_override), "dify_workflow"
+                else:
+                    proposed, mode = await self.interpret(message, catalog, history)
             except Exception:
                 return await self._answer(owner, conv, message, "业务意图解析暂时失败，本轮未执行业务操作，请重试。", mode="model_error")
         from agents.subscription_knowledge import is_consultation_only
