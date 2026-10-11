@@ -21,6 +21,7 @@ prometheus-client==0.21.1
 httpx==0.28.1              # webhook 告警与 Qwen3 Reranker HTTP 客户端
 
 # ── 工具 ──────────────────────────────────────────────────────────────────────
+PyYAML==6.0.2              # Dify DSL validation tests
 python-dotenv==1.0.1
 PyJWT==2.10.1               # Action 层最简 RBAC（user/reviewer/admin）签发/校验本地 JWT
 

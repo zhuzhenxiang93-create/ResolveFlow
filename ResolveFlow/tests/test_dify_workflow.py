@@ -90,3 +90,35 @@ class DifyIntegrationTests(unittest.TestCase):
         obj=self.client.get('/commerce/objects',headers={'Authorization':'Bearer '+other['userToken']}).json()['objects'][0]
         self.proposal('goods','refund',obj['id']);r=self.chat('退掉'+obj['id']);self.assertIsNone(r['commerce_case'])
         sent=self.requests[-1]['inputs']['catalog'];self.assertNotIn(obj['id'],sent)
+
+    def test_multiple_agent_results_preserved_and_failure_reported(self):
+        self.proposal('subscription','refund','Pro',general_remainder='登录401、账单不对')
+        self.outputs['agent_plan']=json.dumps(['commerce','technical','billing'])
+        self.outputs['agent_results']=json.dumps([
+            {'agent_type':'commerce','answer':'需要后端报价','status':'completed'},
+            {'agent_type':'technical','answer':'401 排查建议','status':'completed'},
+            {'agent_type':'billing','answer':'账单 Agent 暂时失败','status':'failed'}])
+        self.outputs['support_answer']='401 排查建议；账单 Agent 暂时失败'
+        result=self.chat('把Pro重复扣款退掉，登录401、账单不对')
+        self.assertEqual(result['agent_plan'],['commerce','technical','billing'])
+        self.assertEqual(len(result['agent_results']),3)
+        self.assertIn('dify_billing_failed',result['degradations'])
+        self.assertEqual(result['commerce_case']['operations'][0]['status'],'awaiting_confirmation')
+
+    def test_invalid_agent_role_fails_before_business_mutation(self):
+        self.proposal('goods','refund','无线耳机')
+        self.outputs['agent_plan']=json.dumps(['admin'])
+        result=self.chat('退掉无线耳机')
+        self.assertIn('dify_workflow_failed',result['degradations'])
+        self.assertEqual(self.client.get('/commerce/cases',headers=self.user).json()['cases'],[])
+
+    def test_general_consultation_is_not_labelled_policy(self):
+        self.outputs['proposal']=json.dumps({'intents':[], 'general_remainder':'你能帮我做什么'})
+        self.outputs['policy_answer']='我可以解释政策、查询购买记录并提出售后申请。'
+        self.outputs['agent_plan']=json.dumps(['general'])
+        self.outputs['agent_results']=json.dumps([{'agent_type':'general','answer':self.outputs['policy_answer'],'status':'completed'}])
+        result=self.chat('你能帮我做什么')
+        self.assertIsNone(result['commerce_case'])
+        self.assertNotIn('政策说明：',result['response'])
+        self.assertEqual(result['agent_results'][0]['answer_kind'],'support')
+        self.assertTrue(result['support_result']['response'])

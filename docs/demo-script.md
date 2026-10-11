@@ -14,7 +14,7 @@ Show the three value statements, scenario buttons, conversation and purchases.
 ## 2–3 minutes: why the controls matter
 
 1. Click **Refund policy**. Open a source chip: policy origin and document ID are
-   visible. No refund Case is created. Retrieval in this isolated Demo is lexical.
+   visible. No refund Case is created. In Dify mode, General Agent calls the Dify knowledge tool. In direct/offline mode, retrieval remains lexical.
 2. Click **Choose a purchase**. Eight candidates appear. “Ambiguity cannot authorize
    an arbitrary refund.” Select **无线耳机**.
 3. Show **¥259**, the return requirement and invoice impact. Click **Confirm refund**.
@@ -30,8 +30,8 @@ Show the three value statements, scenario buttons, conversation and purchases.
    remain and no refund is created.
 7. Click **Billing + technical**. The Pro duplicate payment has a **¥99** quote,
    while the separate Technical Agent explains 401. The refund still awaits consent.
-   Open Developer details only if asked: actual `lookup_error_code` execution and
-   `native_llm` interpretation are recorded. Never describe technical guidance as
+   In Dify mode, show the separate **Technical Agent · Live model** message. Supervisor dispatches Commerce and Technical; the quote still comes from the Python business backend. Allow roughly a minute for native Agent execution.
+   Open Developer details only if asked to inspect the returned plan and tool traces. Never describe technical guidance as
    fixing a real account, or claim the Demo uses hybrid RAG.
 8. **Reset Demo** shows a new identity with eight fresh purchases and no prior
    Cases. Prior audit databases are preserved.
@@ -48,3 +48,9 @@ states that Technical Agent is unavailable. Do not use that as a live-model demo
 
 Evidence: [acceptance report](validation.md), [screenshots](screenshots/README.md),
 [real-provider checks](live-validation.json).
+
+## Dify-specific extension
+
+Use the published multi-Agent workflow and launch script in [dify/README.md](../dify/README.md). Show the five native Agent nodes and explain that each has an independent task and read-only tools. They execute only when dispatched, currently in sequence.
+
+Try “请比对账单：应扣99元，实际扣198元。另外我要转人工。” Billing should show the user-provided 99元 difference; Escalation should show a handoff summary and state that no human has been connected. Neither result grants refund eligibility or authority.

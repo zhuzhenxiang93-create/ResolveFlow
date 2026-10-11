@@ -131,6 +131,6 @@ docs/                     运行说明、演示与测试记录
 
 [前端文档](ResolveFlowFrontend/README.md) · [后端文档](ResolveFlow/README.md)
 
-## Dify 工作流
+## Dify 多 Agent
 
-新增 [Dify 集成](dify/README.md)：用 Dify 编排多意图解析、政策检索和技术咨询，复用后端报价、确认、独立审核与幂等业务规则。工作流 DSL 可导入，应用 API Key 保留在本机忽略文件中。
+[Dify 集成](dify/README.md) 用 Supervisor 分派任务，Commerce、General、Technical、Billing、Escalation 五个原生 Agent 按需调用只读工具。复合请求可同时返回退款卡片与技术排障回答；金额、确认、独立审核和幂等仍由 Python 后端处理。可导入的 DSL 与本机验收记录见该目录。

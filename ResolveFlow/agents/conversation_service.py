@@ -112,6 +112,10 @@ class ConversationService:
             if result is None:
                 result = await commerce._answer(owner, conv, message, "", mode="dify_workflow")
             result.pop("general_remainder", None)
+            result["agent_plan"] = dify_result["agent_plan"]
+            result["agent_results"] = dify_result["agent_results"]
+            result["degradations"].extend("dify_" + a["agent_type"] + "_failed"
+                for a in dify_result["agent_results"] if a["status"] == "failed")
             if dify_result["policy_answer"]:
                 # The model's policy response cannot replace a business quote or status.
                 if result.get("route") == "knowledge":
@@ -120,8 +124,11 @@ class ConversationService:
                     result["response"] += "\n政策说明：" + dify_result["policy_answer"]
                 result["sources"] = dify_result["sources"]
                 result["knowledge_used"] = bool(dify_result["sources"])
+            if dify_result["sources"]:
+                result["sources"] = dify_result["sources"]
+                result["knowledge_used"] = True
             if dify_result["support_answer"]:
-                result["response"] += "\n技术/通用咨询：" + dify_result["support_answer"]
+                result["response"] += "\n" + dify_result["support_answer"]
                 result["support_result"] = {"response": dify_result["support_answer"],
                     "agent_type": "dify_support", "tools_used": [t.get("tool") for t in dify_result["tool_traces"]],
                     "tool_traces": dify_result["tool_traces"], "diagnostics": []}
