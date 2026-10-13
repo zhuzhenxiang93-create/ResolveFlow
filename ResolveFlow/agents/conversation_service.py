@@ -184,15 +184,21 @@ class ConversationService:
                  "depends_on": list(item.depends_on)}
                 for item in getattr(intent, "intents", [])
             ],
-            agent_type=routing_result.agent_type.value if routing_result else "general",
-            agent_types=[agent.value for agent in routing_result.agent_types] if routing_result else [],
-            primary_agent=routing_result.primary_agent.value if routing_result and routing_result.primary_agent else "",
-            supporting_agents=[agent.value for agent in routing_result.supporting_agents] if routing_result else [],
-            routing_confidence=routing_result.routing_confidence if routing_result else 0.0,
-            routing_reason=routing_result.routing_reason if routing_result else "",
-            escalated=routing_result.escalated if routing_result else False,
-            task_plan=routing_result.task_plan if routing_result else None,
-            execution_trace=routing_result.execution_trace if routing_result else [],
+            agent_type=getattr(getattr(routing_result, "agent_type", None), "value", "general"),
+            agent_types=[
+                getattr(agent, "value", agent)
+                for agent in (getattr(routing_result, "agent_types", []) or [])
+            ],
+            primary_agent=getattr(getattr(routing_result, "primary_agent", None), "value", ""),
+            supporting_agents=[
+                getattr(agent, "value", agent)
+                for agent in (getattr(routing_result, "supporting_agents", []) or [])
+            ],
+            routing_confidence=getattr(routing_result, "routing_confidence", 0.0),
+            routing_reason=getattr(routing_result, "routing_reason", ""),
+            escalated=getattr(routing_result, "escalated", False),
+            task_plan=getattr(routing_result, "task_plan", None),
+            execution_trace=getattr(routing_result, "execution_trace", []),
             interpretation=record, sources=knowledge, knowledge_used=bool(knowledge),
         )
         result["degradations"].extend(errors)
