@@ -27,7 +27,7 @@ from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from core.intent_recognizer import IntentCategory, IntentRecognizer, UrgencyLevel
+from core.intent_recognizer import IntentCategory, IntentRecognizer, RecognizedIntent, UrgencyLevel
 from core.llm_client import LLMClient
 from agents.chat_tools import build_tool_registry
 from agents.supervisor import (
@@ -100,6 +100,7 @@ class Request:
     intent_group: Optional[str] = None
     urgency:     Optional[UrgencyLevel]   = None
     intent_confidence: float = 1.0
+    intents: List[RecognizedIntent] = field(default_factory=list)
     subtask_id: Optional[str] = None
     task_instruction: str = ""
     dependency_context: str = ""
@@ -414,7 +415,7 @@ class AgentOrchestrator:
         model:    str = "claude-3-5-sonnet-20241022",
         skill_manager: Optional[Any] = None,
         provider: Optional[str] = None,
-        supervisor_max_subtasks: int = 3,
+        supervisor_max_subtasks: int = 4,
         subtask_timeout_s: float = 30.0,
         client=None,
         recognizer=None,
@@ -516,6 +517,7 @@ class AgentOrchestrator:
             req.intent_group = intent_result.intent_group
             req.urgency = intent_result.urgency
             req.intent_confidence = intent_result.confidence
+            req.intents = list(getattr(intent_result, "intents", []))
 
         if self._needs_clarification(req):
             return OrchestratorResult(
@@ -649,6 +651,7 @@ class AgentOrchestrator:
             req.intent_group = intent_result.intent_group
             req.urgency = intent_result.urgency
             req.intent_confidence = intent_result.confidence
+            req.intents = list(getattr(intent_result, "intents", []))
 
         decision = self._route_decision(req)
         risk_reasons = self._high_risk_reasons(req)
@@ -711,9 +714,12 @@ class AgentOrchestrator:
         return result
 
     def _plan_or_fallback(self, req: Request, decision: RoutingDecision, risk_reasons: List[str]):
-        """规划子任务；规划器失败时降级为只处理主 Agent 的单任务确定性计划。
-        run_parallel() 和 run_compound() 共用，避免同一段 try/except 分叉维护两份。"""
+        """Plan confirmed domains; use multi-intent spans as authoritative task scopes."""
         degradations: List[str] = []
+        scopes_by_agent: Dict[str, List[str]] = {}
+        for item in req.intents:
+            agent_type = self._INTENT_ROUTING.get(item.intent, AgentType.GENERAL)
+            scopes_by_agent.setdefault(agent_type.value, []).append(item.text)
         try:
             plan = self._planner.create_plan(
                 original_request=req.message,
@@ -722,6 +728,7 @@ class AgentOrchestrator:
                 reason=decision.reason,
                 confidence=decision.confidence,
                 risk_reasons=risk_reasons,
+                scopes_by_agent=scopes_by_agent or None,
             )
         except Exception as ex:
             logger.warning("TaskPlanner 失败，使用单任务确定性计划: %s", type(ex).__name__)
@@ -829,13 +836,52 @@ class AgentOrchestrator:
 
         return AgentType.GENERAL
 
-    def _route_decision(self, req: Request) -> RoutingDecision:
-        """
-        结构化路由决策。
+    def _route_from_recognized_intents(self, req: Request) -> Optional[RoutingDecision]:
+        """Map every recognized intent to an allowlisted Agent; no second NLP pass.
 
-        先处理紧急/转人工，再用领域分数决定主 Agent 和辅助 Agent。
-        这样可以表达“主处理 + 辅助诊断”，避免关键词命中后无主次地拼接。
+        The first requested domain is primary, except explicit human handoff or
+        critical urgency. Multiple intents for one domain reuse one Agent.
         """
+        ordered: List[AgentType] = []
+        for item in req.intents:
+            agent_type = self._INTENT_ROUTING.get(item.intent, AgentType.GENERAL)
+            if not self._pool.get(agent_type):
+                agent_type = AgentType.GENERAL
+            if agent_type not in ordered:
+                ordered.append(agent_type)
+        if not ordered:
+            return None
+        handoff_requested = any(
+            item.intent in {IntentCategory.ESCALATION, IntentCategory.HUMAN_HANDOFF}
+            for item in req.intents
+        )
+        if req.urgency == UrgencyLevel.CRITICAL or handoff_requested:
+            primary = AgentType.ESCALATION
+            supporting = [agent for agent in ordered if agent != primary]
+            reason = "多意图路由：紧急或明确转人工请求优先升级"
+        else:
+            primary = ordered[0]
+            supporting = ordered[1:]
+            reason = "多意图路由：按已验证意图映射领域"
+        labels = ", ".join(item.intent.value for item in req.intents)
+        confidence = max(0.0, min(float(req.intents[0].confidence), 1.0))
+        return RoutingDecision(
+            primary_agent=primary,
+            supporting_agents=supporting,
+            reason=f"{reason}; intents=[{labels}]; primary={primary.value}",
+            confidence=confidence,
+        )
+
+    def _route_decision(self, req: Request) -> RoutingDecision:
+        """Choose main and supporting Agent(s) with deterministic safeguards.
+
+        New path: consume the complete IntentRecognizer list directly.
+        Legacy direct-call/offline path: preserve existing score heuristics.
+        """
+        if req.intents:
+            decision = self._route_from_recognized_intents(req)
+            if decision is not None:
+                return decision
         high_risk_reasons = self._high_risk_reasons(req)
         if req.urgency == UrgencyLevel.CRITICAL:
             return RoutingDecision(
