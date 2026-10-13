@@ -3,7 +3,6 @@ import unittest
 import json
 
 from agents.agent_orchestrator import AgentOrchestrator, AgentType, Request
-from agents.supervisor import TaskPlanner
 from core.intent_recognizer import IntentRecognizer, IntentCategory, UrgencyLevel
 
 
@@ -61,12 +60,14 @@ class MultiIntentRecognitionTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(decision.primary_agent, AgentType.TECHNICAL)
         self.assertEqual(decision.supporting_agents, [AgentType.GENERAL])
 
-        planner = TaskPlanner([agent.value for agent in AgentType], max_subtasks=4)
-        scopes = {"technical": ["我进不去账号"], "general": ["包裹在哪里"]}
-        plan = planner.create_plan(
-            original_request=message, primary_agent="technical",
-            supporting_agents=["general"], reason="multi", confidence=0.94,
-            scopes_by_agent=scopes,
+        orchestrator = agent_router()
+        orchestrator._max_subtasks = 4
+        from agents.supervisor import DAGScheduler
+        orchestrator._scheduler = DAGScheduler(
+            [agent.value for agent in AgentType], max_subtasks=4,
+        )
+        plan = orchestrator._build_task_plan(
+            request_from_result(message, recognized), decision, [],
         )
         self.assertIn("我进不去账号", plan.subtasks[0].description)
         self.assertIn("包裹在哪里", plan.subtasks[1].description)
@@ -136,6 +137,75 @@ class MultiIntentRecognitionTests(unittest.IsolatedAsyncioTestCase):
         decision = agent_router()._route_decision(request)
         self.assertEqual(decision.primary_agent, AgentType.TECHNICAL)
         self.assertEqual(decision.supporting_agents, [AgentType.BILLING])
+
+
+    async def test_model_declared_dependency_is_used_by_dag(self):
+        message = "先查一下订单情况，再根据结果判断是否可以退款"
+        result = await recognizer({"intents": [
+            {"intent": "order_status", "text": "查一下订单情况", "confidence": 0.91, "depends_on": []},
+            {"intent": "refund", "text": "根据结果判断是否可以退款", "confidence": 0.9, "depends_on": [0]},
+        ]}).recognize(message)
+        self.assertEqual(result.intents[1].depends_on, [0])
+        orchestrator = agent_router()
+        decision = orchestrator._route_decision(request_from_result(message, result))
+        orchestrator._max_subtasks = 4
+        from agents.supervisor import DAGScheduler
+        orchestrator._scheduler = DAGScheduler(
+            [agent.value for agent in AgentType], max_subtasks=4,
+        )
+        plan = orchestrator._build_task_plan(
+            request_from_result(message, result), decision, [],
+        )
+        tasks = {item.agent_type: item for item in plan.subtasks}
+        self.assertEqual(tasks["billing"].dependencies, ["general_1"])
+
+    async def test_ordering_words_without_dependency_are_parallel(self):
+        message = "先看看登录问题，然后帮我查物流"
+        result = await recognizer({"intents": [
+            {"intent": "technical_login", "text": "看看登录问题", "confidence": 0.93, "depends_on": []},
+            {"intent": "logistics", "text": "查物流", "confidence": 0.90, "depends_on": []},
+        ]}).recognize(message)
+        orchestrator = agent_router()
+        decision = orchestrator._route_decision(request_from_result(message, result))
+        orchestrator._max_subtasks = 4
+        from agents.supervisor import DAGScheduler
+        orchestrator._scheduler = DAGScheduler(
+            [agent.value for agent in AgentType], max_subtasks=4,
+        )
+        plan = orchestrator._build_task_plan(
+            request_from_result(message, result), decision, [],
+        )
+        self.assertTrue(all(not item.dependencies for item in plan.subtasks))
+
+    async def test_invalid_dependency_degrades_without_executing_dag(self):
+        message = "查询订单，然后根据结果退款"
+        result = await recognizer({"intents": [
+            {"intent": "order_status", "text": "查询订单", "confidence": 0.91},
+            {"intent": "refund", "text": "根据结果退款", "confidence": 0.9, "depends_on": [5]},
+        ]}).recognize(message)
+        # Malformed dependency is rejected by the model-output boundary.
+        self.assertLessEqual(len(result.intents), 1)
+
+    async def test_same_agent_multiple_intents_are_one_scoped_task(self):
+        message = "给我开发票，还要解释退款政策"
+        result = await recognizer({"intents": [
+            {"intent": "invoice", "text": "给我开发票", "confidence": 0.91},
+            {"intent": "refund", "text": "解释退款政策", "confidence": 0.92},
+        ]}).recognize(message)
+        orchestrator = agent_router()
+        decision = orchestrator._route_decision(request_from_result(message, result))
+        orchestrator._max_subtasks = 4
+        from agents.supervisor import DAGScheduler
+        orchestrator._scheduler = DAGScheduler(
+            [agent.value for agent in AgentType], max_subtasks=4,
+        )
+        plan = orchestrator._build_task_plan(
+            request_from_result(message, result), decision, [],
+        )
+        self.assertEqual(len(plan.subtasks), 1)
+        self.assertIn("给我开发票", plan.subtasks[0].description)
+        self.assertIn("解释退款政策", plan.subtasks[0].description)
+
 
 
 if __name__ == "__main__":
