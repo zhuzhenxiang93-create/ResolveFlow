@@ -189,6 +189,8 @@ class ConversationService:
             primary_agent=routing_result.primary_agent.value if routing_result and routing_result.primary_agent else "",
             supporting_agents=[agent.value for agent in routing_result.supporting_agents] if routing_result else [],
             routing_confidence=routing_result.routing_confidence if routing_result else 0.0,
+            routing_reason=routing_result.routing_reason if routing_result else "",
+            escalated=routing_result.escalated if routing_result else False,
             task_plan=routing_result.task_plan if routing_result else None,
             execution_trace=routing_result.execution_trace if routing_result else [],
             interpretation=record, sources=knowledge, knowledge_used=bool(knowledge),
