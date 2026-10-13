@@ -190,7 +190,7 @@ async def lifespan(app: FastAPI):
         model=cfg["model"],
         skill_manager=_skill_manager,
         provider=cfg["provider"],
-        supervisor_max_subtasks=int(os.getenv("SUPERVISOR_MAX_SUBTASKS", "3")),
+        supervisor_max_subtasks=int(os.getenv("SUPERVISOR_MAX_SUBTASKS", "4")),
         subtask_timeout_s=float(os.getenv("SUPERVISOR_SUBTASK_TIMEOUT_SECONDS", "30")),
         tool_manager=_tool_manager,
     )
