@@ -2,8 +2,10 @@
 
 当前主链：`POST /chat → ConversationService → CommerceConversation → CommerceStore`。
 CommerceStore 使用 SQLite 保存用户购买记录、金额报价、确认、审批和模拟退款状态。
-通用咨询进入 `IntentRecognizer → AgentOrchestrator → General / Technical / Billing / Escalation`，
-通过工具调用和 RAG 提供回答。复合请求保留 Commerce 结果，再处理独立的通用咨询。
+通用咨询进入 `IntentRecognizer（多意图）→ AgentOrchestrator（映射与轻量 TaskPlan）
+→ DAGScheduler → General / Technical / Billing / Escalation → ResponseSynthesizer`。
+不再维护独立 TaskPlanner 或第二次关键词找 Agent 逻辑。复合请求保留受控 Commerce
+结果，再处理独立的通用咨询。
 
 正式服务：`uvicorn api.main:app`。全站使用本地 HS256 JWT，user、reviewer、admin 分工；
 用户确认和独立审核为不同步骤，所有写入规则由 CommerceStore 检查。
@@ -47,9 +49,9 @@ Postgres 仍为独立 POC；正式业务数据库为 SQLite。
 ```text
 ResolveFlow/
 ├── api/main.py                    # FastAPI 入口，/chat /search /knowledge /monitor /eval
-├── core/intent_recognizer.py      # 三路融合意图识别
-├── agents/agent_orchestrator.py   # 多 Agent 路由编排
-├── agents/supervisor.py           # TaskPlanner、DAG Scheduler、受约束结果合成
+├── core/intent_recognizer.py      # LLM 多意图提取，旧版单意图融合仅作兜底
+├── agents/agent_orchestrator.py   # 意图映射、主辅 Agent 选择及直接构建 TaskPlan
+├── agents/supervisor.py           # DAG 校验/执行、确定性结果合成（无独立 Planner）
 ├── memory/conversation_memory.py  # Redis + ChromaDB 记忆管理
 ├── mcp/tool_manager.py            # MCP 工具调用、查询改写、重排、熔断、缓存、降级
 ├── mcp/knowledge_base.py          # ChromaDB + BM25 双路召回与 RRF 融合
@@ -442,14 +444,15 @@ curl http://localhost:8000/health
 |------|------|
 | `conv_id` | 会话 ID |
 | `response` | Agent 回复 |
-| `intent` | 意图识别结果 |
+| `intent` | 兼容旧接口的主意图标签 |
+| `recognized_intents` | 多意图标签、置信分数和结构化依赖（普通咨询路径） |
 | `agent_type` | 实际处理请求的 Agent |
 | `escalated` | 是否触发升级 |
 | `latency_ms` | 端到端耗时 |
 | `task_plan` | 复合请求的脱敏结构化子任务；单 Agent 快速路径为 `null` |
 | `execution_trace` | 子任务状态、依赖、Agent 和延迟，不包含回答正文 |
 | `synthesis_method` | `single_agent`、`deterministic` 或 `fallback` |
-| `degradations` | Planner、Scheduler、Synthesizer 等降级标记 |
+| `degradations` | 任务计划校验、Scheduler、Synthesizer 等降级标记 |
 
 ### 5.5 `/search`
 
@@ -675,12 +678,17 @@ curl -X POST http://localhost:8000/chat \
   }'
 ```
 
-这类问题会触发受控 Supervisor：先生成两个带领域边界的子任务，再按依赖关系
-并行或串行执行。技术 Agent 不处理账单结论，账单 Agent 不替代技术诊断；最终
-由 `ResponseSynthesizer` 去重并检查明显的数字或允许条件冲突。Planner、调度器
-或合成器失败时会保留已有结果并通过 `degradations` 暴露降级状态。
+当前统一 `/chat` 会先通过 CommerceConversation 解析商品、订阅、退款等业务；
+其中涉及订单/资金变更的诉求仍走独立的确认、审批和确定性执行。
+需要专业咨询 Agent 协作的部分才进入多意图编排。
 
-例如“先查询订单状态，然后根据查询结果判断退款资格”会生成依赖：
+在**普通多领域咨询路径**中，IntentRecognizer 一次输出所有明确意图及原文片段，
+AgentOrchestrator 直接映射到领域 Agent 并生成轻量 `TaskPlan`，由
+DAGScheduler 校验 DAG、按显式依赖执行，最后由 ResponseSynthesizer 整理回复。
+同一领域的多个意图默认由一个 Agent 处理。
+
+例如“先查询订单状态，然后根据查询结果判断退款资格”，若意图识别输出第二项
+`depends_on: [0]`，则控制面生成：
 
 ```text
 general_1（查询订单状态）
@@ -688,22 +696,29 @@ general_1（查询订单状态）
 billing_1（根据订单结果判断退款资格）
 ```
 
-Supervisor 默认最多创建3个子任务，每个子任务独立超时。可配置：
+而“先排查登录、然后查物流”即使有顺序连接词，只要两者没有数据依赖，
+则不会因为“先、然后”自动被强制串行。模型提供的依赖需经过类型、索引和
+无环验证；非法依赖降级为只处理主领域的安全咨询。
+
+最多四个 Agent 子任务，单个任务默认超时 30 秒，可配置：
 
 ```env
-SUPERVISOR_MAX_SUBTASKS=3
+SUPERVISOR_MAX_SUBTASKS=4
 SUPERVISOR_SUBTASK_TIMEOUT_SECONDS=30
 ```
 
-离线评测 Supervisor 控制面：
+离线控制面回归：
 
 ```bash
 make supervisor-eval
 ```
 
-该评测使用20条内部确定性样本和金标意图，衡量复合检测、Agent 分配、依赖、
-升级与控制面延迟；它不调用真实 Agent LLM，因此不会把控制面通过率冒充端到端
-回答成功率，也不会生成线上 `synthesis_fallback_rate`。
+该脚本读取 `data/eval/supervisor_multi_intent_cases.jsonl` 的 20 条内部合成
+案例，**给定结构化意图**验证 Agent 映射和依赖执行计划，不能直接证明
+LLM 多意图识别率或真实端到端任务成功率。旧版报告仅作历史比较，
+新旧架构的 Accuracy、Macro-F1、端到端耗时需重新评测。
+
+详见 [多意图精简编排说明](wiki/multi_intent_routing.md)。
 
 ## 7. 知识库使用
 
