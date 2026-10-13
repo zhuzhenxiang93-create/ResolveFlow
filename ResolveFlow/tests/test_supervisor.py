@@ -21,7 +21,7 @@ from agents.supervisor import (
 from core.intent_recognizer import IntentCategory, RecognizedIntent, UrgencyLevel
 
 
-def scheduler(max_subtasks=4, timeout_s=30.0):
+def make_scheduler(max_subtasks=4, timeout_s=30.0):
     return DAGScheduler(
         (agent.value for agent in AgentType),
         max_subtasks=max_subtasks,
@@ -34,7 +34,7 @@ def built_plan(message, intents, primary, supporting=(), risk_reasons=()):
     orch = object.__new__(AgentOrchestrator)
     orch._pool = {agent: [object()] for agent in AgentType}
     orch._max_subtasks = 4
-    orch._scheduler = scheduler()
+    orch._scheduler = make_scheduler()
     req = Request(
         message=message, user_id="test", conv_id="demo",
         intent=intents[0].intent, intent_group="",
@@ -116,17 +116,17 @@ class TaskPlanBuilderTests(unittest.TestCase):
 
     def test_unknown_agent_is_rejected(self):
         with self.assertRaisesRegex(PlanValidationError, "unknown_agent_type"):
-            scheduler().validate(plan(SubTask("x", "one", "unknown")))
+            make_scheduler().validate(plan(SubTask("x", "one", "unknown")))
 
     def test_duplicate_ids_are_rejected(self):
         invalid = plan(SubTask("same", "one", "technical"), SubTask("same", "two", "billing"))
         with self.assertRaisesRegex(PlanValidationError, "duplicate_task_id"):
-            scheduler().validate(invalid)
+            make_scheduler().validate(invalid)
 
     def test_missing_dependency_is_rejected(self):
         invalid = plan(SubTask("a", "one", "technical", ["missing"]))
         with self.assertRaisesRegex(PlanValidationError, "missing_dependency"):
-            scheduler().validate(invalid)
+            make_scheduler().validate(invalid)
 
     def test_cycle_is_rejected(self):
         invalid = plan(
@@ -134,7 +134,7 @@ class TaskPlanBuilderTests(unittest.TestCase):
             SubTask("b", "two", "billing", ["a"]),
         )
         with self.assertRaisesRegex(PlanValidationError, "cyclic_dependency"):
-            scheduler().validate(invalid)
+            make_scheduler().validate(invalid)
 
     def test_too_many_tasks_are_rejected(self):
         invalid = plan(
@@ -143,11 +143,11 @@ class TaskPlanBuilderTests(unittest.TestCase):
             SubTask("c", "three", "general"),
         )
         with self.assertRaisesRegex(PlanValidationError, "too_many_subtasks"):
-            scheduler(max_subtasks=2).validate(invalid)
+            make_scheduler(max_subtasks=2).validate(invalid)
 
     def test_empty_description_is_rejected(self):
         with self.assertRaisesRegex(PlanValidationError, "empty_description"):
-            scheduler().validate(plan(SubTask("a", "", "technical")))
+            make_scheduler().validate(plan(SubTask("a", "", "technical")))
 
     def test_plan_scope_redacts_sensitive_values(self):
         text = "登录验证码 123456 失效，手机号13800138000也无法使用"
@@ -166,7 +166,7 @@ class TaskPlanBuilderTests(unittest.TestCase):
 class SchedulerTests(unittest.TestCase):
     def test_independent_tasks_really_overlap(self):
         async def run():
-            scheduler = scheduler(timeout_s=0.5)
+            scheduler = make_scheduler(timeout_s=0.5)
             task_plan = plan(
                 SubTask("a", "one", "technical"),
                 SubTask("b", "two", "billing"),
@@ -191,7 +191,7 @@ class SchedulerTests(unittest.TestCase):
 
     def test_dependencies_execute_in_order(self):
         async def run():
-            scheduler = scheduler(timeout_s=0.5)
+            scheduler = make_scheduler(timeout_s=0.5)
             task_plan = plan(
                 SubTask("first", "one", "general"),
                 SubTask("second", "two", "billing", ["first"]),
@@ -213,7 +213,7 @@ class SchedulerTests(unittest.TestCase):
         async def executor(task, dependencies):
             return result(task.id, task.agent_type, success=task.id != "bad")
 
-        rows = asyncio.run(scheduler().execute(
+        rows = asyncio.run(make_scheduler().execute(
             plan(SubTask("bad", "one", "technical"), SubTask("good", "two", "billing")),
             executor,
         ))
@@ -226,7 +226,7 @@ class SchedulerTests(unittest.TestCase):
             called.append(task.id)
             return result(task.id, task.agent_type, success=False)
 
-        rows = asyncio.run(scheduler().execute(
+        rows = asyncio.run(make_scheduler().execute(
             plan(SubTask("first", "one", "general"), SubTask("second", "two", "billing", ["first"])),
             executor,
         ))
@@ -238,7 +238,7 @@ class SchedulerTests(unittest.TestCase):
             await asyncio.sleep(0.05)
             return result(task.id, task.agent_type)
 
-        rows = asyncio.run(scheduler(timeout_s=0.01).execute(
+        rows = asyncio.run(make_scheduler(timeout_s=0.01).execute(
             plan(SubTask("slow", "one", "technical")), executor
         ))
         self.assertEqual(rows[0].status, TaskStatus.TIMEOUT)
@@ -400,7 +400,7 @@ class OrchestratorIntegrationTests(unittest.TestCase):
             agent_type: [_FakeAgent(agent_type)] for agent_type in AgentType
         }
         orchestrator._max_subtasks = 4
-        orchestrator._scheduler = scheduler(timeout_s=0.5)
+        orchestrator._scheduler = make_scheduler(timeout_s=0.5)
         orchestrator._synthesizer = ResponseSynthesizer()
         return orchestrator
 
