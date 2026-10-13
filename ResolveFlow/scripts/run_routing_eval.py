@@ -1,4 +1,9 @@
-"""离线评测确定性 Agent 路由规则，不依赖 LLM API。"""
+"""Offline check of deterministic intent->Agent mapping on supplied gold labels.
+
+Legacy rows with expected cross-agent outcomes but only one gold intent are
+skipped: a complete multi-intent gold list is required to evaluate support.
+No second keyword classifier is used to reconstruct those missing labels.
+"""
 import argparse
 import json
 import sys
@@ -13,7 +18,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from agents.agent_orchestrator import AgentOrchestrator, AgentType, Request
-from core.intent_recognizer import IntentCategory, UrgencyLevel
+from core.intent_recognizer import IntentCategory, RecognizedIntent, UrgencyLevel
 from evaluation.dataset_loader import load_multi_agent_profile
 
 
@@ -33,14 +38,29 @@ def evaluate_routing(records: List[Dict[str, Any]]) -> Dict[str, Any]:
     orchestrator = _routing_only_orchestrator()
     results = []
     latencies = []
+    skipped_missing_multi_intents = 0
 
     for record in records:
+        annotated = record.get("expected_intents")
+        if not annotated and record.get("expected_supporting_agents"):
+            skipped_missing_multi_intents += 1
+            continue
+        intents = (
+            [RecognizedIntent(IntentCategory(item["intent"]), item["text"],
+                              float(item.get("confidence", 1.0)),
+                              list(item.get("depends_on", [])))
+             for item in annotated]
+            if annotated else [
+                RecognizedIntent(IntentCategory(record["expected_intent"]), _message(record), 1.0)
+            ]
+        )
         request = Request(
             message=_message(record),
             user_id="offline-eval",
             conv_id=record["id"],
             entities=record.get("entities") or {},
-            intent=IntentCategory(record["expected_intent"]),
+            intent=intents[0].intent if intents else IntentCategory.OTHER,
+            intents=intents,
             intent_group=record.get("expected_group"),
             urgency=UrgencyLevel.MEDIUM,
             intent_confidence=1.0,
@@ -49,7 +69,7 @@ def evaluate_routing(records: List[Dict[str, Any]]) -> Dict[str, Any]:
         decision = orchestrator._route_decision(request)
         escalated = (
             orchestrator._requires_high_risk_escalation(request)
-            or request.intent in (IntentCategory.ESCALATION, IntentCategory.HUMAN_HANDOFF)
+            or decision.primary_agent == AgentType.ESCALATION
         )
         latencies.append((time.perf_counter() - started) * 1000)
 
@@ -78,11 +98,15 @@ def evaluate_routing(records: List[Dict[str, Any]]) -> Dict[str, Any]:
     count = len(results)
     return {
         "total": count,
+        "skipped_missing_multi_intents": skipped_missing_multi_intents,
+        "input_total": count + skipped_missing_multi_intents,
         "escalation_case_count": len(escalation_cases),
         "cross_agent_case_count": len(cross_agent_cases),
         "routing_accuracy": _rate(results, "route_correct"),
-        "supporting_agent_accuracy": _rate(results, "supporting_agents_correct"),
-        "cross_agent_coverage": _rate(cross_agent_cases, "supporting_agents_correct"),
+        "supporting_agent_accuracy": (_rate(cross_agent_cases, "supporting_agents_correct")
+                                     if cross_agent_cases else None),
+        "cross_agent_coverage": (_rate(cross_agent_cases, "supporting_agents_correct")
+                                 if cross_agent_cases else None),
         "escalation_recall": _rate(escalation_cases, "actual_escalation"),
         "escalation_precision": _rate(predicted_escalations, "expected_escalation"),
         "escalation_accuracy": _rate(results, "escalation_correct"),
@@ -129,7 +153,7 @@ def main() -> int:
         "timestamp": datetime.now().isoformat(),
         "dataset": "internal golden set",
         "split": args.split,
-        "evaluation_mode": "gold_intent_rule_only",
+        "evaluation_mode": "explicit_gold_intent_mapping_only",
         "intent_case_count": len(intent_cases),
         "dialog_case_count": len(dialog_cases),
         "approved_case_count": sum(
@@ -151,6 +175,7 @@ def main() -> int:
         "split": args.split,
         "evaluation_mode": payload["evaluation_mode"],
         "total": payload["total"],
+        "skipped_missing_multi_intents": payload["skipped_missing_multi_intents"],
         "routing_accuracy": payload["routing_accuracy"],
         "supporting_agent_accuracy": payload["supporting_agent_accuracy"],
         "cross_agent_coverage": payload["cross_agent_coverage"],
