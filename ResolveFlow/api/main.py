@@ -281,6 +281,7 @@ class ChatResponse(BaseModel):
     entities: Dict[str, List[str]] = Field(default_factory=dict)
     intent_confidence: float = 0.0
     intent_source_scores: Dict[str, float] = Field(default_factory=dict)
+    recognized_intents: List[Dict[str, Any]] = Field(default_factory=list)
     task_plan: Optional[Dict[str, Any]] = None
     execution_trace: List[Dict[str, Any]] = Field(default_factory=list)
     synthesis_method: str = "single_agent"
@@ -376,13 +377,34 @@ async def chat(req: ChatRequest, authorization: str = Header(default="")):
     except ValueError as ex:
         raise HTTPException(400, str(ex)) from ex
     task = result["task"]
-    return ChatResponse(conv_id=result["conversation_id"], response=result["response"], intent=result["intent"],
-                        agent_type=task["primary_agent"] if task else "general",
-                        escalated=result["status"] in {"needs_human", "awaiting_approval"},
-                        latency_ms=(time.monotonic() - started) * 1000, action_task=task, commerce_case=result.get("commerce_case"), candidates=result.get("candidates", []),
-                        knowledge_used=result["knowledge_used"], intent_source_scores=result["intent_source_scores"],
-                        memory_mode=result["memory_mode"], sources=result["sources"],
-                        degradations=result["degradations"], routing_reason=result["route"], synthesis_method="unified_conversation")
+    return ChatResponse(
+        conv_id=result["conversation_id"],
+        response=result["response"],
+        intent=result["intent"],
+        intent_group=result.get("intent_group", "other"),
+        intent_confidence=result.get("intent_confidence", 0.0),
+        entities=result.get("entities", {}),
+        agent_type=result.get("agent_type") or (task["primary_agent"] if task else "general"),
+        agent_types=result.get("agent_types", []),
+        primary_agent=result.get("primary_agent", ""),
+        supporting_agents=result.get("supporting_agents", []),
+        routing_confidence=result.get("routing_confidence", 0.0),
+        routing_reason=result.get("routing_reason") or result["route"],
+        recognized_intents=result.get("recognized_intents", []),
+        task_plan=result.get("task_plan"),
+        execution_trace=result.get("execution_trace", []),
+        escalated=bool(result.get("escalated") or result["status"] in {"needs_human", "awaiting_approval"}),
+        latency_ms=(time.monotonic() - started) * 1000,
+        action_task=task,
+        commerce_case=result.get("commerce_case"),
+        candidates=result.get("candidates", []),
+        knowledge_used=result["knowledge_used"],
+        intent_source_scores=result["intent_source_scores"],
+        memory_mode=result["memory_mode"],
+        sources=result["sources"],
+        degradations=result["degradations"],
+        synthesis_method="unified_conversation",
+    )
 
 
 def _truncate_content(content: str, limit: int) -> str:
