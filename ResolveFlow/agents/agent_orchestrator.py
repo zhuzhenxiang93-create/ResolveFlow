@@ -1,25 +1,17 @@
 """
 亮点：多 Agent 路由与编排
 
-核心问题：多 Agent 情况下如何做 Routing？
-
-路由策略（三层决策）：
-  1. 意图路由 —— 根据 IntentCategory 直接映射到专属 Agent
-  2. 性能路由 —— 同类 Agent 有多个时，选成功率最高、延迟最低的
-  3. 降级路由 —— 专属 Agent 不可用时，自动降级到 GeneralAgent
-
-并行协作：
-  - 复杂问题（如"技术问题 + 账单问题"）可同时派发给多个 Agent
-  - 结果由 Orchestrator 合并后返回
-
-升级机制：
-  - Agent 置信度低于阈值 → 自动升级到更高级 Agent 或转人工
+核心路径：多意图结构化识别 -> Agent 映射与轻量 TaskPlan 构建
+-> DAG 调度 -> 领域 Agent 独立执行 -> 结果合并。
+路由阶段不再重复用关键词扫描语义意图；业务写操作另走受控执行链路。
+同类多个 Agent 实例仍根据运行表现选择，失败时可降级到 General。
 """
 import asyncio
 import inspect
 import json
 import logging
 import os
+import re
 import time
 import uuid
 from collections import deque
@@ -27,7 +19,7 @@ from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from core.intent_recognizer import IntentCategory, IntentRecognizer, UrgencyLevel
+from core.intent_recognizer import IntentCategory, IntentRecognizer, RecognizedIntent, UrgencyLevel
 from core.llm_client import LLMClient
 from agents.chat_tools import build_tool_registry
 from agents.supervisor import (
@@ -36,7 +28,6 @@ from agents.supervisor import (
     SubTask,
     SubTaskResult,
     TaskPlan,
-    TaskPlanner,
     TaskStatus,
 )
 
@@ -100,6 +91,7 @@ class Request:
     intent_group: Optional[str] = None
     urgency:     Optional[UrgencyLevel]   = None
     intent_confidence: float = 1.0
+    intents: List[RecognizedIntent] = field(default_factory=list)
     subtask_id: Optional[str] = None
     task_instruction: str = ""
     dependency_context: str = ""
@@ -221,9 +213,10 @@ class BaseAgent:
             messages.append({"role": "user", "content": f"[结构化实体]\n{_clean(entities_text)}"})
             messages.append({"role": "assistant", "content": "好的，我会结合这些结构化实体处理。"})
         if req.task_instruction:
+            # The upstream IntentRecognizer already provided a scoped goal.
+            # Sending the full original cross-domain request to each Agent
+            # duplicates tokens and leaks unrelated domain context.
             scoped = (
-                "[原始请求，仅作背景]\n"
-                f"{_clean(req.message)}\n\n"
                 "[当前子任务]\n"
                 f"{_clean(req.task_instruction)}\n\n"
                 "只完成当前子任务，不要替其他 Agent 回答其负责的部分。"
@@ -407,6 +400,13 @@ class AgentOrchestrator:
         # 其余意图 → GENERAL（默认）
     }
 
+    _TASK_GUARDS = {
+        AgentType.GENERAL: "仅处理订单、物流、账户资料和一般咨询，不代替其他领域判断",
+        AgentType.TECHNICAL: "仅分析技术故障、错误原因及安全排查步骤，不处理账单结论",
+        AgentType.BILLING: "仅核实账单、支付、退款或发票政策，不执行资金写操作",
+        AgentType.ESCALATION: "仅整理需要升级的原因和已尝试步骤，不承诺真实处理结果",
+    }
+
     def __init__(
         self,
         api_key:  str,
@@ -414,7 +414,7 @@ class AgentOrchestrator:
         model:    str = "claude-3-5-sonnet-20241022",
         skill_manager: Optional[Any] = None,
         provider: Optional[str] = None,
-        supervisor_max_subtasks: int = 3,
+        supervisor_max_subtasks: int = 4,
         subtask_timeout_s: float = 30.0,
         client=None,
         recognizer=None,
@@ -433,11 +433,12 @@ class AgentOrchestrator:
             AgentType.BILLING:   [BillingAgent(client, model, skill_manager, tool_manager)],
             AgentType.ESCALATION: [EscalationAgent(client, model, skill_manager, tool_manager)],
         }
-        self._planner = TaskPlanner(
+        self._max_subtasks = max(1, int(supervisor_max_subtasks))
+        self._scheduler = DAGScheduler(
             allowed_agent_types=(agent_type.value for agent_type in AgentType),
-            max_subtasks=supervisor_max_subtasks,
+            max_subtasks=self._max_subtasks,
+            timeout_s=subtask_timeout_s,
         )
-        self._scheduler = DAGScheduler(self._planner, timeout_s=subtask_timeout_s)
         self._synthesizer = ResponseSynthesizer()
         # 请求级工具调用轨迹：有界队列，供 /trace/tool/{request_id} 和
         # /trace/tools 回放一次请求里实际发生过的工具调用（不落库，进程重启即丢失，
@@ -516,6 +517,7 @@ class AgentOrchestrator:
             req.intent_group = intent_result.intent_group
             req.urgency = intent_result.urgency
             req.intent_confidence = intent_result.confidence
+            req.intents = list(getattr(intent_result, "intents", []))
 
         if self._needs_clarification(req):
             return OrchestratorResult(
@@ -541,7 +543,7 @@ class AgentOrchestrator:
 
         # 4. 升级检查
         escalated = False
-        if response.escalate or self._requires_high_risk_escalation(req) or req.urgency == UrgencyLevel.CRITICAL or req.intent in (
+        if decision.primary_agent == AgentType.ESCALATION or response.escalate or self._requires_high_risk_escalation(req) or req.urgency == UrgencyLevel.CRITICAL or req.intent in (
             IntentCategory.ESCALATION,
             IntentCategory.HUMAN_HANDOFF,
         ):
@@ -575,10 +577,10 @@ class AgentOrchestrator:
         t0 = time.monotonic()
         self._ensure_supervisor_components()
         risk_reasons = self._high_risk_reasons(req)
-        plan, degradations = self._plan_or_fallback(req, decision, risk_reasons)
+        plan, degradations = self._build_plan_or_fallback(req, decision, risk_reasons)
         task_results, degradations = await self._schedule_or_fallback(plan, req, degradations)
 
-        force_escalation = bool(risk_reasons) or req.urgency == UrgencyLevel.CRITICAL or req.intent in (
+        force_escalation = decision.primary_agent == AgentType.ESCALATION or bool(risk_reasons) or req.urgency == UrgencyLevel.CRITICAL or req.intent in (
             IntentCategory.ESCALATION,
             IntentCategory.HUMAN_HANDOFF,
         )
@@ -649,13 +651,14 @@ class AgentOrchestrator:
             req.intent_group = intent_result.intent_group
             req.urgency = intent_result.urgency
             req.intent_confidence = intent_result.confidence
+            req.intents = list(getattr(intent_result, "intents", []))
 
         decision = self._route_decision(req)
         risk_reasons = self._high_risk_reasons(req)
-        plan, degradations = self._plan_or_fallback(req, decision, risk_reasons)
+        plan, degradations = self._build_plan_or_fallback(req, decision, risk_reasons)
         task_results, degradations = await self._schedule_or_fallback(plan, req, degradations)
 
-        force_escalation = bool(risk_reasons) or req.urgency == UrgencyLevel.CRITICAL or req.intent in (
+        force_escalation = decision.primary_agent == AgentType.ESCALATION or bool(risk_reasons) or req.urgency == UrgencyLevel.CRITICAL or req.intent in (
             IntentCategory.ESCALATION,
             IntentCategory.HUMAN_HANDOFF,
         )
@@ -710,35 +713,114 @@ class AgentOrchestrator:
         self._record_tool_trace(result)
         return result
 
-    def _plan_or_fallback(self, req: Request, decision: RoutingDecision, risk_reasons: List[str]):
-        """规划子任务；规划器失败时降级为只处理主 Agent 的单任务确定性计划。
-        run_parallel() 和 run_compound() 共用，避免同一段 try/except 分叉维护两份。"""
+    @staticmethod
+    def _redact_task_text(text: str) -> str:
+        """Keep sensitive identifiers out of plan/trace descriptions."""
+        text = re.sub(r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", "[REDACTED_EMAIL]", text)
+        text = re.sub(r"(?<!\d)1\d{10}(?!\d)", "[REDACTED_PHONE]", text)
+        text = re.sub(r"(?<!\d)\d{12,19}(?!\d)", "[REDACTED_NUMBER]", text)
+        text = re.sub(
+            r"(?i)(密码|验证码)\s*[:：=]?\s*[A-Za-z0-9_-]{4,}",
+            r"\1=[REDACTED]", text,
+        )
+        return text
+
+    def _agent_for_intent(self, intent: IntentCategory) -> AgentType:
+        """Only server-owned intent-to-agent mappings can grant a domain."""
+        agent = self._INTENT_ROUTING.get(intent, AgentType.GENERAL)
+        return agent if self._pool.get(agent) else AgentType.GENERAL
+
+    def _build_task_plan(self, req: Request, decision: RoutingDecision,
+                         risk_reasons: List[str]) -> TaskPlan:
+        """Build executable tasks directly from recognized intent spans.
+
+        No separate planner and no second keyword-based business parsing.
+        Dependency edges come from indices validated by IntentRecognizer.
+        """
+        agent_types = list(dict.fromkeys(decision.agent_types))
+        if len(agent_types) > getattr(self, "_max_subtasks", 4):
+            raise ValueError("too_many_subtasks")
+        items = list(req.intents)
+        if not items and req.intent not in (None, IntentCategory.OTHER):
+            # Direct/legacy single-intent requests retain a one-task plan.
+            items = [RecognizedIntent(req.intent, req.message, req.intent_confidence)]
+        agents_by_index = [self._agent_for_intent(item.intent) for item in items]
+        scopes: Dict[AgentType, List[str]] = {agent: [] for agent in agent_types}
+        edges: Dict[AgentType, List[AgentType]] = {agent: [] for agent in agent_types}
+
+        for index, item in enumerate(items):
+            agent = agents_by_index[index]
+            if agent not in scopes:
+                continue
+            # Never let ungrounded LLM text become executable task scope.
+            if item.text and item.text in req.message and item.text not in scopes[agent]:
+                scopes[agent].append(item.text)
+            for dependency in item.depends_on:
+                if (not isinstance(dependency, int) or isinstance(dependency, bool)
+                        or dependency < 0 or dependency >= index):
+                    raise ValueError("invalid_intent_dependency")
+                previous_agent = agents_by_index[dependency]
+                if (previous_agent != agent and previous_agent in scopes
+                        and previous_agent not in edges[agent]):
+                    edges[agent].append(previous_agent)
+
+        subtasks: List[SubTask] = []
+        for agent in agent_types:
+            phrases = scopes[agent]
+            # A single legacy request is already scoped to one Agent.
+            if not phrases and len(agent_types) == 1 and not req.intents:
+                phrases = [req.message]
+            guard = self._TASK_GUARDS[agent]
+            description = guard
+            if phrases:
+                description += "。聚焦：" + self._redact_task_text("；".join(phrases))
+            risk_level = ("critical" if agent == AgentType.ESCALATION else
+                          "high" if risk_reasons and agent in {AgentType.BILLING, AgentType.GENERAL} else
+                          "medium" if risk_reasons else "low")
+            subtasks.append(SubTask(
+                id=f"{agent.value}_1",
+                description=description,
+                agent_type=agent.value,
+                dependencies=[f"{prior.value}_1" for prior in edges[agent]],
+                risk_level=risk_level,
+                expected_output="给出可核实的处理结果，不越权承诺或执行敏感操作",
+            ))
+
+        plan = TaskPlan(
+            original_request=req.message,
+            subtasks=subtasks,
+            reason=decision.reason,
+            confidence=decision.confidence,
+            method="intent_mapping",
+        )
+        self._scheduler.validate(plan)
+        return plan
+
+    def _build_plan_or_fallback(self, req: Request, decision: RoutingDecision,
+                                risk_reasons: List[str]):
+        """On invalid task graphs, safely degrade to the primary Agent only."""
         degradations: List[str] = []
         try:
-            plan = self._planner.create_plan(
-                original_request=req.message,
-                primary_agent=decision.primary_agent.value,
-                supporting_agents=[agent.value for agent in decision.supporting_agents],
-                reason=decision.reason,
-                confidence=decision.confidence,
-                risk_reasons=risk_reasons,
-            )
+            return self._build_task_plan(req, decision, risk_reasons), degradations
         except Exception as ex:
-            logger.warning("TaskPlanner 失败，使用单任务确定性计划: %s", type(ex).__name__)
-            degradations.append("task_planner_unavailable")
+            logger.warning("Intent task graph failed, degrade to primary Agent: %s", type(ex).__name__)
+            degradations.append("task_plan_unavailable")
+            primary = decision.primary_agent
             plan = TaskPlan(
                 original_request=req.message,
                 subtasks=[SubTask(
-                    id=f"{decision.primary_agent.value}_fallback_1",
-                    description="仅处理当前主领域请求，不能替其他领域作出结论",
-                    agent_type=decision.primary_agent.value,
+                    id=f"{primary.value}_fallback_1",
+                    description=self._TASK_GUARDS[primary] + "。仅处理主领域的安全咨询",
+                    agent_type=primary.value,
                     risk_level="high" if risk_reasons else "low",
+                    expected_output="不猜测未验证的其他领域结果",
                 )],
-                reason="planner fallback to primary agent",
+                reason="invalid multi-intent task graph; fallback to primary Agent",
                 confidence=decision.confidence,
                 method="fallback",
             )
-        return plan, degradations
+            self._scheduler.validate(plan)
+            return plan, degradations
 
     async def _schedule_or_fallback(self, plan: TaskPlan, req: Request, degradations: List[str]):
         """按计划调度子任务；调度器失败时把每个子任务标记为失败，保留可观测性。
@@ -787,14 +869,15 @@ class AgentOrchestrator:
         return task_results, degradations
 
     def _ensure_supervisor_components(self) -> None:
-        """兼容使用 object.__new__ 构造的离线路由测试。"""
-        if not hasattr(self, "_planner"):
-            self._planner = TaskPlanner(
-                allowed_agent_types=(agent_type.value for agent_type in AgentType),
-                max_subtasks=3,
-            )
+        """Initialize optional components for tests using object.__new__."""
+        if not hasattr(self, "_max_subtasks"):
+            self._max_subtasks = 4
         if not hasattr(self, "_scheduler"):
-            self._scheduler = DAGScheduler(self._planner, timeout_s=30.0)
+            self._scheduler = DAGScheduler(
+                allowed_agent_types=(agent.value for agent in AgentType),
+                max_subtasks=self._max_subtasks,
+                timeout_s=30.0,
+            )
         if not hasattr(self, "_synthesizer"):
             self._synthesizer = ResponseSynthesizer()
 
@@ -811,277 +894,41 @@ class AgentOrchestrator:
 
     # ── 路由逻辑 ──────────────────────────────────────────────────────────────
 
-    def _route(self, intent: Optional[IntentCategory], urgency: Optional[UrgencyLevel]) -> AgentType:
-        """
-        三层路由决策：
-          1. 意图映射
-          2. 紧急度覆盖（CRITICAL 直接升级）
-          3. 默认 GENERAL
-        """
-        if urgency == UrgencyLevel.CRITICAL:
-            return AgentType.ESCALATION
-
-        if intent and intent in self._INTENT_ROUTING:
-            target = self._INTENT_ROUTING[intent]
-            # 如果目标类型有可用实例则使用，否则降级
-            if target in self._pool and self._pool[target]:
-                return target
-
-        return AgentType.GENERAL
-
     def _route_decision(self, req: Request) -> RoutingDecision:
+        """One deterministic routing pass over the recognized intent list.
+
+        With legacy single-intent data, route just that one intent. Do not
+        infer additional business domains from conjunctions or keywords.
         """
-        结构化路由决策。
-
-        先处理紧急/转人工，再用领域分数决定主 Agent 和辅助 Agent。
-        这样可以表达“主处理 + 辅助诊断”，避免关键词命中后无主次地拼接。
-        """
-        high_risk_reasons = self._high_risk_reasons(req)
-        if req.urgency == UrgencyLevel.CRITICAL:
-            return RoutingDecision(
-                primary_agent=AgentType.ESCALATION,
-                supporting_agents=[
-                    agent_type for agent_type in self._collaboration_targets(req)
-                    if agent_type not in {AgentType.ESCALATION, AgentType.GENERAL}
-                ],
-                reason="紧急度为 CRITICAL，触发升级路由",
-                confidence=1.0,
-            )
-
-        if req.intent in (IntentCategory.ESCALATION, IntentCategory.HUMAN_HANDOFF):
-            supporting_agents = [
-                agent_type for agent_type in self._collaboration_targets(req)
-                if agent_type not in {AgentType.ESCALATION, AgentType.GENERAL}
-            ]
-            return RoutingDecision(
-                primary_agent=AgentType.ESCALATION,
-                supporting_agents=supporting_agents,
-                reason=f"意图为 {req.intent.value if req.intent else 'unknown'}，触发升级路由",
-                confidence=max(req.intent_confidence, 0.8),
-            )
-
-        if self._should_route_to_escalation(req, high_risk_reasons):
-            supporting_agents = [
-                agent_type for agent_type in self._collaboration_targets(req)
-                if agent_type not in {AgentType.ESCALATION, AgentType.GENERAL}
-            ]
-            return RoutingDecision(
-                primary_agent=AgentType.ESCALATION,
-                supporting_agents=supporting_agents,
-                reason=(
-                    "高风险规则触发升级: "
-                    + ", ".join(high_risk_reasons)
-                    + f"; intent={req.intent.value if req.intent else 'unknown'}"
-                ),
-                confidence=max(req.intent_confidence, 0.85),
-            )
-
-        scores = self._domain_scores(req)
-        available_scores = {
-            agent_type: score
-            for agent_type, score in scores.items()
-            if agent_type == AgentType.GENERAL or self._pool.get(agent_type)
-        }
-        if not available_scores:
-            return RoutingDecision(
-                primary_agent=AgentType.GENERAL,
-                reason="无可用专属 Agent，降级到 GeneralAgent",
-                confidence=0.1,
-            )
-
-        ordered = sorted(available_scores.items(), key=lambda item: item[1], reverse=True)
-        primary_agent, primary_score = ordered[0]
-        collaboration_targets = self._collaboration_targets(req)
-        if len(collaboration_targets) >= 2:
-            supporting_agents = [agent_type for agent_type in collaboration_targets if agent_type != primary_agent]
+        items = list(req.intents)
+        if not items and req.intent not in (None, IntentCategory.OTHER):
+            items = [RecognizedIntent(req.intent, req.message, req.intent_confidence)]
+        participating: List[AgentType] = []
+        for item in items:
+            agent = self._agent_for_intent(item.intent)
+            if agent not in participating:
+                participating.append(agent)
+        explicit_handoff = any(
+            item.intent in {IntentCategory.ESCALATION, IntentCategory.HUMAN_HANDOFF}
+            for item in items
+        )
+        if req.urgency == UrgencyLevel.CRITICAL or explicit_handoff:
+            primary = AgentType.ESCALATION
+            supporting = [agent for agent in participating if agent != primary]
+            reason = "explicit_handoff_or_critical"
+        elif participating:
+            primary = participating[0]
+            supporting = participating[1:]
+            reason = "direct_multi_intent_mapping"
         else:
-            supporting_agents = [
-                agent_type
-                for agent_type, score in ordered[1:]
-                if agent_type != AgentType.GENERAL and score >= 0.45 and score >= primary_score * 0.55
-            ]
-
-        reason = self._routing_reason(req, available_scores, primary_agent, supporting_agents)
+            primary, supporting, reason = AgentType.GENERAL, [], "no_recognized_intent"
+        labels = ",".join(item.intent.value for item in items)
         return RoutingDecision(
-            primary_agent=primary_agent,
-            supporting_agents=supporting_agents,
-            reason=reason,
-            confidence=round(min(primary_score, 1.0), 3),
+            primary_agent=primary,
+            supporting_agents=supporting,
+            reason=f"{reason}; intents=[{labels}]; primary={primary.value}",
+            confidence=min(1.0, max(0.0, float(req.intent_confidence))),
         )
-
-    def _domain_scores(self, req: Request) -> Dict[AgentType, float]:
-        """按意图、关键词和实体为各领域 Agent 打分。"""
-        msg = req.message.lower()
-        scores = {
-            AgentType.GENERAL: 0.1,
-            AgentType.TECHNICAL: 0.0,
-            AgentType.BILLING: 0.0,
-        }
-
-        if req.intent in (
-            IntentCategory.QUERY,
-            IntentCategory.ORDER_STATUS,
-            IntentCategory.LOGISTICS,
-            IntentCategory.REQUEST,
-            IntentCategory.COMPLAINT,
-            IntentCategory.GREETING,
-            IntentCategory.FEEDBACK,
-            IntentCategory.OTHER,
-            IntentCategory.ACCOUNT,
-        ):
-            scores[AgentType.GENERAL] += 0.55
-
-        if req.intent in (
-            IntentCategory.TECHNICAL,
-            IntentCategory.TECHNICAL_LOGIN,
-            IntentCategory.TECHNICAL_CRASH,
-        ):
-            scores[AgentType.TECHNICAL] += 0.75
-
-        if req.intent in (
-            IntentCategory.BILLING,
-            IntentCategory.ACCOUNT_SECURITY,
-            IntentCategory.REFUND,
-            IntentCategory.INVOICE,
-            IntentCategory.PAYMENT_ISSUE,
-        ):
-            scores[AgentType.BILLING] += 0.75
-
-        payment_page_technical = (
-            req.intent in (
-                IntentCategory.TECHNICAL,
-                IntentCategory.TECHNICAL_LOGIN,
-                IntentCategory.TECHNICAL_CRASH,
-            )
-            and
-            any(keyword in msg for keyword in ("支付页面", "付款页", "结算页面"))
-            and any(keyword in msg for keyword in ("报错", "加载", "跳转", "卡住", "异常"))
-        )
-        if payment_page_technical:
-            # 支付页面故障先由 Technical 主处理，再由 Billing 核验交易状态。
-            scores[AgentType.TECHNICAL] += 1.05
-
-        technical_kws = ["崩溃", "报错", "error", "crash", "无法登录", "登录失败", "500", "401", "验证码", "加载异常", "页面异常"]
-        billing_kws = ["退款", "退货", "扣款", "扣费", "发票", "账单", "支付", "订阅", "refund", "invoice", "多扣", "收费"]
-        general_kws = ["订单", "物流", "快递", "配送", "会员", "积分", "咨询", "帮助", "资料"]
-
-        technical_hits = sum(1 for kw in technical_kws if kw in msg)
-        billing_hits = sum(1 for kw in billing_kws if kw in msg)
-        general_hits = sum(1 for kw in general_kws if kw in msg)
-
-        scores[AgentType.TECHNICAL] += min(0.45, technical_hits * 0.18)
-        scores[AgentType.BILLING] += min(0.45, billing_hits * 0.18)
-        scores[AgentType.GENERAL] += min(0.35, general_hits * 0.12)
-
-        entities = req.entities or {}
-        if entities.get("error_code"):
-            scores[AgentType.TECHNICAL] += 0.2
-        if entities.get("amount"):
-            scores[AgentType.BILLING] += 0.15
-        if entities.get("order_id"):
-            scores[AgentType.GENERAL] += 0.1
-        if self._high_risk_reasons(req):
-            scores[AgentType.BILLING] += 0.25
-
-        return {agent_type: round(score, 3) for agent_type, score in scores.items()}
-
-    @staticmethod
-    def _routing_reason(
-        req: Request,
-        scores: Dict[AgentType, float],
-        primary_agent: AgentType,
-        supporting_agents: List[AgentType],
-    ) -> str:
-        score_text = ", ".join(
-            f"{agent_type.value}={score:.2f}"
-            for agent_type, score in sorted(scores.items(), key=lambda item: item[1], reverse=True)
-        )
-        support_text = ", ".join(agent.value for agent in supporting_agents) or "none"
-        intent = req.intent.value if req.intent else "unknown"
-        signals = AgentOrchestrator._routing_signals(req)
-        signal_text = ", ".join(signals) or "none"
-        return (
-            f"intent={intent}, group={req.intent_group or 'unknown'}, "
-            f"primary={primary_agent.value}, supporting={support_text}, "
-            f"signals=[{signal_text}], scores=[{score_text}]"
-        )
-
-    def _collaboration_targets(self, req: Request) -> List[AgentType]:
-        """
-        判断是否需要多个 Agent 并行协作。
-
-        意图识别通常只返回一个主意图；这里用领域关键词补充检测复合问题，
-        例如"登录报错且被重复扣款"需要技术和账单 Agent 同时处理。
-        """
-        msg = req.message.lower()
-        targets: List[AgentType] = []
-
-        technical_kws = ["崩溃", "报错", "error", "crash", "登录", "异常登录", "登录异常", "500", "401", "加载失败", "加载异常", "无法跳转"]
-        billing_kws = ["退款", "扣款", "扣费", "发票", "开票", "账单", "支付", "订阅", "refund", "invoice", "收费", "交易"]
-        general_kws = ["订单", "物流", "快递", "配送", "会员", "积分", "资料"]
-
-        technical_intents = {
-            IntentCategory.TECHNICAL,
-            IntentCategory.TECHNICAL_LOGIN,
-            IntentCategory.TECHNICAL_CRASH,
-        }
-        billing_intents = {
-            IntentCategory.BILLING,
-            IntentCategory.ACCOUNT_SECURITY,
-            IntentCategory.REFUND,
-            IntentCategory.INVOICE,
-            IntentCategory.PAYMENT_ISSUE,
-        }
-        general_intents = {
-            IntentCategory.QUERY,
-            IntentCategory.ORDER_STATUS,
-            IntentCategory.LOGISTICS,
-            IntentCategory.ACCOUNT,
-        }
-        compound_signal = any(
-            marker in msg for marker in (
-                "同时", "又", "还", "以及", "并且", "而且", "一起", "也", "和",
-                "先", "再", "然后", "之后",
-            )
-        )
-        escalation_primary = req.intent in (IntentCategory.ESCALATION, IntentCategory.HUMAN_HANDOFF)
-
-        if req.intent in technical_intents or (
-            any(kw in msg for kw in technical_kws) and (compound_signal or escalation_primary)
-        ):
-            targets.append(AgentType.TECHNICAL)
-        if req.intent in billing_intents or (
-            any(kw in msg for kw in billing_kws) and (compound_signal or escalation_primary)
-        ):
-            targets.append(AgentType.BILLING)
-        if req.intent in general_intents or (
-            any(kw in msg for kw in general_kws) and (compound_signal or escalation_primary)
-        ):
-            targets.append(AgentType.GENERAL)
-
-        # 保持顺序去重，并只返回当前有实例的 Agent 类型。
-        deduped = list(dict.fromkeys(targets))
-        return [agent_type for agent_type in deduped if self._pool.get(agent_type)]
-
-    @staticmethod
-    def _routing_signals(req: Request) -> List[str]:
-        """提取路由解释信号，便于评测和面试复盘定位规则来源。"""
-        msg = (req.message or "").lower()
-        signals: List[str] = []
-        signal_groups = {
-            "technical": ["崩溃", "报错", "error", "crash", "无法登录", "登录失败", "500", "401", "页面", "加载"],
-            "billing": ["退款", "扣款", "扣费", "发票", "账单", "支付", "交易", "收费"],
-            "general": ["订单", "物流", "快递", "配送", "会员", "积分", "资料"],
-            "handoff": ["人工", "转人工", "升级", "专员", "投诉"],
-            "security": ["被盗", "盗用", "陌生设备", "异常登录", "安全风险", "验证码", "密码"],
-        }
-        for group, keywords in signal_groups.items():
-            hits = [kw for kw in keywords if kw.lower() in msg]
-            if hits:
-                signals.append(f"{group}:{'/'.join(hits[:3])}")
-        if req.entities:
-            signals.append("entities:" + "/".join(sorted(req.entities.keys())))
-        return signals
 
     @staticmethod
     def _needs_clarification(req: Request) -> bool:
@@ -1102,11 +949,13 @@ class AgentOrchestrator:
     def _high_risk_reasons(req: Request) -> List[str]:
         """返回触发升级的通用风险原因，不绑定具体评测样本。"""
         reasons: List[str] = []
-        if req.intent == IntentCategory.ACCOUNT_SECURITY:
+        # A secondary sensitive intent must not bypass escalation.
+        categories = {req.intent} | {item.intent for item in req.intents}
+        if IntentCategory.ACCOUNT_SECURITY in categories:
             reasons.append("account_security_intent")
-        if req.intent == IntentCategory.PAYMENT_ISSUE:
+        if IntentCategory.PAYMENT_ISSUE in categories:
             reasons.append("payment_issue_intent")
-        if req.intent in (IntentCategory.ESCALATION, IntentCategory.HUMAN_HANDOFF):
+        if categories.intersection({IntentCategory.ESCALATION, IntentCategory.HUMAN_HANDOFF}):
             reasons.append("handoff_intent")
         message = (req.message or "").lower()
         handoff_keywords = (
@@ -1128,15 +977,15 @@ class AgentOrchestrator:
             reasons.append("credential_safety")
         refund_action_terms = ("申请退款", "提交退款", "退款申请", "取消退款", "退款争议")
         refund_information_only = any(term in message for term in ("是否符合退款条件", "退款条件是什么", "能否退款", "可以退款吗"))
-        if req.intent == IntentCategory.REFUND and not refund_information_only and any(
+        if IntentCategory.REFUND in categories and not refund_information_only and any(
             term in message for term in refund_action_terms
         ):
             reasons.append("refund_action")
         refund_review_terms = ("退款结果", "申请复核", "人工审核", "审核完成", "审核结果")
-        if req.intent == IntentCategory.REFUND and any(term in message for term in refund_review_terms):
+        if IntentCategory.REFUND in categories and any(term in message for term in refund_review_terms):
             reasons.append("refund_review")
         if (
-            req.intent == IntentCategory.REFUND
+            IntentCategory.REFUND in categories
             and "退款资格" in message
             and any(term in message for term in ("争议", "复核", "审核", "确认我的"))
         ):
@@ -1153,15 +1002,6 @@ class AgentOrchestrator:
         if any(term in message for term in repeated_failure_terms) and any(term in message for term in ("失败", "报错", "没有结果", "无效")):
             reasons.append("repeated_failure")
         return list(dict.fromkeys(reasons))
-
-    @staticmethod
-    def _should_route_to_escalation(req: Request, high_risk_reasons: List[str]) -> bool:
-        """决定是否由升级 Agent 主处理；账单/技术高风险仍会保留领域 Agent 辅助。"""
-        if not high_risk_reasons:
-            return False
-        if "handoff_intent" in high_risk_reasons:
-            return True
-        return False
 
     def _best_agent(self, agent_type: AgentType) -> Optional[BaseAgent]:
         """

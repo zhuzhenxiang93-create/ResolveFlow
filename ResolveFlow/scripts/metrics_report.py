@@ -188,7 +188,7 @@ def build_metrics_report(
             "compound_detection_accuracy", "subtask_coverage",
             "agent_assignment_accuracy", "dependency_accuracy",
             "multi_agent_routing_accuracy", "control_plane_task_success_rate",
-            "planner_fallback_rate",
+            "task_plan_fallback_rate",
             "synthesis_fallback_rate", "avg_control_plane_latency_ms",
             "p95_control_plane_latency_ms",
         ):
@@ -238,7 +238,9 @@ def resume_safe_bullets(metrics: Dict[str, Any]) -> List[str]:
         )
     if "routing_accuracy" in metrics:
         mode = metrics.get("routing_eval_mode")
-        prefix = "在内部合成 holdout 上进行给定金标意图的离线路由评测" if mode == "gold_intent_rule_only" else "通过结构化主辅 Agent 路由评测"
+        prefix = ("在内部合成 holdout 上进行给定金标意图的离线路由评测"
+                  if mode == "gold_intent_rule_only"
+                  else "在已有金标意图上测试确定性 Agent 映射（不含未标注复合意图）")
         text = f"{prefix}，Routing Accuracy={_pct(metrics['routing_accuracy'])}"
         if "supporting_agent_accuracy" in metrics:
             text += f"，Supporting Agent Accuracy={_pct(metrics['supporting_agent_accuracy'])}"
@@ -252,7 +254,7 @@ def resume_safe_bullets(metrics: Dict[str, Any]) -> List[str]:
         bullets.append(text + "。")
     if "compound_detection_accuracy" in metrics:
         bullets.append(
-            "在内部确定性 Supervisor 集上验证复合请求拆分与依赖规划："
+            "在内部合成且给定结构化意图的控制面集合上验证 Agent 映射和 DAG："
             f"Compound Detection={_pct(metrics['compound_detection_accuracy'])}，"
             f"Agent Assignment={_pct(metrics['agent_assignment_accuracy'])}，"
             f"Dependency Accuracy={_pct(metrics['dependency_accuracy'])}。"
@@ -280,6 +282,7 @@ def not_resume_safe(metrics: Dict[str, Any]) -> List[str]:
     warnings = [
         "未接入真实线上流量，不能写生产用户数、线上 QPS 或线上 SLA。",
         "LLM 端到端延迟受外部模型服务影响，未压测前不要写生产 P95。",
+        "多意图识别和 depends_on 属于新架构；改造前的单意图 Accuracy/F1、路由指标不能当作新架构的多意图效果。",
     ]
     if "rag_top_3_hit_rate" not in metrics:
         warnings.append("尚未生成 RAG 报告，不能写 RAG Top-K 指标。")

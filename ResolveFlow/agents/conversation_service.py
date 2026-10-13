@@ -11,7 +11,6 @@ from pathlib import Path
 
 from agents.action_runtime import TERMINAL
 from agents.subscription_knowledge import policy_refund_is_actually_goods, refund_target_is_ambiguous
-from agents.supervisor import SubTaskResult, TaskPlanner, TaskStatus
 from core.intent_recognizer import IntentCategory, IntentRecognizer
 from memory.conversation_memory import MsgRole
 from memory.local_conversation_memory import LocalConversationMemory
@@ -145,12 +144,15 @@ class ConversationService:
                     "degradations": errors + ["intent_unavailable"], "status": "retryable_error"}
         intent_value, intent_source_scores = intent.intent.value, intent.source_scores
         offline = None
+        routing_result = None
         if self.answer_orchestrator:
             from agents.agent_orchestrator import Request
             result = await self.answer_orchestrator.run(Request(message=message, user_id=owner, conv_id=conv,
                 context=memory.to_prompt_text(), history=history, intent=intent.intent, intent_group=intent.intent_group,
-                intent_confidence=intent.confidence, urgency=intent.urgency, entities=intent.entities))
+                intent_confidence=intent.confidence, urgency=intent.urgency, entities=intent.entities,
+                intents=list(getattr(intent, "intents", []))))
             answer = result.response
+            routing_result = result
             for trace in result.tool_traces:
                 knowledge.extend(trace.get("sources", []))
                 errors.extend(trace.get("degradations", []))
@@ -173,8 +175,32 @@ class ConversationService:
         result = await commerce._answer(owner, conv, message, answer, mode="general_support")
         if not self.answer_orchestrator and offline:
             result["support_result"] = offline
-        result.update(route="chat", intent=intent_value, intent_source_scores=intent_source_scores,
-                      interpretation=record, sources=knowledge, knowledge_used=bool(knowledge))
+        result.update(
+            route="chat", intent=intent_value, intent_source_scores=intent_source_scores,
+            intent_group=intent.intent_group, intent_confidence=intent.confidence,
+            entities=dict(intent.entities),
+            recognized_intents=[
+                {"intent": item.intent.value, "confidence": round(item.confidence, 3),
+                 "depends_on": list(item.depends_on)}
+                for item in getattr(intent, "intents", [])
+            ],
+            agent_type=getattr(getattr(routing_result, "agent_type", None), "value", "general"),
+            agent_types=[
+                getattr(agent, "value", agent)
+                for agent in (getattr(routing_result, "agent_types", []) or [])
+            ],
+            primary_agent=getattr(getattr(routing_result, "primary_agent", None), "value", ""),
+            supporting_agents=[
+                getattr(agent, "value", agent)
+                for agent in (getattr(routing_result, "supporting_agents", []) or [])
+            ],
+            routing_confidence=getattr(routing_result, "routing_confidence", 0.0),
+            routing_reason=getattr(routing_result, "routing_reason", ""),
+            escalated=getattr(routing_result, "escalated", False),
+            task_plan=getattr(routing_result, "task_plan", None),
+            execution_trace=getattr(routing_result, "execution_trace", []),
+            interpretation=record, sources=knowledge, knowledge_used=bool(knowledge),
+        )
         result["degradations"].extend(errors)
         return result
 
