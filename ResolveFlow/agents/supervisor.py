@@ -140,6 +140,7 @@ class TaskPlanner:
         reason: str,
         confidence: float,
         risk_reasons: Sequence[str] = (),
+        scopes_by_agent: Optional[Mapping[str, Sequence[str]]] = None,
     ) -> TaskPlan:
         agent_types = list(dict.fromkeys([primary_agent, *supporting_agents]))
         if len(agent_types) > self.max_subtasks:
@@ -153,7 +154,12 @@ class TaskPlanner:
         dependencies = self._infer_dependencies(original_request, agent_types, task_ids)
         subtasks = []
         for agent_type in agent_types:
-            relevant = self._relevant_clauses(agent_type, clauses)
+            # The multi-intent recognizer has already extracted grounded per-goal
+            # spans. Prefer those over a second keyword-based clause classifier.
+            explicit = list((scopes_by_agent or {}).get(agent_type, ()))
+            relevant = [item for item in explicit if isinstance(item, str) and item.strip()][:3]
+            if not relevant:
+                relevant = self._relevant_clauses(agent_type, clauses)
             raw_scope = "；".join(relevant) if relevant else original_request.strip()
             scope = self._sanitize_scope(raw_scope)
             guard = self._DEFAULT_DESCRIPTIONS.get(
