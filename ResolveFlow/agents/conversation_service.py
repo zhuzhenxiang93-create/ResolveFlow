@@ -145,12 +145,15 @@ class ConversationService:
                     "degradations": errors + ["intent_unavailable"], "status": "retryable_error"}
         intent_value, intent_source_scores = intent.intent.value, intent.source_scores
         offline = None
+        routing_result = None
         if self.answer_orchestrator:
             from agents.agent_orchestrator import Request
             result = await self.answer_orchestrator.run(Request(message=message, user_id=owner, conv_id=conv,
                 context=memory.to_prompt_text(), history=history, intent=intent.intent, intent_group=intent.intent_group,
-                intent_confidence=intent.confidence, urgency=intent.urgency, entities=intent.entities))
+                intent_confidence=intent.confidence, urgency=intent.urgency, entities=intent.entities,
+                intents=list(getattr(intent, "intents", []))))
             answer = result.response
+            routing_result = result
             for trace in result.tool_traces:
                 knowledge.extend(trace.get("sources", []))
                 errors.extend(trace.get("degradations", []))
@@ -173,8 +176,23 @@ class ConversationService:
         result = await commerce._answer(owner, conv, message, answer, mode="general_support")
         if not self.answer_orchestrator and offline:
             result["support_result"] = offline
-        result.update(route="chat", intent=intent_value, intent_source_scores=intent_source_scores,
-                      interpretation=record, sources=knowledge, knowledge_used=bool(knowledge))
+        result.update(
+            route="chat", intent=intent_value, intent_source_scores=intent_source_scores,
+            intent_group=intent.intent_group, intent_confidence=intent.confidence,
+            entities=dict(intent.entities),
+            recognized_intents=[
+                {"intent": item.intent.value, "confidence": round(item.confidence, 3)}
+                for item in getattr(intent, "intents", [])
+            ],
+            agent_type=routing_result.agent_type.value if routing_result else "general",
+            agent_types=[agent.value for agent in routing_result.agent_types] if routing_result else [],
+            primary_agent=routing_result.primary_agent.value if routing_result and routing_result.primary_agent else "",
+            supporting_agents=[agent.value for agent in routing_result.supporting_agents] if routing_result else [],
+            routing_confidence=routing_result.routing_confidence if routing_result else 0.0,
+            task_plan=routing_result.task_plan if routing_result else None,
+            execution_trace=routing_result.execution_trace if routing_result else [],
+            interpretation=record, sources=knowledge, knowledge_used=bool(knowledge),
+        )
         result["degradations"].extend(errors)
         return result
 
