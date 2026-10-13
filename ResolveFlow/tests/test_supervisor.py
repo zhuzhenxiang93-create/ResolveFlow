@@ -8,6 +8,7 @@ from agents.agent_orchestrator import (
     AgentType,
     Request,
     RoutingDecision,
+    TechnicalAgent,
 )
 from agents.supervisor import (
     DAGScheduler,
@@ -161,6 +162,32 @@ class TaskPlanBuilderTests(unittest.TestCase):
         self.assertNotIn("13800138000", description)
         self.assertIn("REDACTED", description)
 
+
+
+class AgentPromptScopeTests(unittest.IsolatedAsyncioTestCase):
+    async def test_scoped_agent_does_not_repeat_other_business_domains(self):
+        class Recorder:
+            def __init__(self):
+                self.calls = []
+
+            async def create(self, **kwargs):
+                self.calls.append(kwargs)
+                return "排查登录故障即可"
+
+        client = Recorder()
+        agent = TechnicalAgent(client=client, model="test")
+        req = Request(
+            message="我的登录故障还没解决，而且我的银行卡被重复扣款了",
+            user_id="u", conv_id="c",
+            task_instruction="仅排查登录故障，不讨论付款",
+        )
+        response = await agent.handle(req)
+        self.assertTrue(response.success)
+        text = "\n".join(
+            str(part.get("content", "")) for part in client.calls[0]["messages"]
+        )
+        self.assertIn("仅排查登录故障", text)
+        self.assertNotIn("银行卡被重复扣款", text)
 
 
 class SchedulerTests(unittest.TestCase):
