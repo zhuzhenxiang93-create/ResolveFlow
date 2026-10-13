@@ -125,5 +125,18 @@ class MultiIntentRecognitionTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(decision.supporting_agents, [AgentType.GENERAL])
 
 
+    async def test_sensitive_secondary_intent_remains_escalated(self):
+        message = "我的账号进不去，扣款出现了异常"
+        result = await recognizer({"intents": [
+            {"intent": "technical_login", "text": "我的账号进不去", "confidence": 0.94},
+            {"intent": "payment_issue", "text": "扣款出现了异常", "confidence": 0.86},
+        ]}).recognize(message)
+        request = request_from_result(message, result)
+        self.assertIn("payment_issue_intent", agent_router()._high_risk_reasons(request))
+        decision = agent_router()._route_decision(request)
+        self.assertEqual(decision.primary_agent, AgentType.TECHNICAL)
+        self.assertEqual(decision.supporting_agents, [AgentType.BILLING])
+
+
 if __name__ == "__main__":
     unittest.main()
