@@ -543,7 +543,7 @@ class AgentOrchestrator:
 
         # 4. 升级检查
         escalated = False
-        if response.escalate or self._requires_high_risk_escalation(req) or req.urgency == UrgencyLevel.CRITICAL or req.intent in (
+        if decision.primary_agent == AgentType.ESCALATION or response.escalate or self._requires_high_risk_escalation(req) or req.urgency == UrgencyLevel.CRITICAL or req.intent in (
             IntentCategory.ESCALATION,
             IntentCategory.HUMAN_HANDOFF,
         ):
@@ -580,7 +580,7 @@ class AgentOrchestrator:
         plan, degradations = self._plan_or_fallback(req, decision, risk_reasons)
         task_results, degradations = await self._schedule_or_fallback(plan, req, degradations)
 
-        force_escalation = bool(risk_reasons) or req.urgency == UrgencyLevel.CRITICAL or req.intent in (
+        force_escalation = decision.primary_agent == AgentType.ESCALATION or bool(risk_reasons) or req.urgency == UrgencyLevel.CRITICAL or req.intent in (
             IntentCategory.ESCALATION,
             IntentCategory.HUMAN_HANDOFF,
         )
@@ -658,7 +658,7 @@ class AgentOrchestrator:
         plan, degradations = self._plan_or_fallback(req, decision, risk_reasons)
         task_results, degradations = await self._schedule_or_fallback(plan, req, degradations)
 
-        force_escalation = bool(risk_reasons) or req.urgency == UrgencyLevel.CRITICAL or req.intent in (
+        force_escalation = decision.primary_agent == AgentType.ESCALATION or bool(risk_reasons) or req.urgency == UrgencyLevel.CRITICAL or req.intent in (
             IntentCategory.ESCALATION,
             IntentCategory.HUMAN_HANDOFF,
         )
@@ -1148,11 +1148,13 @@ class AgentOrchestrator:
     def _high_risk_reasons(req: Request) -> List[str]:
         """返回触发升级的通用风险原因，不绑定具体评测样本。"""
         reasons: List[str] = []
-        if req.intent == IntentCategory.ACCOUNT_SECURITY:
+        # A secondary sensitive intent must not bypass escalation.
+        categories = {req.intent} | {item.intent for item in req.intents}
+        if IntentCategory.ACCOUNT_SECURITY in categories:
             reasons.append("account_security_intent")
-        if req.intent == IntentCategory.PAYMENT_ISSUE:
+        if IntentCategory.PAYMENT_ISSUE in categories:
             reasons.append("payment_issue_intent")
-        if req.intent in (IntentCategory.ESCALATION, IntentCategory.HUMAN_HANDOFF):
+        if categories.intersection({IntentCategory.ESCALATION, IntentCategory.HUMAN_HANDOFF}):
             reasons.append("handoff_intent")
         message = (req.message or "").lower()
         handoff_keywords = (
@@ -1174,15 +1176,15 @@ class AgentOrchestrator:
             reasons.append("credential_safety")
         refund_action_terms = ("申请退款", "提交退款", "退款申请", "取消退款", "退款争议")
         refund_information_only = any(term in message for term in ("是否符合退款条件", "退款条件是什么", "能否退款", "可以退款吗"))
-        if req.intent == IntentCategory.REFUND and not refund_information_only and any(
+        if IntentCategory.REFUND in categories and not refund_information_only and any(
             term in message for term in refund_action_terms
         ):
             reasons.append("refund_action")
         refund_review_terms = ("退款结果", "申请复核", "人工审核", "审核完成", "审核结果")
-        if req.intent == IntentCategory.REFUND and any(term in message for term in refund_review_terms):
+        if IntentCategory.REFUND in categories and any(term in message for term in refund_review_terms):
             reasons.append("refund_review")
         if (
-            req.intent == IntentCategory.REFUND
+            IntentCategory.REFUND in categories
             and "退款资格" in message
             and any(term in message for term in ("争议", "复核", "审核", "确认我的"))
         ):
