@@ -29,6 +29,15 @@ jobs:
           python -m unittest discover -s tests -p 'test_multi_intent_routing.py' -v
           python -m unittest discover -s tests -p 'test_supervisor.py' -v
           python -m unittest discover -s tests -p 'test_conversation_intent_merge.py' -v
+      - name: Compile project and run commerce safety regressions
+        working-directory: ResolveFlow
+        run: |
+          python -m compileall -q .
+          python -m unittest discover -s tests -p 'test_action_safety.py' -v
+          python -m unittest discover -s tests -p 'test_commerce.py' -v
+          python -m unittest discover -s tests -p 'test_compound_requests.py' -v
+          python -m unittest discover -s tests -p 'test_unified_conversation.py' -v
+          python -m unittest discover -s tests -p 'test_native_tools.py' -v
       - name: Run explicit multi-intent control-plane regression
         working-directory: ResolveFlow
         run: python scripts/run_supervisor_eval.py
