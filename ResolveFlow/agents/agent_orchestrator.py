@@ -213,9 +213,10 @@ class BaseAgent:
             messages.append({"role": "user", "content": f"[结构化实体]\n{_clean(entities_text)}"})
             messages.append({"role": "assistant", "content": "好的，我会结合这些结构化实体处理。"})
         if req.task_instruction:
+            # The upstream IntentRecognizer already provided a scoped goal.
+            # Sending the full original cross-domain request to each Agent
+            # duplicates tokens and leaks unrelated domain context.
             scoped = (
-                "[原始请求，仅作背景]\n"
-                f"{_clean(req.message)}\n\n"
                 "[当前子任务]\n"
                 f"{_clean(req.task_instruction)}\n\n"
                 "只完成当前子任务，不要替其他 Agent 回答其负责的部分。"
