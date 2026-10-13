@@ -1,5 +1,4 @@
 import asyncio
-import json
 import time
 import unittest
 
@@ -17,14 +16,37 @@ from agents.supervisor import (
     SubTask,
     SubTaskResult,
     TaskPlan,
-    TaskPlanner,
     TaskStatus,
 )
-from core.intent_recognizer import IntentCategory, UrgencyLevel
+from core.intent_recognizer import IntentCategory, RecognizedIntent, UrgencyLevel
 
 
-def planner(max_subtasks=3):
-    return TaskPlanner([agent.value for agent in AgentType], max_subtasks=max_subtasks)
+def scheduler(max_subtasks=4, timeout_s=30.0):
+    return DAGScheduler(
+        (agent.value for agent in AgentType),
+        max_subtasks=max_subtasks,
+        timeout_s=timeout_s,
+    )
+
+
+def built_plan(message, intents, primary, supporting=(), risk_reasons=()):
+    """Exercise the real lightweight plan builder, without a second Planner."""
+    orch = object.__new__(AgentOrchestrator)
+    orch._pool = {agent: [object()] for agent in AgentType}
+    orch._max_subtasks = 4
+    orch._scheduler = scheduler()
+    req = Request(
+        message=message, user_id="test", conv_id="demo",
+        intent=intents[0].intent, intent_group="",
+        intent_confidence=intents[0].confidence,
+        urgency=UrgencyLevel.LOW, intents=list(intents),
+    )
+    return orch._build_task_plan(
+        req,
+        RoutingDecision(primary_agent=primary, supporting_agents=list(supporting),
+                        reason="unit_test", confidence=0.9),
+        list(risk_reasons),
+    )
 
 
 def plan(*tasks):
@@ -46,56 +68,65 @@ def result(task_id, agent_type, content="ok", success=True, status=None):
     )
 
 
-class PlannerTests(unittest.TestCase):
-    def test_compound_request_gets_scoped_subtasks(self):
-        task_plan = planner().create_plan(
-            original_request="登录一直报错，而且银行卡被重复扣款",
-            primary_agent="technical",
-            supporting_agents=["billing"],
-            reason="compound",
-            confidence=0.9,
+class TaskPlanBuilderTests(unittest.TestCase):
+    def test_multi_intent_scopes_are_grounded(self):
+        text = "登录一直报错，而且银行卡被重复扣款"
+        task_plan = built_plan(
+            message=text,
+            intents=[
+                RecognizedIntent(IntentCategory.TECHNICAL_LOGIN, "登录一直报错", 0.95),
+                RecognizedIntent(IntentCategory.PAYMENT_ISSUE, "银行卡被重复扣款", 0.93),
+            ],
+            primary=AgentType.TECHNICAL,
+            supporting=[AgentType.BILLING],
             risk_reasons=["payment_risk"],
         )
         self.assertEqual([task.agent_type for task in task_plan.subtasks], ["technical", "billing"])
-        self.assertIn("登录", task_plan.subtasks[0].description)
+        self.assertIn("登录一直报错", task_plan.subtasks[0].description)
         self.assertNotIn("重复扣款", task_plan.subtasks[0].description)
-        self.assertIn("重复扣款", task_plan.subtasks[1].description)
+        self.assertIn("银行卡被重复扣款", task_plan.subtasks[1].description)
         self.assertEqual(task_plan.subtasks[1].risk_level, "high")
 
-    def test_sequential_language_creates_dependency(self):
-        task_plan = planner().create_plan(
-            original_request="先查询订单状态，然后根据查询结果判断退款资格",
-            primary_agent="billing",
-            supporting_agents=["general"],
-            reason="dependent",
-            confidence=1.0,
+    def test_structured_dependency_is_retained(self):
+        text = "先查询订单状态，然后根据查询结果判断退款资格"
+        task_plan = built_plan(
+            message=text,
+            intents=[
+                RecognizedIntent(IntentCategory.ORDER_STATUS, "查询订单状态", 0.95),
+                RecognizedIntent(IntentCategory.REFUND, "根据查询结果判断退款资格", 0.92, [0]),
+            ],
+            primary=AgentType.GENERAL,
+            supporting=[AgentType.BILLING],
         )
         by_agent = {task.agent_type: task for task in task_plan.subtasks}
         self.assertEqual(by_agent["billing"].dependencies, [by_agent["general"].id])
 
-    def test_invalid_json_is_rejected(self):
-        with self.assertRaisesRegex(PlanValidationError, "planner_json_invalid"):
-            planner().parse_json_plan("not-json", original_request="x")
+    def test_ordering_words_do_not_force_data_dependency(self):
+        text = "先排查登录问题，然后查物流"
+        task_plan = built_plan(
+            message=text,
+            intents=[
+                RecognizedIntent(IntentCategory.TECHNICAL_LOGIN, "排查登录问题", 0.94),
+                RecognizedIntent(IntentCategory.LOGISTICS, "查物流", 0.95),
+            ],
+            primary=AgentType.TECHNICAL,
+            supporting=[AgentType.GENERAL],
+        )
+        self.assertTrue(all(not t.dependencies for t in task_plan.subtasks))
 
     def test_unknown_agent_is_rejected(self):
-        payload = {"subtasks": [{
-            "id": "x", "description": "x", "agent_type": "unknown", "dependencies": []
-        }]}
         with self.assertRaisesRegex(PlanValidationError, "unknown_agent_type"):
-            planner().parse_json_plan(json.dumps(payload), original_request="x")
+            scheduler().validate(plan(SubTask("x", "one", "unknown")))
 
     def test_duplicate_ids_are_rejected(self):
-        invalid = plan(
-            SubTask("same", "one", "technical"),
-            SubTask("same", "two", "billing"),
-        )
+        invalid = plan(SubTask("same", "one", "technical"), SubTask("same", "two", "billing"))
         with self.assertRaisesRegex(PlanValidationError, "duplicate_task_id"):
-            planner().validate(invalid)
+            scheduler().validate(invalid)
 
     def test_missing_dependency_is_rejected(self):
         invalid = plan(SubTask("a", "one", "technical", ["missing"]))
         with self.assertRaisesRegex(PlanValidationError, "missing_dependency"):
-            planner().validate(invalid)
+            scheduler().validate(invalid)
 
     def test_cycle_is_rejected(self):
         invalid = plan(
@@ -103,7 +134,7 @@ class PlannerTests(unittest.TestCase):
             SubTask("b", "two", "billing", ["a"]),
         )
         with self.assertRaisesRegex(PlanValidationError, "cyclic_dependency"):
-            planner().validate(invalid)
+            scheduler().validate(invalid)
 
     def test_too_many_tasks_are_rejected(self):
         invalid = plan(
@@ -112,19 +143,18 @@ class PlannerTests(unittest.TestCase):
             SubTask("c", "three", "general"),
         )
         with self.assertRaisesRegex(PlanValidationError, "too_many_subtasks"):
-            planner(max_subtasks=2).validate(invalid)
+            scheduler(max_subtasks=2).validate(invalid)
 
     def test_empty_description_is_rejected(self):
         with self.assertRaisesRegex(PlanValidationError, "empty_description"):
-            planner().validate(plan(SubTask("a", "", "technical")))
+            scheduler().validate(plan(SubTask("a", "", "technical")))
 
-    def test_plan_description_redacts_sensitive_values(self):
-        task_plan = planner().create_plan(
-            original_request="登录验证码 123456 失效，手机号13800138000也无法使用",
-            primary_agent="technical",
-            supporting_agents=[],
-            reason="sensitive",
-            confidence=1.0,
+    def test_plan_scope_redacts_sensitive_values(self):
+        text = "登录验证码 123456 失效，手机号13800138000也无法使用"
+        task_plan = built_plan(
+            message=text,
+            intents=[RecognizedIntent(IntentCategory.TECHNICAL_LOGIN, text, 0.93)],
+            primary=AgentType.TECHNICAL,
         )
         description = task_plan.subtasks[0].description
         self.assertNotIn("123456", description)
@@ -132,10 +162,11 @@ class PlannerTests(unittest.TestCase):
         self.assertIn("REDACTED", description)
 
 
+
 class SchedulerTests(unittest.TestCase):
     def test_independent_tasks_really_overlap(self):
         async def run():
-            scheduler = DAGScheduler(planner(), timeout_s=0.5)
+            scheduler = scheduler(timeout_s=0.5)
             task_plan = plan(
                 SubTask("a", "one", "technical"),
                 SubTask("b", "two", "billing"),
@@ -160,7 +191,7 @@ class SchedulerTests(unittest.TestCase):
 
     def test_dependencies_execute_in_order(self):
         async def run():
-            scheduler = DAGScheduler(planner(), timeout_s=0.5)
+            scheduler = scheduler(timeout_s=0.5)
             task_plan = plan(
                 SubTask("first", "one", "general"),
                 SubTask("second", "two", "billing", ["first"]),
@@ -182,7 +213,7 @@ class SchedulerTests(unittest.TestCase):
         async def executor(task, dependencies):
             return result(task.id, task.agent_type, success=task.id != "bad")
 
-        rows = asyncio.run(DAGScheduler(planner()).execute(
+        rows = asyncio.run(scheduler().execute(
             plan(SubTask("bad", "one", "technical"), SubTask("good", "two", "billing")),
             executor,
         ))
@@ -195,7 +226,7 @@ class SchedulerTests(unittest.TestCase):
             called.append(task.id)
             return result(task.id, task.agent_type, success=False)
 
-        rows = asyncio.run(DAGScheduler(planner()).execute(
+        rows = asyncio.run(scheduler().execute(
             plan(SubTask("first", "one", "general"), SubTask("second", "two", "billing", ["first"])),
             executor,
         ))
@@ -207,7 +238,7 @@ class SchedulerTests(unittest.TestCase):
             await asyncio.sleep(0.05)
             return result(task.id, task.agent_type)
 
-        rows = asyncio.run(DAGScheduler(planner(), timeout_s=0.01).execute(
+        rows = asyncio.run(scheduler(timeout_s=0.01).execute(
             plan(SubTask("slow", "one", "technical")), executor
         ))
         self.assertEqual(rows[0].status, TaskStatus.TIMEOUT)
@@ -368,8 +399,8 @@ class OrchestratorIntegrationTests(unittest.TestCase):
         orchestrator._pool = {
             agent_type: [_FakeAgent(agent_type)] for agent_type in AgentType
         }
-        orchestrator._planner = planner()
-        orchestrator._scheduler = DAGScheduler(orchestrator._planner, timeout_s=0.5)
+        orchestrator._max_subtasks = 4
+        orchestrator._scheduler = scheduler(timeout_s=0.5)
         orchestrator._synthesizer = ResponseSynthesizer()
         return orchestrator
 
@@ -422,21 +453,13 @@ class OrchestratorIntegrationTests(unittest.TestCase):
         self.assertIn("response_synthesizer_unavailable", output.degradations)
         self.assertIn("handled:", output.response)
 
-    def test_planner_failure_uses_primary_agent_fallback_plan(self):
-        base_planner = planner()
-
-        class BrokenPlanner:
-            @staticmethod
-            def create_plan(**kwargs):
-                raise RuntimeError("down")
-
-            @staticmethod
-            def validate(task_plan):
-                return base_planner.validate(task_plan)
-
+    def test_invalid_task_plan_uses_primary_agent_fallback(self):
         orchestrator = self.orchestrator()
-        orchestrator._planner = BrokenPlanner()
-        orchestrator._scheduler = DAGScheduler(orchestrator._planner, timeout_s=0.5)
+
+        def broken_task_builder(*args, **kwargs):
+            raise RuntimeError("broken task scope")
+
+        orchestrator._build_task_plan = broken_task_builder
         decision = RoutingDecision(
             primary_agent=AgentType.TECHNICAL,
             supporting_agents=[AgentType.BILLING],
@@ -444,7 +467,7 @@ class OrchestratorIntegrationTests(unittest.TestCase):
             confidence=0.9,
         )
         output = asyncio.run(orchestrator.run_parallel(self.request(), decision))
-        self.assertIn("task_planner_unavailable", output.degradations)
+        self.assertIn("task_plan_unavailable", output.degradations)
         self.assertEqual(output.task_plan["method"], "fallback")
         self.assertEqual(len(output.execution_trace), 1)
         self.assertEqual(output.execution_trace[0]["agent_type"], "technical")
@@ -495,9 +518,9 @@ class OrchestratorIntegrationTests(unittest.TestCase):
         output = asyncio.run(orchestrator.run_compound(self._remainder_request(), primary))
         self.assertTrue(output.escalated)
 
-    def test_run_compound_does_not_pollute_task_planner_allowed_types(self):
+    def test_run_compound_does_not_assign_action_as_consultation_agent(self):
         # "action"/"policy" must never need to be registered as an AgentType — they
-        # bypass TaskPlanner/DAGScheduler entirely via extra_results, so the remainder
+        # bypass consultation DAG entirely via extra_results, so the remainder
         # plan produced here should only ever contain real AgentType subtasks.
         orchestrator = self.orchestrator()
         primary = result("policy_primary", "policy", "会员费退款政策说明。")
