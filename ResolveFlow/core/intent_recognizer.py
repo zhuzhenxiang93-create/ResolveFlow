@@ -6,8 +6,9 @@
   2. Embedding 向量相似度（权重 20%）—— 快速匹配常见表达
   3. 关键词模式匹配（权重 10%）—— 零延迟兜底
 
-三路结果通过加权投票合并，置信度低于阈值时降级为 OTHER。
-LLM 和 Embedding 并行调用，不串行等待。
+LLM 优先以结构化列表识别本轮所有明确诉求，每个意图携带原文片段。
+旧版单标签 JSON / LLM 失败时保留单标签加权融合兼容路径。
+LLM 和本地相似度计算并行（当该分支启用时）。
 """
 import asyncio
 import hashlib
@@ -53,6 +54,14 @@ class UrgencyLevel(Enum):
     CRITICAL = 4
 
 
+@dataclass(frozen=True)
+class RecognizedIntent:
+    """An explicit per-request goal, grounded in a substring of this user turn."""
+    intent: IntentCategory
+    text: str
+    confidence: float
+
+
 @dataclass
 class IntentResult:
     intent:     IntentCategory
@@ -63,6 +72,7 @@ class IntentResult:
     reasoning:  str
     latency_ms: float
     source_scores: Dict[str, float] = field(default_factory=dict)
+    intents: List[RecognizedIntent] = field(default_factory=list)
 
 
 # ── Few-shot 模板（同时用于 LLM 示例和 Embedding 匹配）────────────────────────
@@ -199,6 +209,20 @@ class IntentRecognizer:
             emb = {"intent": IntentCategory.OTHER, "confidence": 0.0}
 
         intent, confidence, source_scores = self._vote(llm, emb, pat)
+        if llm.get("multi_format"):
+            # A validated multi-intent LLM result is authoritative for which
+            # goals were actually requested. Never add extra intents based on
+            # a stray keyword (for example "不要退款").
+            intents = list(llm.get("intents", []))
+            if intents:
+                intent, confidence = intents[0].intent, intents[0].confidence
+            else:
+                intent, confidence = IntentCategory.OTHER, 0.0
+        else:
+            # Legacy model output / model outage: conservative single-intent
+            # fallback; do not guess additional goals from unrelated keywords.
+            intents = ([RecognizedIntent(intent, message, confidence)]
+                       if intent != IntentCategory.OTHER else [])
         entities = self._extract_entities(message)
         urgency  = self._urgency(message, intent)
 
@@ -211,6 +235,7 @@ class IntentRecognizer:
             reasoning=llm.get("reasoning", ""),
             latency_ms=(time.monotonic() - t0) * 1000,
             source_scores=source_scores,
+            intents=intents,
         )
 
         # LRU 缓存
@@ -245,34 +270,79 @@ class IntentRecognizer:
                 for m in history[-3:]
             )
 
-        prompt = f"""你是客服意图分析专家。根据示例判断用户意图，返回 JSON。
-如果用户问题能匹配细粒度业务意图，请优先返回细粒度意图，而不是宽泛大类。
-例如退款优先返回 refund，发票优先返回 invoice，登录故障优先返回 technical_login。
+        prompt = f"""你是客服多意图识别器。只识别本轮用户明确提出的独立诉求（最多4项）。
+每项输出具体意图 intent、原文中真实存在的连续片段 text 和 confidence (0到1)。
+text 必须从本轮用户消息逐字摘录，不得改写、添加或虚构任务。
+如果用户明确否定某个操作（例如“不退款，只查物流”），不要输出被否定的操作。
+区分政策咨询与真实操作请求；背景、条件与之前的历史请求不自动变成本轮操作。
+同一业务领域内多个独立请求也分别输出。无法识别时返回空列表。
 
-示例:
+单意图样例:
 {examples}
 
-{ctx}
-用户消息: "{message}"
+多意图示例:
+输入: "我登录失败，而且物流一直不更新"
+输出: {{"intents":[{{"intent":"technical_login","text":"我登录失败","confidence":0.9}},{{"intent":"logistics","text":"物流一直不更新","confidence":0.9}}],"reasoning":"技术和物流两个独立诉求"}}
+输入: "只查物流，不需要退款"
+输出: {{"intents":[{{"intent":"logistics","text":"查物流","confidence":0.9}}],"reasoning":"退款已被用户否定"}}
 
-返回格式（仅 JSON，不要其他文字）:
-{{"intent": "<意图值>", "confidence": <0-1>, "reasoning": "<一句话说明>"}}
+{ctx}
+本轮用户消息: "{message}"
+
+只返回JSON对象，格式:
+{{"intents":[{{"intent":"<类别>","text":"<来自本轮消息的连续原文>","confidence":0.0}}],"reasoning":"<简短说明>"}}
 
 可选意图: {", ".join(c.value for c in IntentCategory)}"""
         prompt = self._clean_text(prompt)
 
         try:
             raw = await self.client.create(
-                max_tokens=256,
+                max_tokens=768,
                 temperature=0.1,
                 messages=[{"role": "user", "content": prompt}],
             )
             s, e = raw.find("{"), raw.rfind("}") + 1
             data = json.loads(raw[s:e])
+            if not isinstance(data, dict):
+                raise ValueError("intent_json_not_object")
+            if "intents" in data:
+                if not isinstance(data["intents"], list):
+                    raise ValueError("intents_not_list")
+                intents: List[RecognizedIntent] = []
+                seen = set()
+                for item in data["intents"][:4]:
+                    if not isinstance(item, dict):
+                        continue
+                    try:
+                        category = IntentCategory(item.get("intent"))
+                        confidence = float(item.get("confidence", 0.0))
+                    except (TypeError, ValueError):
+                        continue
+                    excerpt = str(item.get("text") or "").strip()
+                    # Bound each goal to evidence in this turn. A model cannot
+                    # invent an unrelated task or permission via a freeform plan.
+                    if (category == IntentCategory.OTHER or not excerpt
+                            or excerpt not in message or not 0.0 <= confidence <= 1.0
+                            or confidence < self.threshold):
+                        continue
+                    key = (category, excerpt)
+                    if key not in seen:
+                        intents.append(RecognizedIntent(category, excerpt, confidence))
+                        seen.add(key)
+                primary = intents[0] if intents else None
+                return {
+                    "intent": primary.intent if primary else IntentCategory.OTHER,
+                    "confidence": primary.confidence if primary else 0.0,
+                    "reasoning": str(data.get("reasoning", ""))[:240],
+                    "intents": intents,
+                    "multi_format": True,
+                }
+            # Compatibility with old single-label model responses.
             try:
                 data["intent"] = IntentCategory(data["intent"])
-            except ValueError:
-                data["intent"] = IntentCategory.OTHER
+                data["confidence"] = float(data.get("confidence", 0.0))
+            except (KeyError, TypeError, ValueError):
+                raise ValueError("legacy_intent_json_invalid")
             return data
         except Exception as ex:
             logger.warning(f"LLM 识别失败: {ex}")
