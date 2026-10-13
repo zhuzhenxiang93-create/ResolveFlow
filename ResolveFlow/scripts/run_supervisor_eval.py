@@ -1,4 +1,8 @@
-"""离线评测 Supervisor 的复合检测、结构化规划、依赖与升级控制面。"""
+"""Evaluate deterministic intent->Agent mapping, DAG validation and escalation.
+
+Inputs are pre-annotated synthetic multi-intent cases; this does not measure
+the LLM's multi-intent recognition accuracy or real end-to-end task success.
+"""
 from __future__ import annotations
 
 import json
@@ -15,8 +19,8 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from agents.agent_orchestrator import AgentOrchestrator, AgentType, Request
-from agents.supervisor import TaskPlanner
-from core.intent_recognizer import IntentCategory, UrgencyLevel
+from agents.supervisor import DAGScheduler
+from core.intent_recognizer import IntentCategory, RecognizedIntent, UrgencyLevel
 
 
 def _load_cases(path: Path) -> List[Dict[str, Any]]:
@@ -28,7 +32,7 @@ def _load_cases(path: Path) -> List[Dict[str, Any]]:
         required = {
             "id", "message", "intent", "expected_primary_agent",
             "expected_supporting_agents", "expected_dependencies", "compound",
-            "should_escalate",
+            "should_escalate", "intents",
         }
         missing = required - set(row)
         if missing:
@@ -42,6 +46,10 @@ def _load_cases(path: Path) -> List[Dict[str, Any]]:
 def _routing_only_orchestrator() -> AgentOrchestrator:
     orchestrator = object.__new__(AgentOrchestrator)
     orchestrator._pool = {agent_type: [object()] for agent_type in AgentType}
+    orchestrator._max_subtasks = 4
+    orchestrator._scheduler = DAGScheduler(
+        [agent.value for agent in AgentType], max_subtasks=4,
+    )
     return orchestrator
 
 
@@ -62,36 +70,39 @@ def _percentile(values: List[float], pct: float) -> float:
 
 def evaluate_supervisor(cases: List[Dict[str, Any]]) -> Dict[str, Any]:
     orchestrator = _routing_only_orchestrator()
-    planner = TaskPlanner([agent.value for agent in AgentType], max_subtasks=3)
     results = []
     latencies = []
     for row in cases:
+        intents = [
+            RecognizedIntent(
+                IntentCategory(item["intent"]), item["text"],
+                float(item.get("confidence", 1.0)),
+                list(item.get("depends_on", [])),
+            )
+            for item in row["intents"]
+        ]
         request = Request(
             message=row["message"],
             user_id="offline-eval",
             conv_id=row["id"],
-            intent=IntentCategory(row["intent"]),
+            intent=intents[0].intent if intents else IntentCategory.OTHER,
             intent_group=row.get("intent_group"),
+            intents=intents,
             urgency=UrgencyLevel.MEDIUM,
-            intent_confidence=1.0,
+            intent_confidence=1.0 if intents else 0.0,
         )
         started = time.perf_counter()
         decision = orchestrator._route_decision(request)
         actual_compound = decision.multi_agent
         plan = None
-        planner_fallback = False
+        plan_fallback = False
         if actual_compound:
             try:
-                plan = planner.create_plan(
-                    original_request=request.message,
-                    primary_agent=decision.primary_agent.value,
-                    supporting_agents=[agent.value for agent in decision.supporting_agents],
-                    reason=decision.reason,
-                    confidence=decision.confidence,
-                    risk_reasons=orchestrator._high_risk_reasons(request),
+                plan = orchestrator._build_task_plan(
+                    request, decision, orchestrator._high_risk_reasons(request),
                 )
             except Exception:
-                planner_fallback = True
+                plan_fallback = True
         latencies.append((time.perf_counter() - started) * 1000)
 
         actual_agents = {decision.primary_agent.value, *[agent.value for agent in decision.supporting_agents]}
@@ -101,14 +112,14 @@ def evaluate_supervisor(cases: List[Dict[str, Any]]) -> Dict[str, Any]:
         } if plan else {}
         escalated = (
             orchestrator._requires_high_risk_escalation(request)
-            or request.intent in (IntentCategory.ESCALATION, IntentCategory.HUMAN_HANDOFF)
+            or decision.primary_agent == AgentType.ESCALATION
         )
         compound_correct = actual_compound == bool(row["compound"])
         route_correct = decision.primary_agent.value == row["expected_primary_agent"]
         coverage_correct = actual_agents == expected_agents
         dependency_correct = actual_dependencies == row["expected_dependencies"]
         escalation_correct = escalated == bool(row["should_escalate"])
-        plan_valid = (plan is not None and not planner_fallback) if row["compound"] else plan is None
+        plan_valid = (plan is not None and not plan_fallback) if row["compound"] else plan is None
         results.append({
             "id": row["id"],
             "tags": row.get("tags", []),
@@ -120,7 +131,7 @@ def evaluate_supervisor(cases: List[Dict[str, Any]]) -> Dict[str, Any]:
             "dependency_correct": dependency_correct,
             "escalation_correct": escalation_correct,
             "plan_valid": plan_valid,
-            "planner_fallback": planner_fallback,
+            "plan_fallback": plan_fallback,
             "actual_primary_agent": decision.primary_agent.value,
             "actual_supporting_agents": [agent.value for agent in decision.supporting_agents],
             "actual_dependencies": actual_dependencies,
@@ -143,7 +154,7 @@ def evaluate_supervisor(cases: List[Dict[str, Any]]) -> Dict[str, Any]:
         "escalation_accuracy": _rate(results, "escalation_correct"),
         "control_plane_task_success_rate": _rate(results, "passed"),
         "end_to_end_task_success_rate": None,
-        "planner_fallback_rate": _rate(results, "planner_fallback"),
+        "task_plan_fallback_rate": _rate(results, "plan_fallback"),
         "synthesis_fallback_rate": None,
         "synthesis_evaluated": False,
         "avg_control_plane_latency_ms": round(statistics.mean(latencies), 4),
@@ -154,12 +165,12 @@ def evaluate_supervisor(cases: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 def main() -> int:
-    cases = _load_cases(ROOT / "data/eval/supervisor_cases.jsonl")
+    cases = _load_cases(ROOT / "data/eval/supervisor_multi_intent_cases.jsonl")
     report = evaluate_supervisor(cases)
     payload = {
         "timestamp": datetime.now().isoformat(),
-        "dataset": "internal deterministic supervisor set",
-        "evaluation_mode": "gold_intent_rule_planner_control_plane",
+        "dataset": "internal synthetic annotated multi-intent control-plane set",
+        "evaluation_mode": "gold_multi_intent_mapping_and_dag_only",
         **report,
     }
     reports_dir = ROOT / "data/eval/reports"
@@ -174,7 +185,7 @@ def main() -> int:
             "dataset", "evaluation_mode", "total", "compound_detection_accuracy",
             "subtask_coverage", "agent_assignment_accuracy", "dependency_accuracy",
             "multi_agent_routing_accuracy", "escalation_accuracy",
-            "control_plane_task_success_rate", "planner_fallback_rate",
+            "control_plane_task_success_rate", "task_plan_fallback_rate",
             "avg_control_plane_latency_ms", "p95_control_plane_latency_ms",
         )
     } | {"failed_count": len(payload["failed"]), "report_path": str(timestamped)}, ensure_ascii=False, indent=2))
