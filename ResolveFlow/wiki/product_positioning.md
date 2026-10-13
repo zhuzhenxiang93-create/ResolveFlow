@@ -87,20 +87,23 @@ ROI/准确率数字作为本项目的结论，只借鉴"边界怎么划"这个�
 | [Strova AI customer support conversations](https://huggingface.co/datasets/strova-ai/customer_support_conversations_dataset) | 号称覆盖 SaaS 垂类多轮合成对话 | 未查到明确许可证 | 已发现，未验证。许可证和数据质量都还没有核实，不能作为结论引用 |
 | Bitext 通用客服数据集、BFCL、API-Bank、τ-bench、ToolBench | 见 `wiki/external_research.md`/`adoption_decisions.md` | 各不相同 | 项目之前已评估，结论为"暂不导入"（缺本地业务映射或版本/许可证边界未锁定）；这次定位调整未改变这些结论 |
 
-## 已解决：复合请求（老系统多 Agent 编排 + 新系统 Action 执行的合并）
+## 已解决：复合请求（通用多意图编排 + 受控业务执行）
 
-原先的问题：一句话同时混"广泛话题"和"会员操作"（例如"帮我查物流，另外会员费退了没"）时，
-`GoalInterpreter` 只识别得出会员那半句，"物流"那半句会被整体丢弃，用户连"处理不了"的提示
-都收不到。已解决：`GoalProposal` 新增 `general_remainder` 字段标出业务目标之外的独立通用
-请求；`ConversationService` 在 `action`/`knowledge` 两条路由都会把已算好的业务结果（Action
-执行结果或政策 RAG 回答）包装成 `SubTaskResult`，通过 `AgentOrchestrator.run_compound()`
-接入老系统本来就有的 `TaskPlanner`/`DAGScheduler`/`ResponseSynthesizer` 复合请求处理机制，
-对剩余部分做规则化拆分、并行调度并合成回复——支持任意 N 层嵌套（例如"物流+技术故障+退款"
-三件事一句话），因为老系统的子任务拆分/调度本身就不限定子任务数量。`ResponseSynthesizer`
-新增 `extra_results` 参数，让预先算好的业务/政策结果参与最终内容合成，但不参与关键词冲突
-检测——避免业务结果里的真实数字和无关话题的巧合关键词被误判成"数字/极性冲突"从而触发不
-必要的人工升级。单话题消息路径不变，不产生额外模型调用；只有真正的复合消息才会调用
-`run_compound()` 多花一次意图识别。
+历史问题：一句话混合商品/订阅操作与技术咨询时，早期系统可能丢失其中某些
+独立诉求。当前主链路的 `CommerceConversation` 负责解析商品/订阅相关的多个
+操作目标，通过结构化 `general_remainder` 保留不属于受控业务链的技术/通用问题，
+并交给通用 Agent 编排处理。
+
+通用咨询侧的 `IntentRecognizer` 现在一次返回多个细粒度意图与原文片段。
+`AgentOrchestrator` 直接进行映射并生成有限 `TaskPlan`，不存在独立 TaskPlanner，
+也不再在路由阶段扫描关键词补造第二个领域。`DAGScheduler` 根据结构化
+`depends_on` 导出的 DAG 验证和执行独立或有依赖的任务，`ResponseSynthesizer`
+负责确定性合并；已验证的 Commerce 结果优先保留为已完成业务状态，不能由
+普通咨询 Agent 覆盖。为了控制复杂度，当前最多支持四个 Agent 领域子任务。
+
+过往报告、旧版数据中描述的关键词复合检测与 TaskPlanner 属于历史实现，
+其 Accuracy 和延迟不能作为新多意图架构的成绩。新实现详见
+[`wiki/multi_intent_routing.md`](multi_intent_routing.md)。
 
 同时解决了一个相关但独立的问题："退款"本身的指代歧义（会员费退款 vs 商品退款）。当消息里
 "退款"没有任何一边的限定词时（`agents/subscription_knowledge.py:refund_target_is_ambiguous`），
