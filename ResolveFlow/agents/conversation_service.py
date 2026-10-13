@@ -181,7 +181,8 @@ class ConversationService:
             intent_group=intent.intent_group, intent_confidence=intent.confidence,
             entities=dict(intent.entities),
             recognized_intents=[
-                {"intent": item.intent.value, "confidence": round(item.confidence, 3)}
+                {"intent": item.intent.value, "confidence": round(item.confidence, 3),
+                 "depends_on": list(item.depends_on)}
                 for item in getattr(intent, "intents", [])
             ],
             agent_type=routing_result.agent_type.value if routing_result else "general",
